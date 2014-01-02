@@ -25,11 +25,40 @@
     GLDimension *zDim = rho.dimensions[0];
     
     GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    
-    GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-	
     GLScalar *rho_0 = [rho mean: 0];
     GLFunction *N2 = [diffZ transform: [rho dividedBy: rho_0]];
+    GLFunction *invN2 = [N2 scalarDivide: 1.0];
+	
+    GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
+	
+    GLLinearTransform *invN2_trans = [GLLinearTransform linearTransformFromFunction: invN2];
+    
+    GLLinearTransform *diffOp = [invN2_trans multiply: diffZZ];
+	[diffOp dumpToConsole];
+    NSArray *system = [diffOp eigensystem];
+    
+    return system;
+}
+
+- (NSArray *) internalModesFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k latitude: (GLFloat) latitude
+{
+    if (rho.dimensions.count != 1) {
+        [NSException raise:@"InvalidDimensions" format:@"Only one dimension allowed, at this point"];
+    }
+	
+	GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
+    
+    GLEquation *equation = rho.equation;
+    GLDimension *zDim = rho.dimensions[0];
+    
+    GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
+    GLScalar *rho_0 = [rho mean: 0];
+    GLFunction *N2 = [diffZ transform: [rho dividedBy: rho_0]];
+	
+	
+    GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
+	
+    
     GLFunction *invN2 = [N2 scalarDivide: 1.0];
 	
     GLLinearTransform *invN2_trans = [GLLinearTransform linearTransformFromFunction: invN2];
