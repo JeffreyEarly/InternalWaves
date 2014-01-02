@@ -24,20 +24,18 @@
     GLEquation *equation = rho.equation;
     GLDimension *zDim = rho.dimensions[0];
     
-    GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
+    GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
     
     GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    
+	
     GLScalar *rho_0 = [rho mean: 0];
     GLFunction *N2 = [diffZ transform: [rho dividedBy: rho_0]];
-    
     GLFunction *invN2 = [N2 scalarDivide: 1.0];
+	
     GLLinearTransform *invN2_trans = [GLLinearTransform linearTransformFromFunction: invN2];
     
-    GLFunction *invN2_z = [diffZ transform: invN2];
-    GLLinearTransform *invN2_z_trans = [GLLinearTransform linearTransformFromFunction: invN2_z];
-    
-    GLLinearTransform *diffOp = [[invN2_z_trans multiply: diffZ] plus: [invN2_trans multiply: diffZZ]];
+    GLLinearTransform *diffOp = [invN2_trans multiply: diffZZ];
+	[diffOp dumpToConsole];
     NSArray *system = [diffOp eigensystem];
     
     return system;
@@ -59,14 +57,14 @@ int main(int argc, const char * argv[])
 		
 		GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
 		diffZZ = [diffZZ densified];
-		[diffZZ dumpToConsole];
+		//[diffZZ dumpToConsole];
 		
 		NSArray *system = [diffZZ eigensystem];
 		GLFunction *eigenvalues = system[0];
 		GLLinearTransform *S = system[1];
 		
-		[eigenvalues dumpToConsole];
-		[S dumpToConsole];
+		//[eigenvalues dumpToConsole];
+		//[S dumpToConsole];
         
         GLFunction *rho = [z times: @(1)];
         GLInternalModes *internalModes = [[GLInternalModes alloc] init];
