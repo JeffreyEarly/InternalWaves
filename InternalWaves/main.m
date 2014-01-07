@@ -25,8 +25,7 @@
     GLDimension *zDim = rho.dimensions[0];
     
     GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    GLScalar *rho_0 = [rho mean: 0];
-    GLFunction *N2 = [diffZ transform: [rho dividedBy: rho_0]];
+    GLFunction *N2 = [diffZ transform: [[rho dividedBy: [rho mean]] times: @(1)]];
 	
     GLFunction *invN2 = [N2 scalarDivide: 1.0];
 		
@@ -55,9 +54,7 @@
     
 	// First construct N^2
     GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    GLScalar *rho_0 = [rho mean: 0];
-	
-    GLFunction *N2 = [diffZ transform: [rho dividedBy: rho_0]];
+    GLFunction *N2 = [diffZ transform: [[rho dividedBy: [rho mean]] times: @(-g)]];
 	
 	// Now construct A = k*k*eye(N) - Diff2;
 	GLLinearTransform *k2 = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[zDim] toDimensions: @[zDim] inFormat: @[@(kGLDiagonalMatrixFormat)] forEquation:equation matrix:^( NSUInteger *row, NSUInteger *col ) {
@@ -74,11 +71,16 @@
     return system;
 }
 
-- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho forLatitude: (GLFloat) latitude
+- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho  withHorizontalDimensions: (NSArray *) horizDims forLatitude: (GLFloat) latitude
 {
+	// rho will be a function of z only, so we need to create the full dimensions.
+	NSMutableArray *dimensions = [rho.dimensions mutableCopy];
+	[dimensions addObjectsFromArray: horizDims];
+	
+	// create an array with the intended transformation (this is agnostic to dimension ordering).
 	NSMutableArray *basis = [NSMutableArray array];
 	GLDimension *zDim;
-	for (GLDimension *dim in rho.dimensions) {
+	for (GLDimension *dim in dimensions) {
 		if ( [dim.name isEqualToString: @"x"] || [dim.name isEqualToString: @"y"]) {
 			[basis addObject: @(kGLExponentialBasis)];
 		} else {
@@ -87,42 +89,35 @@
 		}
 	}
 	
-	GLFunction *rho_bar = [rho transformToBasis: basis];
+	NSArray *transformedDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: dimensions transformedToBasis: basis];
 	GLDimension *kDim, *lDim;
-	for (GLDimension *dim in rho_bar.dimensions) {
+	for (GLDimension *dim in transformedDimensions) {
 		if ( [dim.name isEqualToString: @"k"]) {
 			kDim = dim;
 		} else if ( [dim.name isEqualToString: @"l"]) {
 			lDim = dim;
 		}
 	}
-	
+		
 	GLEquation *equation = rho.equation;
-	GLFunction *k = [GLFunction functionOfRealTypeFromDimension: kDim withDimensions: rho_bar.dimensions forEquation: equation];
-	GLFunction *l = [GLFunction functionOfRealTypeFromDimension: lDim withDimensions: rho_bar.dimensions forEquation: equation];
+	GLFunction *k = [GLFunction functionOfRealTypeFromDimension: kDim withDimensions: transformedDimensions forEquation: equation];
+	GLFunction *l = [GLFunction functionOfRealTypeFromDimension: lDim withDimensions: transformedDimensions forEquation: equation];
 	GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
 	
 	GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
-	GLFloat g = 9.81;
     
-	// Do we want to deal with rho being 3D?
-	
 	// First construct N^2
-	NSMutableArray *horizDims = [rho_bar.dimensions mutableCopy];
-	[horizDims removeObject: zDim];
     GLLinearTransform *diffZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-	GLLinearTransform *diffZ = [diffZ1D expandedWithFromDimensions: rho_bar.dimensions toDimensions: rho_bar.dimensions];
-    GLScalar *rho_0 = [rho mean: [rho_bar.dimensions indexOfObject: zDim]];
-	
-    GLFunction *N2 = [diffZ transform: [rho dividedBy: rho_0]];
-	
+    GLFunction *N2 = [diffZ1D transform: [[rho dividedBy: [rho mean]] times: @(1)]];
+
 	// Now construct A = k*k*eye(N) - Diff2;
     GLLinearTransform *diffZZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-	GLLinearTransform *diffZZ = [diffZZ1D expandedWithFromDimensions: rho_bar.dimensions toDimensions: rho_bar.dimensions];
-	GLLinearTransform *A = [K2 minus: diffZZ];
+	GLLinearTransform *diffZZ = [diffZZ1D expandedWithFromDimensions: transformedDimensions toDimensions: transformedDimensions];
+	GLLinearTransform *A = [[GLLinearTransform linearTransformFromFunction:K2] minus: diffZZ];
     
+	[diffZZ dumpToConsole];
+	
 	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
-	GLLinearTransform *N2_transform = [ expandedWithFromDimensions: rho_bar.dimensions toDimensions: rho_bar.dimensions];
 	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [K2 multiply: N2]] minus: [diffZZ times: @(f0*f0)]];
 	
     NSArray *system = [A generalizedEigensystemWith: B];
@@ -144,7 +139,7 @@ int main(int argc, const char * argv[])
 		NSUInteger Nx = 8;
 		NSUInteger Nz = 64;
 		
-		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
+		//GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
 		
@@ -157,11 +152,12 @@ int main(int argc, const char * argv[])
 		yDim.name = @"y";
 		
 		// We create the z variable with dimensions in reverse order so that the fft will act on contiguous chunks of memory.
-        GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim, yDim, xDim] forEquation:equation];
+        GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
         GLFunction *rho = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
 
         GLInternalModes *internalModes = [[GLInternalModes alloc] init];
-        NSArray *system = [internalModes internalModesFromDensityProfile: rho];
+        //NSArray *system = [internalModes internalModesFromDensityProfile: rho];
+		NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho withHorizontalDimensions: @[yDim, xDim] forLatitude:latitude];
 		//NSArray *system = [internalModes internalModesFromDensityProfile: rho wavenumber: 1.0 latitude: 45.0];
         GLFunction *eigenvalues = system[0];
 		GLLinearTransform *S = system[1];
