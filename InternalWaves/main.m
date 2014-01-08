@@ -66,7 +66,7 @@
 	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
 	GLLinearTransform *B = [[[GLLinearTransform linearTransformFromFunction: N2] times: @(k*k)] minus: [diffZZ times: @(f0*f0)]];
 
-    NSArray *system = [A generalizedEigensystemWith: B];
+    NSArray *system = [B generalizedEigensystemWith: A];
     
     return system;
 }
@@ -114,13 +114,11 @@
     GLLinearTransform *diffZZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
 	GLLinearTransform *diffZZ = [diffZZ1D expandedWithFromDimensions: transformedDimensions toDimensions: transformedDimensions];
 	GLLinearTransform *A = [[GLLinearTransform linearTransformFromFunction:K2] minus: diffZZ];
-    
-	[diffZZ dumpToConsole];
-	
+
 	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
 	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [K2 multiply: N2]] minus: [diffZZ times: @(f0*f0)]];
 	
-    NSArray *system = [A generalizedEigensystemWith: B];
+    NSArray *system = [B generalizedEigensystemWith: A];
     
     return system;
 }
@@ -139,7 +137,7 @@ int main(int argc, const char * argv[])
 		NSUInteger Nx = 8;
 		NSUInteger Nz = 64;
 		
-		//GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
+		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
 		
@@ -157,11 +155,12 @@ int main(int argc, const char * argv[])
 
         GLInternalModes *internalModes = [[GLInternalModes alloc] init];
         //NSArray *system = [internalModes internalModesFromDensityProfile: rho];
-		NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho withHorizontalDimensions: @[yDim, xDim] forLatitude:latitude];
-		//NSArray *system = [internalModes internalModesFromDensityProfile: rho wavenumber: 1.0 latitude: 45.0];
+		//NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho withHorizontalDimensions: @[yDim, xDim] forLatitude:latitude];
+		NSArray *system = [internalModes internalModesFromDensityProfile: rho wavenumber: 0 latitude: 45.0];
         GLFunction *eigenvalues = system[0];
 		GLLinearTransform *S = system[1];
         
+		eigenvalues = [[[eigenvalues times: @(1/(f0*f0))] abs] sqrt];
         [eigenvalues dumpToConsole];
 		[S dumpToConsole];
 	}
