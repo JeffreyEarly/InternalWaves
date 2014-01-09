@@ -65,10 +65,11 @@
     
 	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
 	GLLinearTransform *B = [[[GLLinearTransform linearTransformFromFunction: N2] times: @(k*k)] minus: [diffZZ times: @(f0*f0)]];
-
+		
     NSArray *system = [B generalizedEigensystemWith: A];
-    
-    return system;
+    GLLinearTransform *S = [system[1] normalizeWithFunction: [N2 minus: @(f0*f0)]];
+	
+    return @[system[0], S];
 }
 
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho  withHorizontalDimensions: (NSArray *) horizDims forLatitude: (GLFloat) latitude
@@ -105,10 +106,11 @@
 	GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
 	
 	GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
-    
+    GLFloat g = 9.81;
+	
 	// First construct N^2
     GLLinearTransform *diffZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    GLFunction *N2 = [diffZ1D transform: [[rho dividedBy: [rho mean]] times: @(1)]];
+    GLFunction *N2 = [diffZ1D transform: [[rho dividedBy: [rho mean]] times: @(-g)]];
 
 	// Now construct A = k*k*eye(N) - Diff2;
     GLLinearTransform *diffZZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
@@ -119,8 +121,21 @@
 	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [K2 multiply: N2]] minus: [diffZZ times: @(f0*f0)]];
 	
     NSArray *system = [B generalizedEigensystemWith: A];
-    
-    return system;
+	GLFunction *lambda = [system[0] setValue: 0.0 atIndices: @":,0,0"];
+    GLLinearTransform *S = [system[1] normalizeWithFunction: [N2 minus: @(f0*f0)]];
+	
+	NSUInteger index = 0;
+	NSUInteger totalVectors = S.matrixDescription.nPoints / S.matrixDescription.strides[index].nPoints;
+	NSUInteger vectorStride = S.matrixDescription.strides[index].columnStride;
+	NSUInteger vectorLength = S.matrixDescription.strides[index].nRows;
+	NSUInteger vectorElementStride = S.matrixDescription.strides[index].rowStride;
+	NSUInteger complexStride = S.matrixDescription.strides[index].complexStride;
+	
+	for (NSUInteger i=0; i<vectorLength; i++) {
+		S.pointerValue[i*vectorElementStride] = 0;
+	}
+	
+    return @[lambda, S];
 }
 
 @end
@@ -155,13 +170,16 @@ int main(int argc, const char * argv[])
 
         GLInternalModes *internalModes = [[GLInternalModes alloc] init];
         //NSArray *system = [internalModes internalModesFromDensityProfile: rho];
-		//NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho withHorizontalDimensions: @[yDim, xDim] forLatitude:latitude];
-		NSArray *system = [internalModes internalModesFromDensityProfile: rho wavenumber: 0 latitude: 45.0];
+		NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho withHorizontalDimensions: @[yDim, xDim] forLatitude:latitude];
+		//NSArray *system = [internalModes internalModesFromDensityProfile: rho wavenumber: 0.01 latitude: 45.0];
         GLFunction *eigenvalues = system[0];
 		GLLinearTransform *S = system[1];
         
 		eigenvalues = [[[eigenvalues times: @(1/(f0*f0))] abs] sqrt];
         [eigenvalues dumpToConsole];
+		
+		//S = [S normalizeWithScalar: N2-f0*f0 acrossDimensions: 0];
+		
 		[S dumpToConsole];
 	}
     return 0;
