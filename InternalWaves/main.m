@@ -138,11 +138,75 @@
 	lambda = [lambda makeRealIfPossible];
     S = [S makeRealIfPossible];
     
+    GLLinearTransform *diffZ = [diffZ1D expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
+    GLLinearTransform *Sprime = [diffZ multiply: S];
+    
+    [Sprime dumpToConsole];
+    
+    
+    
     return @[lambda, S];
 }
 
 @end
 
+
+@interface GLInternalWaveInitialization : NSObject
+@property(retain) NSArray *spectralDimensions;
+@property(retain) GLEquation *equation;
+@end
+
+@implementation GLInternalWaveInitialization
+- (id) initWithSpectralDimensions: (NSArray *) dimensions equation: (GLEquation *) equation
+{
+    if ((self=[super init])) {
+        self.spectralDimensions=dimensions;
+        self.equation=equation;
+    }
+    return self;
+}
+
+- (GLFunction *) spectrumWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit
+{
+    GLFunction *U_mag = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
+    [U_mag zero];
+    U_mag = [U_mag setValue: U_max/(4*sqrt(2.0)) atIndices: [NSString stringWithFormat:@"%lu,%lu,%lu", mode, lUnit, kUnit]];
+    
+    NSUInteger zDimNPoints = [U_mag.dimensions[0] nPoints];
+    NSUInteger kDimNPoints = [U_mag.dimensions[1] nPoints];
+    NSUInteger lDimNPoints = [U_mag.dimensions[2] nPoints];
+        
+    GLSplitComplex C = splitComplexFromData( U_mag.data );
+    
+    // index=i*ny*nz+j*nz+k
+    // index=(i*ny+j)*nz+k
+    // my notation, (z*kDimNPoints+k)*lDimNPoints+l
+    for (NSUInteger z=0; z<zDimNPoints; z++) {
+        // Hermitian conjugates
+        for (NSUInteger i=1; i<kDimNPoints/2; i++) {
+            C.realp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints] = C.realp[(z*kDimNPoints+i)*lDimNPoints];
+            C.imagp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints] = -C.imagp[(z*kDimNPoints+i)*lDimNPoints];
+            
+            C.realp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)] = C.realp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)];
+            C.imagp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)] = -C.imagp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)];
+        }
+        
+        // For the four self-conjugate components, that means that there can be no imaginary component
+        C.imagp[z*kDimNPoints*lDimNPoints+0] = 0;
+        C.imagp[z*kDimNPoints*lDimNPoints+(lDimNPoints-1)] = 0;
+        C.imagp[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+0] = 0;
+        C.imagp[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+(lDimNPoints-1)] = 0;
+        
+        // But that their real components should be doubled, to make all else equal.
+        C.realp[z*kDimNPoints*lDimNPoints+0] *= 2;
+        C.realp[z*kDimNPoints*lDimNPoints+(lDimNPoints-1)] *= 2;
+        C.realp[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+0] *= 2;
+        C.realp[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+(lDimNPoints-1)] *= 2;
+    }
+    
+    return U_mag;
+}
+@end
 
 int main(int argc, const char * argv[])
 {
@@ -159,6 +223,14 @@ int main(int argc, const char * argv[])
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
 		
+        // This is good for unit testing.
+        BOOL shouldUnitTest = NO;
+        NSUInteger modeUnit = 0;
+		NSUInteger kUnit = 0;
+		NSUInteger lUnit = 0;
+		NSInteger omegaSign = 0;
+        GLFloat U_max = .10;
+        
         /************************************************************************************************/
 		/*		Define the problem dimensions															*/
 		/************************************************************************************************/
@@ -185,12 +257,22 @@ int main(int argc, const char * argv[])
         GLFunction *eigenvalues = system[0];
 		GLLinearTransform *S = system[1];
         
+        NSArray *spectralDimensions = eigenvalues.dimensions;
+        
 		eigenvalues = [[[eigenvalues times: @(1/(f0*f0))] abs] sqrt];
         [eigenvalues dumpToConsole];
 		
 		//S = [S normalizeWithScalar: N2-f0*f0 acrossDimensions: 0];
 		
 		[S dumpToConsole];
+        
+        /************************************************************************************************/
+		/*		Now set the magnitude of the wave at each component.									*/
+		/************************************************************************************************/
+		
+		// Set the magnitude of the components
+        GLInternalWaveInitialization *initialization = [[GLInternalWaveInitialization alloc] initWithSpectralDimensions: spectralDimensions equation:equation];
+		GLFunction *U_mag = [initialization spectrumWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit];
         
         // We create the z variable with dimensions in reverse order so that the fft will act on contiguous chunks of memory.
 	}
