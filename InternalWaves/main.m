@@ -125,16 +125,19 @@
     GLLinearTransform *S = [system[1] normalizeWithFunction: [N2 minus: @(f0*f0)]];
 	
 	NSUInteger index = 0;
-	NSUInteger totalVectors = S.matrixDescription.nPoints / S.matrixDescription.strides[index].nPoints;
-	NSUInteger vectorStride = S.matrixDescription.strides[index].columnStride;
+//	NSUInteger totalVectors = S.matrixDescription.nPoints / S.matrixDescription.strides[index].nPoints;
+//	NSUInteger vectorStride = S.matrixDescription.strides[index].columnStride;
 	NSUInteger vectorLength = S.matrixDescription.strides[index].nRows;
 	NSUInteger vectorElementStride = S.matrixDescription.strides[index].rowStride;
-	NSUInteger complexStride = S.matrixDescription.strides[index].complexStride;
+//	NSUInteger complexStride = S.matrixDescription.strides[index].complexStride;
 	
 	for (NSUInteger i=0; i<vectorLength; i++) {
 		S.pointerValue[i*vectorElementStride] = 0;
 	}
-	
+
+	lambda = [lambda makeRealIfPossible];
+    S = [S makeRealIfPossible];
+    
     return @[lambda, S];
 }
 
@@ -150,12 +153,15 @@ int main(int argc, const char * argv[])
 		GLFloat depth = 100;
 		GLFloat width = 1000;
 		NSUInteger Nx = 8;
-		NSUInteger Nz = 64;
+		NSUInteger Nz = 100;
 		
 		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
 		
+        /************************************************************************************************/
+		/*		Define the problem dimensions															*/
+		/************************************************************************************************/
 		GLEquation *equation = [[GLEquation alloc] init];
 		GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: Nz domainMin: -depth length: depth];
 		zDim.name = @"z";
@@ -163,14 +169,18 @@ int main(int argc, const char * argv[])
 		xDim.name = @"x";
 		GLDimension *yDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Nx domainMin: -width/2 length: width];
 		yDim.name = @"y";
-		
-		// We create the z variable with dimensions in reverse order so that the fft will act on contiguous chunks of memory.
+        GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
+		tDim.name = @"time";
+        
+        /************************************************************************************************/
+		/*		Create a density profile and compute the internal wave modes                            */
+		/************************************************************************************************/
         GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
         GLFunction *rho = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
 
         GLInternalModes *internalModes = [[GLInternalModes alloc] init];
-        //NSArray *system = [internalModes internalModesFromDensityProfile: rho];
 		NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho withHorizontalDimensions: @[yDim, xDim] forLatitude:latitude];
+        //NSArray *system = [internalModes internalModesFromDensityProfile: rho];
 		//NSArray *system = [internalModes internalModesFromDensityProfile: rho wavenumber: 0.01 latitude: 45.0];
         GLFunction *eigenvalues = system[0];
 		GLLinearTransform *S = system[1];
@@ -181,6 +191,8 @@ int main(int argc, const char * argv[])
 		//S = [S normalizeWithScalar: N2-f0*f0 acrossDimensions: 0];
 		
 		[S dumpToConsole];
+        
+        // We create the z variable with dimensions in reverse order so that the fft will act on contiguous chunks of memory.
 	}
     return 0;
 }
