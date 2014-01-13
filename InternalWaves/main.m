@@ -95,12 +95,8 @@
     return @[lambda, S, Sprime];
 }
 
-- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho  withHorizontalDimensions: (NSArray *) horizDims forLatitude: (GLFloat) latitude
+- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho  withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
 {
-	// rho will be a function of z only, so we need to create the full dimensions.
-	NSMutableArray *dimensions = [rho.dimensions mutableCopy];
-	[dimensions addObjectsFromArray: horizDims];
-	
 	// create an array with the intended transformation (this is agnostic to dimension ordering).
 	NSMutableArray *basis = [NSMutableArray array];
 	GLDimension *zDim;
@@ -177,21 +173,49 @@
 
 
 @interface GLInternalWaveInitialization : NSObject
-@property(retain) NSArray *spectralDimensions;
-@property(retain) GLEquation *equation;
+@property(strong) NSArray *spectralDimensions;
+@property(strong) GLEquation *equation;
+@property(strong) GLDimension *modeDim;
+@property(strong) NSMutableArray *horizontalDimensions;
+@property GLFloat f0;
+
+@property(strong) GLFunction *zeta_plus;
+@property(strong) GLFunction *zeta_minus;
+@property(strong) GLFunction *rho_plus;
+@property(strong) GLFunction *rho_minus;
+@property(strong) GLFunction *u_plus;
+@property(strong) GLFunction *u_minus;
+@property(strong) GLFunction *v_plus;
+@property(strong) GLFunction *v_minus;
+@property(strong) GLFunction *w_plus;
+@property(strong) GLFunction *w_minus;
 @end
 
 @implementation GLInternalWaveInitialization
-- (id) initWithSpectralDimensions: (NSArray *) dimensions equation: (GLEquation *) equation
+- (id) initAtLatitude: (GLFloat) latitude withSpectralDimensions: (NSArray *) dimensions equation: (GLEquation *) equation
 {
     if ((self=[super init])) {
         self.spectralDimensions=dimensions;
         self.equation=equation;
+		self.horizontalDimensions = [NSMutableArray array];
+		for (GLDimension *dim in dimensions) {
+			if (dim.basisFunction == kGLDeltaBasis) {
+				if (self.modeDim) {
+					[NSException raise:@"InvalidDimensions" format: @"The dimensions must contain one vertical dimension in a delta basis, and horizontal dimensions in an exponential basis"];
+				}
+				self.modeDim = dim;
+			} else if (dim.basisFunction == kGLExponentialBasis) {
+				[self.horizontalDimensions addObject: dim];
+			} else {
+				[NSException raise:@"InvalidDimensions" format: @"The dimensions must contain one vertical dimension in a delta basis, and horizontal dimensions in an exponential basis"];
+			}
+		}
+		self.f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
     }
     return self;
 }
 
-- (GLFunction *) spectrumWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit
+- (GLFunction *) createSpectrumWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit
 {
     GLFunction *U_mag = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
     [U_mag zero];
@@ -231,6 +255,49 @@
     
     return U_mag;
 }
+
+- (void) createGarrettMunkSpectrumWithStrafication: (GLFunction *) N2 forEnergy: (GLFloat) energyLevel
+{
+	// We follow Winters and D'Asaro (1997) for the creation of the Garrett-Munk spectrum
+	GLFloat j_star = 6;
+	GLFloat E = 4000;
+	GLFloat g = 9.81;
+	GLScalar *rho0 = [rho mean];
+	
+	// H(j) = 2*j_star/(pi*(j^2 + j_star^2))
+	GLFunction *j = [GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation];
+	GLFunction *H = [[[j multiply: j] plus: @(j_star*j_star)] scalarDivide: 2*j_star/M_PI];
+	
+	// k_j = (pi*f0/( \int N(z) ))*j
+	GLScalar *NSum = [[[N2 abs] sqrt] integrate];
+	GLFunction *k_j = [[j dividedBy: NSum] multiply: @(M_PI*self.f0)];
+	
+	// B(alpha,j) = (4/pi) * k_j * k^2/(k^2 + k_j^2);
+	GLFunction *K2 = [self.horizontalDimensions[0] multiply: self.horizontalDimensions[0]];
+	for (NSUInteger iDim=1; iDim < self.horizontalDimensions.count; iDim++) {
+		K2 = [K2 plus: [self.horizontalDimensions[iDim] multiply: self.horizontalDimensions[iDim]]];
+	}
+	GLFunction *B = [[[K2 dividedBy: [[K2 plus: [k_j multiply: k_j]] multiply: [K2 plus: [k_j multiply: k_j]]]] multiply: k_j] multiply: @(4./M_PI)];
+	
+	// G^2(alpha, j) = E*H(j)*B(alpha,j)
+	GLFunction *G2 = [[H multiply: B] multiply: @(E)];
+	
+	// G(j,l,k) = G(alpha,j)/sqrt(2*pi*alpha) where alpha = sqrt(k^2 + l^2);
+	// We cut the value in half, because we will want the expectation of the the positive and negative sides to add up to this value.
+	GLFunction *G = [[[G2 dividedBy: [[K2 sqrt] times: @(2*M_PI)]] sqrt] times: @(0.5)];
+	
+	// <G_+> = 1/2 <G> = <G_->
+	GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
+	GLFunction *G_minus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
+	G_plus = [G_plus multiply: G];
+	G_minus = [G_minus multiply: G];
+	
+	self.zeta_minus = G_minus;
+	self.zeta_plus = G_plus;
+	
+	self.rho_minus = [[[G_minus multiply: N2] times: rho0] times: @(1/g)];
+}
+
 @end
 
 int main(int argc, const char * argv[])
@@ -277,7 +344,7 @@ int main(int argc, const char * argv[])
 
         GLInternalModes *internalModes = [[GLInternalModes alloc] init];
 		internalModes.maximumModes = 10;
-		NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho withHorizontalDimensions: @[yDim, xDim] forLatitude:latitude];
+		NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho withFullDimensions: @[zDim, yDim, xDim] forLatitude:latitude];
         //NSArray *system = [internalModes internalModesFromDensityProfile: rho];
 		//NSArray *system = [internalModes internalModesFromDensityProfile: rho wavenumber: 0.01 latitude: 45.0];
         GLFunction *eigenvalues = system[0];
@@ -297,8 +364,8 @@ int main(int argc, const char * argv[])
 		/************************************************************************************************/
 		
 		// Set the magnitude of the components
-//        GLInternalWaveInitialization *initialization = [[GLInternalWaveInitialization alloc] initWithSpectralDimensions: spectralDimensions equation:equation];
-//		GLFunction *U_mag = [initialization spectrumWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit];
+        GLInternalWaveInitialization *initialization = [[GLInternalWaveInitialization alloc] initWithSpectralDimensions: spectralDimensions equation:equation];
+		GLFunction *U_mag = [initialization createSpectrumWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit];
         
         // We create the z variable with dimensions in reverse order so that the fft will act on contiguous chunks of memory.
 	}
