@@ -11,6 +11,7 @@
 
 @interface GLInternalModes : NSObject
 @property NSUInteger maximumModes;
+@property(strong) GLFunction *N2;
 @end
 
 @implementation GLInternalModes
@@ -21,7 +22,7 @@
         [NSException raise:@"InvalidDimensions" format:@"Only one dimension allowed, at this point"];
     }
     
-	GLFloat g = 9.81;
+	//GLFloat g = 9.81;
     GLScalar *rho0 = [rho mean];
 	
     GLEquation *equation = rho.equation;
@@ -29,10 +30,10 @@
     
 	// First construct N^2
     GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    GLFunction *N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(1)]];
+    self.N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(1)]];
 	
 	
-    GLFunction *invN2 = [N2 scalarDivide: 1.0];
+    GLFunction *invN2 = [self.N2 scalarDivide: 1.0];
 		
     GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
     GLLinearTransform *invN2_trans = [GLLinearTransform linearTransformFromFunction: invN2];
@@ -47,7 +48,7 @@
 		S = [S reducedFromDimensions: [NSString stringWithFormat: @"0:%lu", self.maximumModes-1] toDimension: @":"];
 	}
 	
-    S = [S normalizeWithFunction: [N2 times: rho0]];
+    S = [S normalizeWithFunction: [self.N2 times: rho0]];
 	GLLinearTransform *Sprime = [diffZ multiply: S];
 	
     return @[lambda, S, Sprime];
@@ -68,7 +69,7 @@
     
 	// First construct N^2
     GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    GLFunction *N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
+    self.N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
 	
 	// Now construct A = k*k*eye(N) - Diff2;
 	GLLinearTransform *k2 = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[zDim] toDimensions: @[zDim] inFormat: @[@(kGLDiagonalMatrixFormat)] forEquation:equation matrix:^( NSUInteger *row, NSUInteger *col ) {
@@ -78,7 +79,7 @@
 	GLLinearTransform *A = [k2 minus: diffZZ];
     
 	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
-	GLLinearTransform *B = [[[GLLinearTransform linearTransformFromFunction: N2] times: @(k*k)] minus: [diffZZ times: @(f0*f0)]];
+	GLLinearTransform *B = [[[GLLinearTransform linearTransformFromFunction: self.N2] times: @(k*k)] minus: [diffZZ times: @(f0*f0)]];
 		
     NSArray *system = [B generalizedEigensystemWith: A];
 	
@@ -89,13 +90,15 @@
 		S = [S reducedFromDimensions: [NSString stringWithFormat: @"0:%lu", self.maximumModes-1] toDimension: @":"];
 	}
 	
-    S = [S normalizeWithFunction: [[N2 minus: @(f0*f0)] times: rho0]];
+    S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: rho0]];
 	GLLinearTransform *Sprime = [diffZ multiply: S];
 	
-    return @[lambda, S, Sprime];
+	GLFunction *omega = [[lambda abs] sqrt];
+	
+    return @[omega, S, Sprime];
 }
 
-- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho  withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
+- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
 {
 	// create an array with the intended transformation (this is agnostic to dimension ordering).
 	NSMutableArray *basis = [NSMutableArray array];
@@ -130,7 +133,7 @@
 	
 	// First construct N^2
     GLLinearTransform *diffZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    GLFunction *N2 = [diffZ1D transform: [[rho dividedBy: rho0] times: @(-g)]];
+    self.N2 = [diffZ1D transform: [[rho dividedBy: rho0] times: @(-g)]];
 
 	// Now construct A = k*k*eye(N) - Diff2;
     GLLinearTransform *diffZZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
@@ -138,7 +141,7 @@
 	GLLinearTransform *A = [[GLLinearTransform linearTransformFromFunction:K2] minus: diffZZ];
 
 	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
-	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [K2 multiply: N2]] minus: [diffZZ times: @(f0*f0)]];
+	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [K2 multiply: self.N2]] minus: [diffZZ times: @(f0*f0)]];
 	
 	NSArray *system = [B generalizedEigensystemWith: A];
 	
@@ -150,7 +153,7 @@
 	}
 	
 	lambda = [system[0] setValue: 0.0 atIndices: @":,0,0"];
-    S = [S normalizeWithFunction: [[N2 minus: @(f0*f0)] times: rho0]];
+    S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: rho0]];
 	
 	NSUInteger index = 0;
 //	NSUInteger totalVectors = S.matrixDescription.nPoints / S.matrixDescription.strides[index].nPoints;
@@ -166,18 +169,37 @@
     GLLinearTransform *diffZ = [diffZ1D expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
     GLLinearTransform *Sprime = [diffZ multiply: S];
 	
-    return @[lambda, S, Sprime];
+	GLFunction *omega = [[lambda abs] sqrt];
+	
+    return @[omega, S, Sprime];
 }
 
 @end
 
 
 @interface GLInternalWaveInitialization : NSObject
-@property(strong) NSArray *spectralDimensions;
+
 @property(strong) GLEquation *equation;
+
+/// The spatial dimensions, x, y, z.
+@property(strong) NSArray *fullDimensions;
+
+/// The
+@property(strong) NSArray *spectralDimensions;
 @property(strong) GLDimension *modeDim;
 @property(strong) NSMutableArray *horizontalDimensions;
+
+@property GLFloat latitude;
 @property GLFloat f0;
+
+@property(strong) GLFunction *rho;
+@property(strong) GLFunction *N2;
+@property NSUInteger maximumModes;
+
+
+@property(strong) GLFunction *eigenfrequencies;
+@property(strong) GLLinearTransform *S;
+@property(strong) GLLinearTransform *Sprime;
 
 @property(strong) GLFunction *zeta_plus;
 @property(strong) GLFunction *zeta_minus;
@@ -189,34 +211,55 @@
 @property(strong) GLFunction *v_minus;
 @property(strong) GLFunction *w_plus;
 @property(strong) GLFunction *w_minus;
+
 @end
 
 @implementation GLInternalWaveInitialization
-- (id) initAtLatitude: (GLFloat) latitude withSpectralDimensions: (NSArray *) dimensions equation: (GLEquation *) equation
+- (id) initWithDensityProfile: (GLFunction *) rho fullDimensions: (NSArray *) dimensions latitude: (GLFloat) latitude equation: (GLEquation *) equation
 {
     if ((self=[super init])) {
         self.spectralDimensions=dimensions;
         self.equation=equation;
 		self.horizontalDimensions = [NSMutableArray array];
-		for (GLDimension *dim in dimensions) {
-			if (dim.basisFunction == kGLDeltaBasis) {
-				if (self.modeDim) {
-					[NSException raise:@"InvalidDimensions" format: @"The dimensions must contain one vertical dimension in a delta basis, and horizontal dimensions in an exponential basis"];
-				}
-				self.modeDim = dim;
-			} else if (dim.basisFunction == kGLExponentialBasis) {
-				[self.horizontalDimensions addObject: dim];
-			} else {
-				[NSException raise:@"InvalidDimensions" format: @"The dimensions must contain one vertical dimension in a delta basis, and horizontal dimensions in an exponential basis"];
-			}
-		}
+		self.rho = rho;
+		self.latitude = latitude;
 		self.f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
+		
+//		for (GLDimension *dim in dimensions) {
+//			if (dim.basisFunction == kGLDeltaBasis) {
+//				if (self.modeDim) {
+//					[NSException raise:@"InvalidDimensions" format: @"The dimensions must contain one vertical dimension in a delta basis, and horizontal dimensions in an exponential basis"];
+//				}
+//				self.modeDim = dim;
+//			} else if (dim.basisFunction == kGLExponentialBasis) {
+//				[self.horizontalDimensions addObject: dim];
+//			} else {
+//				[NSException raise:@"InvalidDimensions" format: @"The dimensions must contain one vertical dimension in a delta basis, and horizontal dimensions in an exponential basis"];
+//			}
+//		}
     }
     return self;
 }
 
+- (void) computeInternalModes
+{
+	NSLog(@"Computing internal modes...");
+	
+	GLInternalModes *internalModes = [[GLInternalModes alloc] init];
+	internalModes.maximumModes = self.maximumModes;
+	NSArray *system = [internalModes internalWaveModesFromDensityProfile: self.rho withFullDimensions: self.fullDimensions forLatitude: self.latitude];
+
+	self.eigenfrequencies = system[0];
+	self.S = system[1];
+	self.Sprime = system[2];
+	self.N2 = internalModes.N2;
+	self.spectralDimensions = self.eigenfrequencies.dimensions;
+}
+
 - (GLFunction *) createSpectrumWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit
 {
+	[self computeInternalModes];
+	
     GLFunction *U_mag = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
     [U_mag zero];
     U_mag = [U_mag setValue: U_max/(4*sqrt(2.0)) atIndices: [NSString stringWithFormat:@"%lu,%lu,%lu", mode, lUnit, kUnit]];
@@ -256,20 +299,22 @@
     return U_mag;
 }
 
-- (void) createGarrettMunkSpectrumWithStrafication: (GLFunction *) N2 forEnergy: (GLFloat) energyLevel
+- (void) createGarrettMunkSpectrumWithEnergy: (GLFloat) energyLevel
 {
+	[self computeInternalModes];
+	
 	// We follow Winters and D'Asaro (1997) for the creation of the Garrett-Munk spectrum
 	GLFloat j_star = 6;
 	GLFloat E = 4000;
 	GLFloat g = 9.81;
-	GLScalar *rho0 = [rho mean];
+	GLScalar *rho0 = [self.rho mean];
 	
 	// H(j) = 2*j_star/(pi*(j^2 + j_star^2))
 	GLFunction *j = [GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation];
 	GLFunction *H = [[[j multiply: j] plus: @(j_star*j_star)] scalarDivide: 2*j_star/M_PI];
 	
 	// k_j = (pi*f0/( \int N(z) ))*j
-	GLScalar *NSum = [[[N2 abs] sqrt] integrate];
+	GLScalar *NSum = [[[self.N2 abs] sqrt] integrate];
 	GLFunction *k_j = [[j dividedBy: NSum] multiply: @(M_PI*self.f0)];
 	
 	// B(alpha,j) = (4/pi) * k_j * k^2/(k^2 + k_j^2);
@@ -295,7 +340,10 @@
 	self.zeta_minus = G_minus;
 	self.zeta_plus = G_plus;
 	
-	self.rho_minus = [[[G_minus multiply: N2] times: rho0] times: @(1/g)];
+	self.rho_minus = [[[G_minus multiply: self.N2] times: rho0] times: @(1/g)];
+	self.rho_plus = [[[G_plus multiply: self.N2] times: rho0] times: @(1/g)];
+	
+	
 }
 
 @end
