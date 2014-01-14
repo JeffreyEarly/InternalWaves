@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23C1885AA8000213615 /* GLInternalModes.m */; };
+		8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */; };
 		81C427481856844C00EAF7A1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		81C4274B1856844C00EAF7A1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81C4274A1856844C00EAF7A1 /* main.m */; };
 		81C4274F1856844C00EAF7A1 /* InternalWaves.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 81C4274E1856844C00EAF7A1 /* InternalWaves.1 */; };
@@ -27,6 +29,10 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		8107F23B1885AA8000213615 /* GLInternalModes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalModes.h; sourceTree = "<group>"; };
+		8107F23C1885AA8000213615 /* GLInternalModes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalModes.m; sourceTree = "<group>"; };
+		8107F23E1885AE0A00213615 /* GLInternalWaveInitialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalWaveInitialization.h; sourceTree = "<group>"; };
+		8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalWaveInitialization.m; sourceTree = "<group>"; };
 		81C427441856844C00EAF7A1 /* InternalWaves */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = InternalWaves; sourceTree = BUILT_PRODUCTS_DIR; };
 		81C427471856844C00EAF7A1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		81C4274A1856844C00EAF7A1 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -78,6 +84,10 @@
 			isa = PBXGroup;
 			children = (
 				81C4274A1856844C00EAF7A1 /* main.m */,
+				8107F23B1885AA8000213615 /* GLInternalModes.h */,
+				8107F23C1885AA8000213615 /* GLInternalModes.m */,
+				8107F23E1885AE0A00213615 /* GLInternalWaveInitialization.h */,
+				8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */,
 				81C4274E1856844C00EAF7A1 /* InternalWaves.1 */,
 				81C4274C1856844C00EAF7A1 /* Supporting Files */,
 			);
@@ -143,6 +153,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */,
+				8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */,
 				81C4274B1856844C00EAF7A1 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
