@@ -152,8 +152,8 @@
 	}
 	
 	lambda = [lambda setValue: 0.0 atIndices: @":,0,0"];
-	GLFloat deltaK = lDim.nPoints * kDim.nPoints;
-    S = [S normalizeWithFunction: [[[self.N2 minus: @(f0*f0)] times: rho0] times: @(deltaK)]];
+	//GLFloat deltaK = lDim.nPoints * kDim.nPoints;
+    S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: rho0]];
 	
 	NSUInteger index = 0;
 	//	NSUInteger totalVectors = S.matrixDescription.nPoints / S.matrixDescription.strides[index].nPoints;

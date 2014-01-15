@@ -28,6 +28,8 @@
  */
 - (void) createGarrettMunkSpectrumWithEnergy: (GLFloat) energyLevel;
 
+- (void) createUnitWaveWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit omegaSign: (GLFloat) sign;
+
 /// The equation used for all computations.
 @property(strong) GLEquation *equation;
 

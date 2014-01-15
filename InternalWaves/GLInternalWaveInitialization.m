@@ -16,6 +16,8 @@
 @property(strong) GLDimension *modeDim;
 @property(strong) NSMutableArray *horizontalDimensions;
 
+- (void) generateWavePhasesFromPositive: (GLFunction *) G_plus negative: (GLFunction *) G_minus;
+
 @end
 
 @implementation GLInternalWaveInitialization
@@ -75,19 +77,34 @@
 	}
 }
 
-- (GLFunction *) createSpectrumWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit
+- (void) createUnitWaveWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit omegaSign: (GLFloat) sign
 {
 	[self computeInternalModes];
 	
+    if (mode == 0) {
+        [NSException raise: @"UnsupportedMode" format:@"Barotropic mode is not supported. Set the mode to 1 or greater"];
+    }
+    // The 1st baroclinic mode is in position 0.
+    mode = mode-1;
+    
+
+    
     GLFunction *U_mag = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
     [U_mag zero];
-    U_mag = [U_mag setValue: U_max/(4*sqrt(2.0)) atIndices: [NSString stringWithFormat:@"%lu,%lu,%lu", mode, lUnit, kUnit]];
-    
     NSUInteger zDimNPoints = [U_mag.dimensions[0] nPoints];
     NSUInteger kDimNPoints = [U_mag.dimensions[1] nPoints];
     NSUInteger lDimNPoints = [U_mag.dimensions[2] nPoints];
+
+    // We will be setting G, the energy density. So we have to convert U_max into that value.
+//    GLFloat k = [self.kDim valueAtIndex: kUnit];
+//    GLFloat l = [self.lDim valueAtIndex: lUnit];
+//    GLFloat omega = self.eigenfrequencies.pointerValue[(mode*lDimNPoints+lUnit)*zDimNPoints+kUnit];
+//    
+//    GLFloat G = U_max*(k*k+l*l)/(k*omega);
+
+    U_mag = [U_mag setValue: 1.0 atIndices: [NSString stringWithFormat:@"%lu,%lu,%lu", mode, lUnit, kUnit]];
 	
-    GLSplitComplex C = splitComplexFromData( U_mag.data );
+    GLFloat *C = U_mag.pointerValue;
     
     // index=i*ny*nz+j*nz+k
     // index=(i*ny+j)*nz+k
@@ -95,27 +112,38 @@
     for (NSUInteger z=0; z<zDimNPoints; z++) {
         // Hermitian conjugates
         for (NSUInteger i=1; i<kDimNPoints/2; i++) {
-            C.realp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints] = C.realp[(z*kDimNPoints+i)*lDimNPoints];
-            C.imagp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints] = -C.imagp[(z*kDimNPoints+i)*lDimNPoints];
-            
-            C.realp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)] = C.realp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)];
-            C.imagp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)] = -C.imagp[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)];
+            C[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints] = C[(z*kDimNPoints+i)*lDimNPoints];
+            C[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)] = C[(z*kDimNPoints+(kDimNPoints-i))*lDimNPoints+(lDimNPoints-1)];
         }
         
         // For the four self-conjugate components, that means that there can be no imaginary component
-        C.imagp[z*kDimNPoints*lDimNPoints+0] = 0;
-        C.imagp[z*kDimNPoints*lDimNPoints+(lDimNPoints-1)] = 0;
-        C.imagp[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+0] = 0;
-        C.imagp[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+(lDimNPoints-1)] = 0;
-        
         // But that their real components should be doubled, to make all else equal.
-        C.realp[z*kDimNPoints*lDimNPoints+0] *= 2;
-        C.realp[z*kDimNPoints*lDimNPoints+(lDimNPoints-1)] *= 2;
-        C.realp[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+0] *= 2;
-        C.realp[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+(lDimNPoints-1)] *= 2;
+        C[z*kDimNPoints*lDimNPoints+0] *= 2;
+        C[z*kDimNPoints*lDimNPoints+(lDimNPoints-1)] *= 2;
+        C[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+0] *= 2;
+        C[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+(lDimNPoints-1)] *= 2;
     }
     
-    return U_mag;
+    GLFunction *G_plus = [U_mag duplicate];
+    GLFunction *G_minus = [U_mag duplicate];
+    
+    if (sign<0) {
+        [G_plus zero];
+    } else if (sign > 0) {
+        [G_minus zero];
+    }
+    
+    [self generateWavePhasesFromPositive: G_plus negative: G_minus];
+    
+    // Rather than figure out how to properly normalize, we just cheat.
+    GLFloat U0 = [[[self.Sprime transform: [self.u_plus plus: self.u_minus]] abs] maxNow];
+    GLFloat V0 = [[[self.Sprime transform: [self.v_plus plus: self.v_minus]] abs] maxNow];
+    GLFloat Speed = sqrt(U0*U0+V0*V0);
+    
+    G_plus = [G_plus times: @(U_max/(2*Speed))];
+    G_minus = [G_minus times: @(U_max/(2*Speed))];
+    
+    [self generateWavePhasesFromPositive: G_plus negative: G_minus];
 }
 
 - (void) createGarrettMunkSpectrumWithEnergy: (GLFloat) energyLevel
@@ -125,8 +153,6 @@
 	// We follow Winters and D'Asaro (1997) for the creation of the Garrett-Munk spectrum
 	GLFloat j_star = 6;
 	GLFloat E = 4000*energyLevel; // [ J/m^{2} ]
-	GLFloat g = 9.81; // [ m/s^2 ]
-	GLScalar *rho0 = [self.rho mean];
 	
 	// The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
 	GLFunction *j = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation] plus: @(1)];
@@ -160,7 +186,15 @@
 	G_plus = [G_plus multiply: G];
 	G_minus = [G_minus multiply: G];
 	
-	self.zeta_minus = G_minus;
+    [self generateWavePhasesFromPositive: G_plus negative: G_minus];
+}
+
+- (void) generateWavePhasesFromPositive: (GLFunction *) G_plus negative: (GLFunction *) G_minus
+{
+    GLFloat g = 9.81; // [ m/s^2 ]
+	GLScalar *rho0 = [self.rho mean];
+    
+    self.zeta_minus = G_minus;
 	self.zeta_plus = G_plus;
 	
 	self.rho_minus = [[G_minus times: rho0] times: @(1/g)];
@@ -169,9 +203,11 @@
 	self.w_minus = [[[G_minus multiply: self.eigenfrequencies] swapComplex] negate];
 	self.w_plus = [[G_plus multiply: self.eigenfrequencies] swapComplex];
 	
-	k = [GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation];
+	GLFunction *k = [GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation];
 	GLFunction *l = [GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation];
+    GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
 	K2 = [K2 setValue: 1 atIndices: @":,0,0"]; // prevent divide by zero.
+    
 	self.u_minus = [G_minus multiply: [[[k multiply: self.eigenfrequencies] plus: [[l times: @(self.f0)] swapComplex]] dividedBy: K2]];
 	self.u_plus = [G_plus multiply: [[[[k multiply: self.eigenfrequencies] minus: [[l times: @(self.f0)] swapComplex]] dividedBy: K2] negate]];
 	
