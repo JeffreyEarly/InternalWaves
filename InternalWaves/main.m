@@ -53,10 +53,10 @@ int main(int argc, const char * argv[])
 		/*		Create a density profile and compute the internal wave phases                           */
 		/************************************************************************************************/
         GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
-        GLFunction *rho = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
+        GLFunction *rho_bar = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
 		
 		// We use the dimensions in reverse order so that the fft will act on contiguous chunks of memory.
-        GLInternalWaveInitialization *wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho fullDimensions:@[zDim, yDim, xDim] latitude:latitude equation:equation];
+        GLInternalWaveInitialization *wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, yDim, xDim] latitude:latitude equation:equation];
         
         if (shouldUnitTest) {
             wave.maximumModes = modeUnit+2;
@@ -65,8 +65,6 @@ int main(int argc, const char * argv[])
             wave.maximumModes = 2;
             [wave createGarrettMunkSpectrumWithEnergy: 1.0];
 		}
-		
-        
         
 		/************************************************************************************************/
 		/*		Create the dynamical variables from the analytical solution								*/
@@ -75,7 +73,7 @@ int main(int argc, const char * argv[])
 		// We should check that we optimizations in places for these. They should be purely imaginary, and the multiplication and exponentiation should take advantage of that.
 		GLFunction *iOmega = [wave.eigenfrequencies swapComplex];
 		GLFunction *minusiOmega = [[wave.eigenfrequencies swapComplex] negate];
-        
+
 		NSArray * (^timeToUV) (GLScalar *) = ^( GLScalar *t ) {
 			GLFunction *time_phase_plus = [[iOmega multiply: t] exponentiate];
 			GLFunction *time_phase_minus = [[minusiOmega multiply: t] exponentiate];
@@ -83,8 +81,9 @@ int main(int argc, const char * argv[])
 			GLFunction *u = [[wave.Sprime transform: [[wave.u_plus multiply: time_phase_plus] plus: [wave.u_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
 			GLFunction *v = [[wave.Sprime transform: [[wave.v_plus multiply: time_phase_plus] plus: [wave.v_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
 			GLFunction *w = [[wave.S transform: [[wave.w_plus multiply: time_phase_plus] plus: [wave.w_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
+            GLFunction *rho = [[[[wave.S transform: [[wave.rho_plus multiply: time_phase_plus] plus: [wave.rho_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]] times: wave.N2] plus: rho_bar];
 			
-			return @[u,v,w];
+			return @[u,v,w,rho];
 		};
         		
 		GLScalar *t = [GLScalar scalarWithValue: 0.0*2*M_PI/f0 forEquation: equation];
@@ -92,6 +91,7 @@ int main(int argc, const char * argv[])
 		GLFunction *u = uv[0];
 		GLFunction *v = uv[1];
 		GLFunction *w = uv[2];
+        GLFunction *rho = uv[3];
         GLFunction *speed = [[[[u times: u] plus: [v times: v]] plus: [w times: w]] sqrt];
 		GLFloat maxSpeed = [speed maxNow];
 		NSLog(@"maxSpeed: %f", maxSpeed);
@@ -120,6 +120,10 @@ int main(int argc, const char * argv[])
         GLMutableVariable *wHistory = [w variableByAddingDimension: tDim];
 		wHistory.name = @"w";
 		wHistory = [netcdfFile addVariable: wHistory];
+        
+        GLMutableVariable *rhoHistory = [rho variableByAddingDimension: tDim];
+		rhoHistory.name = @"rho";
+		rhoHistory = [netcdfFile addVariable: rhoHistory];
         
         [netcdfFile waitUntilAllOperationsAreFinished];
         [netcdfFile close];
