@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23C1885AA8000213615 /* GLInternalModes.m */; };
 		8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */; };
+		8107F2421888A17C00213615 /* MakeTracerMovieInMatlab.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F2411888A17C00213615 /* MakeTracerMovieInMatlab.m */; };
 		81C427481856844C00EAF7A1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		81C4274B1856844C00EAF7A1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81C4274A1856844C00EAF7A1 /* main.m */; };
 		81C4274F1856844C00EAF7A1 /* InternalWaves.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 81C4274E1856844C00EAF7A1 /* InternalWaves.1 */; };
@@ -33,6 +34,7 @@
 		8107F23C1885AA8000213615 /* GLInternalModes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalModes.m; sourceTree = "<group>"; };
 		8107F23E1885AE0A00213615 /* GLInternalWaveInitialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalWaveInitialization.h; sourceTree = "<group>"; };
 		8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalWaveInitialization.m; sourceTree = "<group>"; };
+		8107F2411888A17C00213615 /* MakeTracerMovieInMatlab.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MakeTracerMovieInMatlab.m; sourceTree = SOURCE_ROOT; };
 		81519E6118874C79008E6EBD /* ShowInMatlab.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ShowInMatlab.m; sourceTree = SOURCE_ROOT; };
 		81C427441856844C00EAF7A1 /* InternalWaves */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = InternalWaves; sourceTree = BUILT_PRODUCTS_DIR; };
 		81C427471856844C00EAF7A1 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -99,6 +101,7 @@
 			isa = PBXGroup;
 			children = (
 				81519E6118874C79008E6EBD /* ShowInMatlab.m */,
+				8107F2411888A17C00213615 /* MakeTracerMovieInMatlab.m */,
 				81C4274D1856844C00EAF7A1 /* InternalWaves-Prefix.pch */,
 			);
 			name = "Supporting Files";
@@ -158,6 +161,7 @@
 				8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */,
 				8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */,
 				81C4274B1856844C00EAF7A1 /* main.m in Sources */,
+				8107F2421888A17C00213615 /* MakeTracerMovieInMatlab.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

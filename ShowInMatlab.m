@@ -15,6 +15,37 @@ v = double(ncread(file, 'v'));
 w = double(ncread(file, 'w'));
 rho = double(ncread(file, 'rho'));
 
+
+% [X,Y,Z]=meshgrid(x,y,z);
+% figure
+% colormap(flipud(jet(128)))
+% hsurfaces = slice(X,Y,Z,rho3d,[min(x)],[max(y)],[min(z)])
+% set(hsurfaces,'FaceColor','interp','EdgeColor','none')
+% caxis([min(rho_bar) max(rho_bar)])
+% view(30,10);
+% 
+% deltaRho = (max(rho_bar)-min(rho_bar))/3;
+% rho1 = min(rho_bar)+deltaRho;
+% rho2 = min(rho_bar)+2*deltaRho;
+% coloraxis = linspace(0,1,length(colormap));
+% rho1Color = interp1(coloraxis,colormap, 1/3);
+% rho2Color = interp1(coloraxis,colormap, 2/3);
+% 
+% p = patch(isosurface(X,Y,Z,rho3d,rho1));
+% %isonormals(X,Y,Z,rho3d,p)
+% alpha(p,0.5)
+% set(p,'FaceColor',rho1Color,'EdgeColor','none');
+% 
+% p = patch(isosurface(X,Y,Z,rho3d,rho2));
+% %isonormals(X,Y,Z,rho3d,p)
+% alpha(p,0.5)
+% set(p,'FaceColor',rho2Color,'EdgeColor','none');
+% 
+% lighting gouraud
+% camlight(30,20)
+% camlight
+% return
+
 scrsz = get(0,'ScreenSize');
 figure('Position',[1 scrsz(4)/2 scrsz(4) scrsz(4)/2])
 for iTime=1:4
@@ -40,18 +71,14 @@ for iTime=1:4
 end	
 
 
-% 
-% subplot(2,2,1)
-% pcolor(x, y, ssh(:,:,1)), axis equal tight, shading interp
-% title('SSH of gaussian eddy, day 0')
-% subplot(2,2,3)
-% pcolor(x, y, ssh(:,:,end)), axis equal tight, shading interp
-% title(sprintf('SSH of gaussian eddy, day %d', round(t(end))))
-% 
-% 
-% subplot(2,2,2)
-% pcolor(x, y, tracer(:,:,1)), axis equal tight, shading interp
-% title('Tracer advected by a gaussian eddy, day 0')
-% subplot(2,2,4)
-% pcolor(x, y, tracer(:,:,end)), axis equal tight, shading interp
-% title(sprintf('Tracer advected by a gaussian eddy, day %d', round(t(end))))
+[X,Y,Z]=meshgrid(x,y,z);
+p = patch(isosurface(X,Y,Z,rho3d,1025.5));
+isonormals(X,Y,Z,rho3d,p)
+set(p,'FaceColor','red','EdgeColor','none');
+% %daspect([1,1,1])
+% view(3); axis tight
+% camlight 
+% lighting gouraud
+% xlim([min(x) max(x)])
+% ylim([min(y) max(y)])
+% zlim([min(z) max(z)])
