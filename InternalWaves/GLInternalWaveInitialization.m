@@ -77,7 +77,7 @@
 	}
 }
 
-- (void) createUnitWaveWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit omegaSign: (GLFloat) sign
+- (GLFloat) createUnitWaveWithSpeed: (GLFloat) U_max verticalMode: (NSUInteger) mode k: (NSUInteger) kUnit l: (NSUInteger) lUnit omegaSign: (GLFloat) sign
 {
 	[self computeInternalModes];
 	
@@ -91,6 +91,8 @@
     
     GLFunction *U_mag = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
     [U_mag zero];
+	
+	// My notation is horrible here. kDim and lDim are actually reversed!
     NSUInteger zDimNPoints = [U_mag.dimensions[0] nPoints];
     NSUInteger kDimNPoints = [U_mag.dimensions[1] nPoints];
     NSUInteger lDimNPoints = [U_mag.dimensions[2] nPoints];
@@ -98,8 +100,8 @@
     // We will be setting G, the energy density. So we have to convert U_max into that value.
 //    GLFloat k = [self.kDim valueAtIndex: kUnit];
 //    GLFloat l = [self.lDim valueAtIndex: lUnit];
-//    GLFloat omega = self.eigenfrequencies.pointerValue[(mode*lDimNPoints+lUnit)*zDimNPoints+kUnit];
-//    
+	GLFloat omega = self.eigenfrequencies.pointerValue[(mode*kDimNPoints+lUnit)*lDimNPoints+kUnit];
+//
 //    GLFloat G = U_max*(k*k+l*l)/(k*omega);
 
     U_mag = [U_mag setValue: 1.0 atIndices: [NSString stringWithFormat:@"%lu,%lu,%lu", mode, lUnit, kUnit]];
@@ -124,8 +126,9 @@
         C[(z*kDimNPoints+(kDimNPoints/2))*lDimNPoints+(lDimNPoints-1)] *= 2;
     }
     
+	GLScalar *i = [GLScalar scalarWithValue: I forEquation: self.equation];
     GLFunction *G_plus = [U_mag duplicate];
-    GLFunction *G_minus = [U_mag duplicate];
+    GLFunction *G_minus = [[U_mag duplicate] times: i]; // Keep the two sides out of phase initially.
     
     if (sign<0) {
         [G_plus zero];
@@ -144,6 +147,8 @@
     G_minus = [G_minus times: @(U_max/(2*Speed))];
     
     [self generateWavePhasesFromPositive: G_plus negative: G_minus];
+	
+	return omega;
 }
 
 - (void) createGarrettMunkSpectrumWithEnergy: (GLFloat) energyLevel

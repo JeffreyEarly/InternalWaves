@@ -19,10 +19,12 @@ int main(int argc, const char * argv[])
 		GLFloat N2 = 1e-4;
 		GLFloat depth = 100;
 		GLFloat width = 1000;
-        GLFloat height = 500;
-		NSUInteger Nx = 16;
-        NSUInteger Ny = 8;
+        GLFloat height = 1000;
+		NSUInteger Nx = 32;
+        NSUInteger Ny = 32;
 		NSUInteger Nz = 100;
+		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
+		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
 		
 		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
 		GLFloat rho0 = 1025;
@@ -31,10 +33,11 @@ int main(int argc, const char * argv[])
         // This is good for unit testing.
         BOOL shouldUnitTest = YES;
         NSUInteger modeUnit = 1;
-		NSUInteger kUnit = 2;
-		NSUInteger lUnit = 0;
-		NSInteger omegaSign = 1;
+		NSUInteger kUnit = 1;
+		NSUInteger lUnit = 1;
+		NSInteger omegaSign = 0;
         GLFloat U_max = .10;
+		GLFloat omega = 0.0; // Don't set this value, it will be set for you based on the modes.
         
         /************************************************************************************************/
 		/*		Define the problem dimensions															*/
@@ -54,13 +57,14 @@ int main(int argc, const char * argv[])
 		/************************************************************************************************/
         GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
         GLFunction *rho_bar = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
+		rho_bar.name = @"rho_bar";
 		
 		// We use the dimensions in reverse order so that the fft will act on contiguous chunks of memory.
         GLInternalWaveInitialization *wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, yDim, xDim] latitude:latitude equation:equation];
         
         if (shouldUnitTest) {
             wave.maximumModes = modeUnit+2;
-            [wave createUnitWaveWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit omegaSign: omegaSign];
+            omega = [wave createUnitWaveWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit omegaSign: omegaSign];
         } else {
             wave.maximumModes = 2;
             [wave createGarrettMunkSpectrumWithEnergy: 1.0];
@@ -108,6 +112,8 @@ int main(int argc, const char * argv[])
         [netcdfFile setGlobalAttribute: @(latitude) forKey: @"latitude"];
         [netcdfFile setGlobalAttribute: @(f0) forKey: @"f0"];
         [netcdfFile setGlobalAttribute: @(depth) forKey: @"D"];
+		
+		[netcdfFile addVariable: rho_bar];
         
 		GLMutableVariable *uHistory = [u variableByAddingDimension: tDim];
 		uHistory.name = @"u";
@@ -124,10 +130,39 @@ int main(int argc, const char * argv[])
         GLMutableVariable *rhoHistory = [rho variableByAddingDimension: tDim];
 		rhoHistory.name = @"rho";
 		rhoHistory = [netcdfFile addVariable: rhoHistory];
+			
+		
+		GLFloat maxTime = shouldUnitTest ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
+        GLFloat sampleTime = shouldUnitTest ? maxTime/3 : sampleTimeInMinutes*60;
+        for (GLFloat time = sampleTime; time < maxTime+sampleTime/2; time += sampleTime)
+        {
+            @autoreleasepool {
+                //NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
+				NSLog(@"Logging day %d @ %02d:%02d (HH:MM)", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60);
+
+//                NSArray *yout = [integrator stepForwardToTime: time];
+                
+                t = [GLScalar scalarWithValue: time forEquation: equation];
+                NSArray *uv = timeToUV(t);
+				GLFunction *u = uv[0];
+				GLFunction *v = uv[1];
+				GLFunction *w = uv[2];
+				GLFunction *rho = uv[3];
+				
+				[tDim addPoint: @(time)];
+				[uHistory concatenateWithLowerDimensionalVariable: u alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                [vHistory concatenateWithLowerDimensionalVariable: v alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+				[wHistory concatenateWithLowerDimensionalVariable: w alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+				[rhoHistory concatenateWithLowerDimensionalVariable: rho alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+				
+//                [xPositionHistory concatenateWithLowerDimensionalVariable: yout[0] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+//                [yPositionHistory concatenateWithLowerDimensionalVariable: yout[1] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                
+                [netcdfFile waitUntilAllOperationsAreFinished];
+            }
+        }
         
-        [netcdfFile waitUntilAllOperationsAreFinished];
-        [netcdfFile close];
-        
+		[netcdfFile close];
 	}
     return 0;
 }
