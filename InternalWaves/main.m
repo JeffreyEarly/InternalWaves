@@ -20,8 +20,8 @@ int main(int argc, const char * argv[])
 		GLFloat depth = 100;
 		GLFloat width = 1000;
         GLFloat height = 1000;
-		NSUInteger Nx = 32;
-        NSUInteger Ny = 32;
+		NSUInteger Nx = 256;
+        NSUInteger Ny = 256;
 		NSUInteger Nz = 100;
 		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.

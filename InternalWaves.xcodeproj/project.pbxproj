@@ -9,7 +9,6 @@
 /* Begin PBXBuildFile section */
 		8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23C1885AA8000213615 /* GLInternalModes.m */; };
 		8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */; };
-		8107F2421888A17C00213615 /* MakeTracerMovieInMatlab.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F2411888A17C00213615 /* MakeTracerMovieInMatlab.m */; };
 		81C427481856844C00EAF7A1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		81C4274B1856844C00EAF7A1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81C4274A1856844C00EAF7A1 /* main.m */; };
 		81C4274F1856844C00EAF7A1 /* InternalWaves.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 81C4274E1856844C00EAF7A1 /* InternalWaves.1 */; };
@@ -161,7 +160,6 @@
 				8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */,
 				8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */,
 				81C4274B1856844C00EAF7A1 /* main.m in Sources */,
-				8107F2421888A17C00213615 /* MakeTracerMovieInMatlab.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
