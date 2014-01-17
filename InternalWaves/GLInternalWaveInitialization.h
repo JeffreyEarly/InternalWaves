@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <GLNumericalModelingKit/GLNumericalModelingKit.h>
 
-@interface GLInternalWaveInitialization : NSObject
+@interface GLInternalWaveInitialization : NSObject <NSCoding>
 
 /** Compute the internal wave modes a set of wavenumbers.
  @param rho Density profile given as a function of z only.

@@ -20,8 +20,8 @@ int main(int argc, const char * argv[])
 		GLFloat depth = 100;
 		GLFloat width = 1000;
         GLFloat height = 1000;
-		NSUInteger Nx = 256;
-        NSUInteger Ny = 256;
+		NSUInteger Nx = 32;
+        NSUInteger Ny = 32;
 		NSUInteger Nz = 100;
 		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
@@ -36,9 +36,9 @@ int main(int argc, const char * argv[])
         BOOL shouldUnitTest = YES;
         NSUInteger modeUnit = 1;
 		NSUInteger kUnit = 1;
-		NSUInteger lUnit = 1;
-		NSInteger omegaSign = 0;
-        GLFloat U_max = .10;
+		NSUInteger lUnit = 0;
+		NSInteger omegaSign = 1;
+        GLFloat U_max = .025;
 		GLFloat omega = 0.0; // Don't set this value, it will be set for you based on the modes.
         
         /************************************************************************************************/
@@ -181,7 +181,7 @@ int main(int argc, const char * argv[])
 		/************************************************************************************************/
 		
 		GLFloat maxTime = shouldUnitTest ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
-        GLFloat sampleTime = shouldUnitTest ? maxTime/3 : sampleTimeInMinutes*60;
+        GLFloat sampleTime = shouldUnitTest ? maxTime/15 : sampleTimeInMinutes*60;
         for (GLFloat time = sampleTime; time < maxTime+sampleTime/2; time += sampleTime)
         {
             @autoreleasepool {

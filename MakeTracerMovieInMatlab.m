@@ -15,27 +15,42 @@ end
 %
 xDomain = ncread(file, 'x');
 yDomain = ncread(file, 'y');
+zDomain = ncread(file, 'z');
+[X,Y,Z]=meshgrid(xDomain,yDomain,zDomain);
+
 x = ncread(file, 'x-float');
 y = ncread(file, 'y-float');
+z = ncread(file, 'z-float');
 t = ncread(file, 'time');
 
-minX = min(xDomain);
-maxX = max(xDomain);
+% read in the mean density profile
+rho_bar = double(ncread(file, 'rho_bar'));
 
+% read in the dynamical variables
+u = double(ncread(file, 'u'));
+v = double(ncread(file, 'v'));
+w = double(ncread(file, 'w'));
+rho = double(ncread(file, 'rho'));
+
+deltaX = xDomain(2)-xDomain(1);
+minX = min(xDomain);
+maxX = max(xDomain+deltaX);
+
+deltaY = yDomain(2)-yDomain(1);
 minY = min(yDomain);
-maxY = max(yDomain);
+maxY = max(yDomain+deltaY);
+
+minZ = min(zDomain);
+maxZ = max(zDomain);
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 	The stride indicates how many floats we will skip
 %
 stride = 1;
-floatSize = 5;
-
-% Read in the initial position of the floats.
-% We will use this information to maintain a constant color on each float.
-xposInitial = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) 1 1], [length(y)/stride length(x)/stride 1 1], [stride stride 1 1]));
-xposInitial = reshape(xposInitial, length(y)*length(x)/(stride*stride), 1);
+zStride = 1;
+floatSize = 25;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -45,50 +60,77 @@ figure('Position', [50 50 1920 1080])
 set(gcf,'PaperPositionMode','auto')
 set(gcf, 'Color', 'w');
 
-for iTime=1:length(t)
-%for iTime=9:9
+% Read in the initial position of the floats.
+% We will use this information to maintain a constant color on each float.
+colormap(jet(128))
+coloraxis = linspace(0,1,length(colormap));
+xposInitial = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) 1 1], [length(x)/stride length(y)/stride length(z)/zStride 1], [stride stride zStride 1]));
+xposInitial = reshape(xposInitial, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
+particle_color = interp1(coloraxis,colormap, (xposInitial-minX)./(maxX-minX) );
 
+particle_size = floatSize*floatSize*ones(size(xposInitial));
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% specify the density surface that we want to display, and find their color in the colormap
+%
+colormap(flipud(jet(128)))
+coloraxis = linspace(0,1,length(colormap));
+deltaRho = (max(rho_bar)-min(rho_bar))/3;
+density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
+density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max(rho_bar)-min(rho_bar)) );
+
+%for iTime=1:length(t)
+for iTime=4:4
+	
+	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(xDomain) length(yDomain) length(zDomain) 1], [1 1 1 1]));
+% 	rho3d(end+1,:,:) = rho3d(1,:,:);
+% 	rho3d(:,end+1,:) = rho3d(:,1,:);
+	
+	hsurfaces = slice(X,Y,Z,rho3d,[minX],[max(yDomain)],[minZ]);
+	set(hsurfaces,'FaceColor','interp','EdgeColor','none')
+	caxis([min(rho_bar) max(rho_bar)])
+		
+	view(30,10);
+
+	for i=1:length(density_surface)
+		p = patch(isosurface(X,Y,Z,rho3d,density_surface(i)));
+		isonormals(X,Y,Z,rho3d,p)
+		alpha(p,0.5)
+		set(p,'FaceColor',density_color(i,:),'EdgeColor','none');
+	end
+	
+	hold on
+	
 	% read in the position of the floats for the given time	
-	xpos = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) 1 iTime], [length(y)/stride length(x)/stride 1 1], [stride stride 1 1]));
-	ypos = double(ncread(file, 'y-position', [ceil(stride/2) ceil(stride/2) 1 iTime], [length(y)/stride length(x)/stride 1 1], [stride stride 1 1]));
+	xpos = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(x)/stride length(y)/stride length(z)/zStride 1], [stride stride zStride 1]));
+	ypos = double(ncread(file, 'y-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(x)/stride length(y)/stride length(z)/zStride 1], [stride stride zStride 1]));
+	zpos = double(ncread(file, 'z-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(x)/stride length(y)/stride length(z)/zStride 1], [stride stride zStride 1]));
 	
 	% make everything a column vector
-	xpos = reshape(xpos, length(y)*length(x)/(stride*stride), 1);
-	ypos = reshape(ypos, length(y)*length(x)/(stride*stride), 1);
+	xpos = reshape(xpos, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
+	ypos = reshape(ypos, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
+	zpos = reshape(zpos, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
 	
 	xpos = mod( xpos-minX, maxX-minX ) + minX;
 	ypos = mod( ypos-minY, maxY-minY ) + minY;
 	
-	% default color map is only 128 shades---we need more!
-	colormap(jet(1024))	
+	% now plot the floats
+	h = scatter3(xpos, ypos, zpos, particle_size, particle_color, 'filled');
 	
-	% now plot the floats, colored by initial position
-	% Scatter works, but is substantially slower than using mesh.
-	% scatter(xpos, ypos, floatSize*floatSize, xposInitial, 'filled')	
-	mesh([xpos';xpos'],[ypos';ypos'],[xposInitial';xposInitial'],'mesh','column','marker','.','MarkerSize',floatSize*floatSize), view(2)
-	grid off
+	xlim([minX maxX])
+	ylim([minY maxY])
+	zlim([min(zDomain) max(zDomain)])
 	
-	% make the axes look better
-	set( gca, 'TickDir', 'out');
-	set( gca, 'Linewidth', 1.0);
-	axis equal tight
+	lighting gouraud
+	camlight(30,20)
+	camlight
 	
-	% get rid of the xticks because we're going to put a colorbar below with the same info.
-	set( gca, 'xtick', [])
 	
-	xlim([min(xDomain) max(xDomain)])
-	ylim([min(yDomain) max(yDomain)])
-	
-	% label everything
-	title( sprintf('Floats advected by a Poincare Wave field, colored by initial position, hour %.1f', t(iTime)/3600), 'fontsize', 28, 'FontName', 'Helvetica' );
-	ylabel( 'distance', 'FontSize', 24.0, 'FontName', 'Helvetica');
-	
-	% add a color bar
-	cb = colorbar( 'location', 'SouthOutside' );
-	set(get(cb,'xlabel'),'String', 'distance', 'FontSize', 24.0, 'FontName', 'Helvetica');
-	set( gca, 'clim', [min(x) max(x)] );
+	hold off
 	
 	% write everything out	
-	output = sprintf('%s/%03d', FramesFolder,iTime-1);
-	print('-depsc2', output)
+% 	output = sprintf('%s/%03d', FramesFolder,iTime-1);
+% 	print('-depsc2', output)
 end

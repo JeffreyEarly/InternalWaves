@@ -20,7 +20,82 @@
 
 @end
 
+static NSString *GLInternalWaveMaximumModesKey = @"GLInternalWaveMaximumModesKey";
+static NSString *GLInternalWaveEquationKey = @"GLInternalWaveEquationKey";
+static NSString *GLInternalWaveFullDimensionsKey = @"GLInternalWaveFullDimensionsKey";
+static NSString *GLInternalWaveSpectralDimensionsKey = @"GLInternalWaveSpectralDimensionsKey";
+static NSString *GLInternalWaveLatitudeKey = @"GLInternalWaveLatitudeKey";
+static NSString *GLInternalWaveF0Key = @"GLInternalWaveF0Key";
+static NSString *GLInternalWaveRhoKey = @"GLInternalWaveRhoKey";
+static NSString *GLInternalWaveN2Key = @"GLInternalWaveN2Key";
+static NSString *GLInternalWaveEigenfrequenciesKey = @"GLInternalWaveEigenfrequenciesKey";
+static NSString *GLInternalWaveSKey = @"GLInternalWaveSKey";
+static NSString *GLInternalWaveSprimeKey = @"GLInternalWaveSprimeKey";
+static NSString *GLInternalWaveZetaPlusKey = @"GLInternalWaveZetaPlusKey";
+static NSString *GLInternalWaveZetaMinusKey = @"GLInternalWaveZetaMinusKey";
+static NSString *GLInternalWaveRhoPlusKey = @"GLInternalWaveRhoPlusKey";
+static NSString *GLInternalWaveRhoMinusKey = @"GLInternalWaveRhoMinusKey";
+static NSString *GLInternalWaveUPlusKey = @"GLInternalWaveUPlusKey";
+static NSString *GLInternalWaveUMinusKey = @"GLInternalWaveUMinusKey";
+static NSString *GLInternalWaveVPlusKey = @"GLInternalWaveVPlusKey";
+static NSString *GLInternalWaveVMinusKey = @"GLInternalWaveVMinusKey";
+static NSString *GLInternalWaveWPlusKey = @"GLInternalWaveWPlusKey";
+static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
+
 @implementation GLInternalWaveInitialization
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    [coder encodeObject: @(self.maximumModes) forKey:GLInternalWaveMaximumModesKey];
+    [coder encodeObject: self.equation forKey:GLInternalWaveEquationKey];
+    [coder encodeObject: self.fullDimensions forKey:GLInternalWaveFullDimensionsKey];
+    [coder encodeObject: self.spectralDimensions forKey:GLInternalWaveSpectralDimensionsKey];
+    [coder encodeObject: @(self.latitude) forKey:GLInternalWaveLatitudeKey];
+    [coder encodeObject: @(self.f0) forKey:GLInternalWaveF0Key];
+    [coder encodeObject: self.rho forKey:GLInternalWaveRhoKey];
+    [coder encodeObject: self.N2 forKey:GLInternalWaveN2Key];
+    [coder encodeObject: self.eigenfrequencies forKey:GLInternalWaveEigenfrequenciesKey];
+    [coder encodeObject: self.S forKey:GLInternalWaveSKey];
+    [coder encodeObject: self.Sprime forKey:GLInternalWaveSprimeKey];
+    [coder encodeObject: self.zeta_plus forKey:GLInternalWaveZetaPlusKey];
+    [coder encodeObject: self.zeta_minus forKey:GLInternalWaveZetaMinusKey];
+    [coder encodeObject: self.rho_plus forKey:GLInternalWaveRhoPlusKey];
+    [coder encodeObject: self.rho_minus forKey:GLInternalWaveRhoMinusKey];
+    [coder encodeObject: self.u_plus forKey:GLInternalWaveUPlusKey];
+    [coder encodeObject: self.u_minus forKey:GLInternalWaveUMinusKey];
+    [coder encodeObject: self.v_plus forKey:GLInternalWaveVPlusKey];
+    [coder encodeObject: self.v_minus forKey:GLInternalWaveVMinusKey];
+    [coder encodeObject: self.w_plus forKey:GLInternalWaveWPlusKey];
+    [coder encodeObject: self.w_minus forKey:GLInternalWaveWMinusKey];
+}
+
+- (id)initWithCoder:(NSCoder *)decoder
+{
+    if ((self=[super init])) {
+        _maximumModes = [[decoder decodeObjectForKey: GLInternalWaveMaximumModesKey] unsignedIntegerValue];
+        _equation = [decoder decodeObjectForKey: GLInternalWaveEquationKey];
+        _fullDimensions = [decoder decodeObjectForKey: GLInternalWaveFullDimensionsKey];
+        _spectralDimensions = [decoder decodeObjectForKey: GLInternalWaveSpectralDimensionsKey];
+        _latitude = [[decoder decodeObjectForKey: GLInternalWaveLatitudeKey] doubleValue];
+        _f0 = [[decoder decodeObjectForKey: GLInternalWaveF0Key] doubleValue];
+        _rho = [decoder decodeObjectForKey: GLInternalWaveRhoKey];
+        _N2 = [decoder decodeObjectForKey: GLInternalWaveN2Key];
+        _eigenfrequencies = [decoder decodeObjectForKey: GLInternalWaveEigenfrequenciesKey];
+        _S = [decoder decodeObjectForKey: GLInternalWaveSKey];
+        _Sprime = [decoder decodeObjectForKey: GLInternalWaveSprimeKey];
+        _zeta_plus = [decoder decodeObjectForKey: GLInternalWaveZetaPlusKey];
+        _zeta_minus = [decoder decodeObjectForKey: GLInternalWaveZetaMinusKey];
+        _rho_plus = [decoder decodeObjectForKey: GLInternalWaveRhoPlusKey];
+        _rho_minus = [decoder decodeObjectForKey: GLInternalWaveRhoMinusKey];
+        _u_plus = [decoder decodeObjectForKey: GLInternalWaveUPlusKey];
+        _u_minus = [decoder decodeObjectForKey: GLInternalWaveUMinusKey];
+        _v_plus = [decoder decodeObjectForKey: GLInternalWaveVPlusKey];
+        _v_minus = [decoder decodeObjectForKey: GLInternalWaveVMinusKey];
+        _w_plus = [decoder decodeObjectForKey: GLInternalWaveWPlusKey];
+        _w_minus = [decoder decodeObjectForKey: GLInternalWaveWMinusKey];
+    }
+    return self;
+}
 
 - (GLInternalWaveInitialization *) initWithDensityProfile: (GLFunction *) rho fullDimensions: (NSArray *) dimensions latitude: (GLFloat) latitude equation: (GLEquation *) equation
 {
