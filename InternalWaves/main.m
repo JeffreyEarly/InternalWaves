@@ -19,9 +19,9 @@ int main(int argc, const char * argv[])
 		GLFloat N2 = 1e-4;
 		GLFloat depth = 100;
 		GLFloat width = 1000;
-        GLFloat height = 1000;
+        GLFloat height = 500;
 		NSUInteger Nx = 32;
-        NSUInteger Ny = 32;
+        NSUInteger Ny = 16;
 		NSUInteger Nz = 100;
 		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
@@ -129,10 +129,10 @@ int main(int argc, const char * argv[])
 			GLFunction *u2 = uv[0];
 			GLFunction *v2 = uv[1];
 			GLFunction *w2 = uv[2];
-			GLSimpleInterpolationOperation *interp = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[u2, v2, w2] secondOperand: yNew];
+			GLSimpleInterpolationOperation *interp = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[u2, v2, w2] secondOperand: @[yNew[2], yNew[1], yNew[0]]];
 			return interp.result;
 		}];
-		
+        
         /************************************************************************************************/
 		/*		Create a NetCDF file and mutable variables in order to record some of the time steps.	*/
 		/************************************************************************************************/
