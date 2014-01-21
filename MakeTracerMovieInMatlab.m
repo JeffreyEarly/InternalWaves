@@ -16,7 +16,7 @@ end
 xDomain = ncread(file, 'x');
 yDomain = ncread(file, 'y');
 zDomain = ncread(file, 'z');
-[Y,X,Z]=meshgrid(yDomain,xDomain,zDomain);
+[X,Y,Z]=meshgrid(xDomain,yDomain,zDomain);
 
 x = ncread(file, 'x-float');
 y = ncread(file, 'y-float');
@@ -64,7 +64,7 @@ set(gcf, 'Color', 'w');
 % We will use this information to maintain a constant color on each float.
 colormap(jet(128))
 coloraxis = linspace(0,1,length(colormap));
-xposInitial = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) 1 1], [length(x)/stride length(y)/stride length(z)/zStride 1], [stride stride zStride 1]));
+xposInitial = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) 1 1], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
 xposInitial = reshape(xposInitial, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
 particle_color = interp1(coloraxis,colormap, (xposInitial-minX)./(maxX-minX) );
 
@@ -80,22 +80,22 @@ deltaRho = (max(rho_bar)-min(rho_bar))/3;
 density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
 density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max(rho_bar)-min(rho_bar)) );
 
-%for iTime=1:length(t)
-for iTime=4:4
+for iTime=1:length(t)
+%for iTime=1:1
 	
-	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(xDomain) length(yDomain) length(zDomain) 1], [1 1 1 1]));
+	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
 % 	rho3d(end+1,:,:) = rho3d(1,:,:);
 % 	rho3d(:,end+1,:) = rho3d(:,1,:);
 	
-	hsurfaces = slice(Y,X,Z,rho3d,[max(yDomain)],[min(xDomain)],[minZ]);
+	hsurfaces = slice(X,Y,Z,rho3d,[min(xDomain)],[max(yDomain)],[minZ]);
 	set(hsurfaces,'FaceColor','interp','EdgeColor','none')
 	caxis([min(rho_bar) max(rho_bar)])
 		
-	view(210,10);
+	view(30,10);
 
 	for i=1:length(density_surface)
-		p = patch(isosurface(Y,X,Z,rho3d,density_surface(i)));
-		isonormals(Y,X,Z,rho3d,p)
+		p = patch(isosurface(X,Y,Z,rho3d,density_surface(i)));
+		isonormals(X,Y,Z,rho3d,p)
 		alpha(p,0.5)
 		set(p,'FaceColor',density_color(i,:),'EdgeColor','none');
 	end
@@ -103,9 +103,9 @@ for iTime=4:4
 	hold on
 	
 	% read in the position of the floats for the given time	
-	xpos = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(x)/stride length(y)/stride length(z)/zStride 1], [stride stride zStride 1]));
-	ypos = double(ncread(file, 'y-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(x)/stride length(y)/stride length(z)/zStride 1], [stride stride zStride 1]));
-	zpos = double(ncread(file, 'z-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(x)/stride length(y)/stride length(z)/zStride 1], [stride stride zStride 1]));
+	xpos = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
+	ypos = double(ncread(file, 'y-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
+	zpos = double(ncread(file, 'z-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) iTime], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
 	
 	% make everything a column vector
 	xpos = reshape(xpos, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
@@ -116,20 +116,20 @@ for iTime=4:4
 	ypos = mod( ypos-minY, maxY-minY ) + minY;
 	
 	% now plot the floats
-	h = scatter3(ypos, xpos, zpos, particle_size, particle_color, 'filled');
+	h = scatter3(xpos, ypos, zpos, particle_size, particle_color, 'filled');
 	
-	ylim([minX maxX])
-	xlim([minY maxY])
+	xlim([minX maxX])
+	ylim([minY maxY])
 	zlim([min(zDomain) max(zDomain)])
 	
 	lighting gouraud
-	camlight(210,20)
+	camlight(30,20)
 	camlight
 	
 	
 	hold off
 	
 	% write everything out	
-% 	output = sprintf('%s/%03d', FramesFolder,iTime-1);
-% 	print('-depsc2', output)
+	output = sprintf('%s/%03d', FramesFolder,iTime-1);
+	print('-depsc2', output)
 end

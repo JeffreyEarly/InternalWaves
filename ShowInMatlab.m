@@ -15,7 +15,7 @@ v = double(ncread(file, 'v'));
 w = double(ncread(file, 'w'));
 rho = double(ncread(file, 'rho'));
 
-
+rho3d=rho(:,:,:,1);
 [X,Y,Z]=meshgrid(x,y,z);
 figure
 colormap(flipud(jet(128)))
@@ -44,7 +44,6 @@ set(p,'FaceColor',rho2Color,'EdgeColor','none');
 lighting gouraud
 camlight(30,20)
 camlight
-return
 
 scrsz = get(0,'ScreenSize');
 figure('Position',[1 scrsz(4)/2 scrsz(4) scrsz(4)/2])
@@ -59,18 +58,18 @@ for iTime=1:4
 	zIndex = 100;
 	u2d = squeeze(u3d(:,:,zIndex));
 	v2d = squeeze(v3d(:,:,zIndex));
-	quiver(x,y,u2d',v2d',0.8)
+	quiver(x,y,u2d,v2d,0.8)
 	xlim([min(x) max(x)])
 	ylim([min(y) max(y)])
 	
 	subplot(3,4,1*4+iTime)
-	pcolor(x,z,squeeze(w3d(:,1,:))'),shading flat
+	pcolor(x,z,squeeze(w3d(1,:,:))'),shading flat
 
 	subplot(3,4,2*4+iTime)
-	pcolor(x,z,squeeze(rho3d(:,1,:))'),shading flat
+	pcolor(x,z,squeeze(rho3d(1,:,:))'),shading flat
 	stride=5;
-	u2d = squeeze(u3d(:,1,1:5:end));
-	w2d = squeeze(w3d(:,1,1:5:end));
+	u2d = squeeze(u3d(1,:,1:5:end));
+	w2d = squeeze(w3d(1,:,1:5:end));
 	hold on
 	quiver(x,z(1:5:end),u2d',w2d',0.8)
 	

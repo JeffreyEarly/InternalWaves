@@ -175,11 +175,11 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     // We will be setting G, the energy density. So we have to convert U_max into that value.
 //    GLFloat k = [self.kDim valueAtIndex: kUnit];
 //    GLFloat l = [self.lDim valueAtIndex: lUnit];
-	GLFloat omega = self.eigenfrequencies.pointerValue[(mode*kDimNPoints+lUnit)*lDimNPoints+kUnit];
+	GLFloat omega = self.eigenfrequencies.pointerValue[(mode*kDimNPoints+kUnit)*lDimNPoints+lUnit];
 //
 //    GLFloat G = U_max*(k*k+l*l)/(k*omega);
 
-    U_mag = [U_mag setValue: 1.0 atIndices: [NSString stringWithFormat:@"%lu,%lu,%lu", mode, lUnit, kUnit]];
+    U_mag = [U_mag setValue: 1.0 atIndices: [NSString stringWithFormat:@"%lu,%lu,%lu", mode, kUnit, lUnit]];
 	
     GLFloat *C = U_mag.pointerValue;
     

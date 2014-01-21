@@ -61,8 +61,10 @@ int main(int argc, const char * argv[])
         GLFunction *rho_bar = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
 		rho_bar.name = @"rho_bar";
 		
-		// We use the dimensions in reverse order so that the fft will act on contiguous chunks of memory.
-        GLInternalWaveInitialization *wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, yDim, xDim] latitude:latitude equation:equation];
+		// The ordering the dimensions is very deliberate here, for two reasons:
+		// 1. The z-dimension is in the first position, so that the horizontal fft will act on contiguous chunks of memory, and
+		// 2. The last two dimensions are ordered (x,y) to appease pcolor, meshgrid, and all the standard matlab formating.
+        GLInternalWaveInitialization *wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
         
         if (shouldUnitTest) {
             wave.maximumModes = modeUnit+2;
@@ -113,7 +115,8 @@ int main(int argc, const char * argv[])
 		GLDimension *zFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints:ceil(depth/verticalFloatSpacingInMeters) domainMin: -depth  length:depth];
 		zFloatDim.name = @"z-float";
         
-        NSArray *floatDimensions = @[zFloatDim, yFloatDim, xFloatDim];
+		// For consistency, we order the float dimensions the same as the dynamical variable dimensions.
+        NSArray *floatDimensions = @[zFloatDim, xFloatDim, yFloatDim];
 		GLFunction *xFloat = [GLFunction functionOfRealTypeFromDimension: xFloatDim withDimensions: floatDimensions forEquation: equation];
 		GLFunction *yFloat = [GLFunction functionOfRealTypeFromDimension: yFloatDim withDimensions: floatDimensions forEquation: equation];
 		GLFunction *zFloat = [GLFunction functionOfRealTypeFromDimension: zFloatDim withDimensions: floatDimensions forEquation: equation];
@@ -122,16 +125,19 @@ int main(int argc, const char * argv[])
 		GLFunction *yPosition = [GLFunction functionFromFunction: yFloat];
 		GLFunction *zPosition = [GLFunction functionFromFunction: zFloat];
 		
-		CGFloat cfl = 0.5;
+		CGFloat cfl = 0.25;
         GLFloat timeStep = cfl * xDim.sampleInterval / maxSpeed;
-        GLRungeKuttaOperation *integrator = [GLRungeKuttaOperation rungeKutta4AdvanceY: @[xPosition, yPosition, zPosition] stepSize: timeStep fFromTY:^(GLScalar *time, NSArray *yNew) {
+		timeStep = shouldUnitTest ? 2*M_PI/(omega*ceil(2*M_PI/(omega*timeStep))) : timeStep;
+        GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta4AdvanceY: @[xPosition, yPosition, zPosition] stepSize: timeStep fFromTY:^(GLScalar *time, NSArray *yNew) {
 			NSArray *uv = timeToUV(time);
 			GLFunction *u2 = uv[0];
 			GLFunction *v2 = uv[1];
 			GLFunction *w2 = uv[2];
-			GLSimpleInterpolationOperation *interp = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[u2, v2, w2] secondOperand: @[yNew[2], yNew[1], yNew[0]]];
+			GLSimpleInterpolationOperation *interp = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[u2, v2, w2] secondOperand: @[yNew[2], yNew[0], yNew[1]]];
 			return interp.result;
 		}];
+		//integrator.absoluteTolerance = @[ @(1e0), @(1e0)];
+		//integrator.relativeTolerance = @[ @(1e-6), @(1e-6), @(1e-6)];
         
         /************************************************************************************************/
 		/*		Create a NetCDF file and mutable variables in order to record some of the time steps.	*/
@@ -181,14 +187,18 @@ int main(int argc, const char * argv[])
 		/************************************************************************************************/
 		
 		GLFloat maxTime = shouldUnitTest ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
-        GLFloat sampleTime = shouldUnitTest ? maxTime/15 : sampleTimeInMinutes*60;
-        for (GLFloat time = sampleTime; time < maxTime+sampleTime/2; time += sampleTime)
+        GLFloat sampleTime = shouldUnitTest ? maxTime/18 : sampleTimeInMinutes*60;
+        //for (GLFloat time = sampleTime; time < maxTime+sampleTime/2; time += sampleTime)
+		while( integrator.currentTime < maxTime + integrator.stepSize/2)
         {
             @autoreleasepool {
+				GLFloat time = integrator.currentTime;
                 NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
+				NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(integrator.currentTime/86400), ((int) floor(integrator.currentTime/3600))%24, ((int) floor(integrator.currentTime/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
 				//NSLog(@"Logging day %d @ %02d:%02d (HH:MM)", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60);
 
-                NSArray *yout = [integrator stepForwardToTime: time];
+                NSArray *yout = [integrator stepForward];
+				//NSArray *yout = [integrator stepForwardToTime: time];
                 NSArray *uv = timeToUV([GLScalar scalarWithValue: time forEquation: equation]);
 				
 				[tDim addPoint: @(time)];
