@@ -64,8 +64,15 @@ set(gcf, 'Color', 'w');
 % We will use this information to maintain a constant color on each float.
 colormap(jet(128))
 coloraxis = linspace(0,1,length(colormap));
-xposInitial = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) 1 1], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
+
+xposInitial = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) 1], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
+yposInitial = double(ncread(file, 'y-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) 1], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
+zposInitial = double(ncread(file, 'z-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) 1], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
+
 xposInitial = reshape(xposInitial, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
+yposInitial = reshape(yposInitial, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
+zposInitial = reshape(zposInitial, length(x)*length(y)*length(z)/(stride*stride*zStride), 1);
+	
 particle_color = interp1(coloraxis,colormap, (xposInitial-minX)./(maxX-minX) );
 
 particle_size = floatSize*floatSize*ones(size(xposInitial));
@@ -80,8 +87,8 @@ deltaRho = (max(rho_bar)-min(rho_bar))/3;
 density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
 density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max(rho_bar)-min(rho_bar)) );
 
-for iTime=1:length(t)
-%for iTime=1:1
+%for iTime=1:length(t)
+for iTime=20:20
 	
 	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
 % 	rho3d(end+1,:,:) = rho3d(1,:,:);
@@ -130,6 +137,12 @@ for iTime=1:length(t)
 	hold off
 	
 	% write everything out	
-	output = sprintf('%s/%03d', FramesFolder,iTime-1);
-	print('-depsc2', output)
+% 	output = sprintf('%s/%03d', FramesFolder,iTime-1);
+% 	print('-depsc2', output)
 end
+
+error = xpos-xposInitial;
+rms_error_x = sqrt(mean(error.*error))
+
+errorZ = zpos-zposInitial;
+rms_error_z = sqrt(mean(errorZ.*errorZ))
