@@ -32,6 +32,7 @@
  @returns A GLInternalModes object with N2, eigenfrequencies, S, and Sprime populated.
  */
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude;
+- (NSArray *) internalWaveModesGIPFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude;
 
 /// Set the maximum number of modes to be used in the transformation matrix.
 @property NSUInteger maximumModes;
@@ -47,7 +48,7 @@
 
 // Not used yet.
 @property(strong) GLFunction *eigenfrequencies;
-@property(strong) GLFunction *eigendepth;
+@property(strong) GLFunction *eigendepths;
 @property(strong) GLLinearTransform *S;
 @property(strong) GLLinearTransform *Sprime;
 
