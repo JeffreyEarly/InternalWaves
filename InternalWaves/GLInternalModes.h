@@ -11,7 +11,7 @@
 
 @interface GLInternalModes : NSObject
 
-/** Compute the internal geostrophic modes.
+/** Compute the internal geostrophic (omega=0) modes.
  @param rho Density profile given as a function of z only.
  @returns A GLInternalModes object with N2, eigenfrequencies, S, and Sprime populated.
  */
@@ -47,6 +47,7 @@
 
 // Not used yet.
 @property(strong) GLFunction *eigenfrequencies;
+@property(strong) GLFunction *eigendepth;
 @property(strong) GLLinearTransform *S;
 @property(strong) GLLinearTransform *Sprime;
 

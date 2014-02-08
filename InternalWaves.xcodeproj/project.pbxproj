@@ -9,6 +9,11 @@
 /* Begin PBXBuildFile section */
 		8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23C1885AA8000213615 /* GLInternalModes.m */; };
 		8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */; };
+		811A019F18A5962000BD8682 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
+		811A01A218A5962000BD8682 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 811A01A118A5962000BD8682 /* main.m */; };
+		811A01A618A5962000BD8682 /* InternalModeTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 811A01A518A5962000BD8682 /* InternalModeTest.1 */; };
+		811A01AA18A5964800BD8682 /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */; };
+		811A01AB18A598B800BD8682 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23C1885AA8000213615 /* GLInternalModes.m */; };
 		81C427481856844C00EAF7A1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		81C4274B1856844C00EAF7A1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81C4274A1856844C00EAF7A1 /* main.m */; };
 		81C4274F1856844C00EAF7A1 /* InternalWaves.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 81C4274E1856844C00EAF7A1 /* InternalWaves.1 */; };
@@ -16,6 +21,16 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
+		811A019C18A5962000BD8682 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+				811A01A618A5962000BD8682 /* InternalModeTest.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
 		81C427421856844C00EAF7A1 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -34,6 +49,10 @@
 		8107F23E1885AE0A00213615 /* GLInternalWaveInitialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalWaveInitialization.h; sourceTree = "<group>"; };
 		8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalWaveInitialization.m; sourceTree = "<group>"; };
 		8107F2411888A17C00213615 /* MakeTracerMovieInMatlab.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MakeTracerMovieInMatlab.m; sourceTree = SOURCE_ROOT; };
+		811A019E18A5962000BD8682 /* InternalModeTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = InternalModeTest; sourceTree = BUILT_PRODUCTS_DIR; };
+		811A01A118A5962000BD8682 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		811A01A418A5962000BD8682 /* InternalModeTest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "InternalModeTest-Prefix.pch"; sourceTree = "<group>"; };
+		811A01A518A5962000BD8682 /* InternalModeTest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = InternalModeTest.1; sourceTree = "<group>"; };
 		81519E6118874C79008E6EBD /* ShowInMatlab.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ShowInMatlab.m; sourceTree = SOURCE_ROOT; };
 		8198DE22188ED5D300702585 /* Make2DTracerMovieInMatlab.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Make2DTracerMovieInMatlab.m; sourceTree = SOURCE_ROOT; };
 		8198DE23188ED5D300702585 /* Make3DParticlePlot.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Make3DParticlePlot.m; sourceTree = SOURCE_ROOT; };
@@ -47,6 +66,15 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		811A019B18A5962000BD8682 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				811A01AA18A5964800BD8682 /* GLNumericalModelingKit.dylib in Frameworks */,
+				811A019F18A5962000BD8682 /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81C427411856844C00EAF7A1 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -59,10 +87,29 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		811A01A018A5962000BD8682 /* InternalModeTest */ = {
+			isa = PBXGroup;
+			children = (
+				811A01A118A5962000BD8682 /* main.m */,
+				811A01A518A5962000BD8682 /* InternalModeTest.1 */,
+				811A01A318A5962000BD8682 /* Supporting Files */,
+			);
+			path = InternalModeTest;
+			sourceTree = "<group>";
+		};
+		811A01A318A5962000BD8682 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				811A01A418A5962000BD8682 /* InternalModeTest-Prefix.pch */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
 		81C4273B1856844C00EAF7A1 = {
 			isa = PBXGroup;
 			children = (
 				81C427491856844C00EAF7A1 /* InternalWaves */,
+				811A01A018A5962000BD8682 /* InternalModeTest */,
 				81C427461856844C00EAF7A1 /* Frameworks */,
 				81C427451856844C00EAF7A1 /* Products */,
 			);
@@ -72,6 +119,7 @@
 			isa = PBXGroup;
 			children = (
 				81C427441856844C00EAF7A1 /* InternalWaves */,
+				811A019E18A5962000BD8682 /* InternalModeTest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -115,6 +163,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		811A019D18A5962000BD8682 /* InternalModeTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 811A01A918A5962000BD8682 /* Build configuration list for PBXNativeTarget "InternalModeTest" */;
+			buildPhases = (
+				811A019A18A5962000BD8682 /* Sources */,
+				811A019B18A5962000BD8682 /* Frameworks */,
+				811A019C18A5962000BD8682 /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = InternalModeTest;
+			productName = InternalModeTest;
+			productReference = 811A019E18A5962000BD8682 /* InternalModeTest */;
+			productType = "com.apple.product-type.tool";
+		};
 		81C427431856844C00EAF7A1 /* InternalWaves */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 81C427521856844C00EAF7A1 /* Build configuration list for PBXNativeTarget "InternalWaves" */;
@@ -154,11 +219,21 @@
 			projectRoot = "";
 			targets = (
 				81C427431856844C00EAF7A1 /* InternalWaves */,
+				811A019D18A5962000BD8682 /* InternalModeTest */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXSourcesBuildPhase section */
+		811A019A18A5962000BD8682 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				811A01AB18A598B800BD8682 /* GLInternalModes.m in Sources */,
+				811A01A218A5962000BD8682 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		81C427401856844C00EAF7A1 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -172,6 +247,40 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		811A01A718A5962000BD8682 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "InternalModeTest/InternalModeTest-Prefix.pch";
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		811A01A818A5962000BD8682 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = "InternalModeTest/InternalModeTest-Prefix.pch";
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
+					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Release;
+		};
 		81C427501856844C00EAF7A1 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -279,6 +388,14 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		811A01A918A5962000BD8682 /* Build configuration list for PBXNativeTarget "InternalModeTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				811A01A718A5962000BD8682 /* Debug */,
+				811A01A818A5962000BD8682 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+		};
 		81C4273F1856844C00EAF7A1 /* Build configuration list for PBXProject "InternalWaves" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

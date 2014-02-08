@@ -16,7 +16,7 @@
         [NSException raise:@"InvalidDimensions" format:@"Only one dimension allowed, at this point"];
     }
     
-	//GLFloat g = 9.81;
+	GLFloat g = 9.81;
     GLScalar *rho0 = [rho mean];
 	
     GLEquation *equation = rho.equation;
@@ -24,10 +24,10 @@
     
 	// First construct N^2
     GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    self.N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(1)]];
+    self.N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
 	
 	
-    GLFunction *invN2 = [self.N2 scalarDivide: 1.0];
+    GLFunction *invN2 = [self.N2 scalarDivide: -g];
 	
     GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
     GLLinearTransform *invN2_trans = [GLLinearTransform linearTransformFromFunction: invN2];
@@ -43,10 +43,11 @@
 		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @"0:%lu", self.maximumModes-1]];
 	}
 	
-    S = [S normalizeWithFunction: [self.N2 times: rho0]];
-	GLLinearTransform *Sprime = [diffZ multiply: S];
+	self.eigendepth = [lambda scalarDivide: 1.0];
+    self.S = [S normalizeWithFunction: [self.N2 times: @(1/g)]];
+	self.Sprime = [diffZ multiply: S];
 	
-    return @[lambda, S, Sprime];
+    return @[self.eigendepth, self.S, self.Sprime];
 }
 
 - (NSArray *) internalModesFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k latitude: (GLFloat) latitude
