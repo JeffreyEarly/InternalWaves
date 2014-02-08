@@ -51,7 +51,7 @@ int main(int argc, const char * argv[])
 //        internalModes.maximumModes = 10;
  		//NSArray *system = [internalModes internalModesFromDensityProfile: rho_bar];
         //NSArray *system = [internalModes internalModesFromDensityProfile: rho_bar wavenumber: .1 latitude: latitude];
-        NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[zDim, xDim, yDim ] forLatitude:latitude];
+        NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim ] forLatitude:latitude];
 		
         GLFunction *eigendepths = system[0];
 		GLLinearTransform *S = system[1];

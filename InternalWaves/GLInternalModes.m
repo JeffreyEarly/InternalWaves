@@ -145,10 +145,10 @@
     GLLinearTransform *diffOp = [invN2_trans multiply: [diffZZ minus: [GLLinearTransform linearTransformFromFunction:K2]]];
 	
     NSArray *system = [diffOp eigensystemWithOrder: NSOrderedAscending];
-	
+    
 	GLFunction *lambda = [system[0] makeRealIfPossible];
 	GLLinearTransform *S = [system[1] makeRealIfPossible];
-	
+	   
 	if (self.maximumModes) {
 //		S = [S reducedFromDimensions: [NSString stringWithFormat: @"0:%lu,:,:", self.maximumModes-1] toDimension: @":,:,:"];
 //		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @"0:%lu,:,:", self.maximumModes-1]];
@@ -160,10 +160,14 @@
 	   
     self.eigendepths = [lambda scalarDivide: 1.0];
     
+    
+    
     //self.eigenfrequencies = [[[[self.eigendepths abs] multiply: [K2 times: @(g)]] plus: @(f0*f0)] sqrt];
     self.S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: @(1/g)]];
 	self.Sprime = [diffZ multiply: S];
 	
+    [self.S dumpToConsole];
+    
     return @[self.eigendepths, self.S, self.Sprime];
 }
 
