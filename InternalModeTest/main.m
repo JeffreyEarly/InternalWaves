@@ -21,9 +21,8 @@ int main(int argc, const char * argv[])
         GLFloat height = 500;
 		NSUInteger Nx = 4;
         NSUInteger Ny = 4;
-		NSUInteger Nz = 10;
+		NSUInteger Nz = 50;
 		
-		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
 		
@@ -48,20 +47,13 @@ int main(int argc, const char * argv[])
 		rho_bar.name = @"rho_bar";
 	    
 		GLInternalModes *internalModes = [[GLInternalModes alloc] init];
-//        internalModes.maximumModes = 10;
- 		//NSArray *system = [internalModes internalModesFromDensityProfile: rho_bar];
-        //NSArray *system = [internalModes internalModesFromDensityProfile: rho_bar wavenumber: .1 latitude: latitude];
-        NSArray *system = [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim ] forLatitude:latitude];
-		
-        GLFunction *eigendepths = system[0];
-		GLLinearTransform *S = system[1];
-		GLLinearTransform *Sprime = system[2];
-		GLFunction *N2 = internalModes.N2;
+        internalModes.maximumModes = 10;
+ 		//[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
+        //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: .01 forLatitude: latitude];
+        [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
         
-		[eigendepths dumpToConsole];
-//        GLFunction *L_r = [[internalModes.eigendepths times: @(g/(f0*f0))] sqrt];
-//        [L_r dumpToConsole];
-		[S dumpToConsole];
+		[internalModes.eigendepths dumpToConsole];
+		[internalModes.S dumpToConsole];
 	}
     return 0;
 }

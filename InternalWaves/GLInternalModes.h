@@ -11,45 +11,57 @@
 
 @interface GLInternalModes : NSObject
 
+/// Set the maximum number of modes to be used in the transformation matrix. Set this first!!!
+@property NSUInteger maximumModes;
+
 /** Compute the internal geostrophic (omega=0) modes.
  @param rho Density profile given as a function of z only.
- @returns A GLInternalModes object with N2, eigenfrequencies, S, and Sprime populated.
+ @param latitude Latitude at which the modes will be used. The only affects the Rossby radii.
+ @returns A GLInternalModes object with N2, eigendepths, eigenfrequencies, S, and Sprime populated.
  */
-- (NSArray *) internalModesFromDensityProfile: (GLFunction *) rho;
+- (NSArray *) internalGeostrophicModesFromDensityProfile: (GLFunction *) rho forLatitude: (GLFloat) latitude;
 
 /** Compute the internal wave modes for a given wavenumber.
  @param rho Density profile given as a function of z only.
  @param k Wavenumber given in cycles/meter.
  @param latitude Latitude at which the modes will be used (for the Coriolis frequency).
- @returns A GLInternalModes object with N2, eigenfrequencies, S, and Sprime populated.
+ @returns A GLInternalModes object with N2, eigendepths, eigenfrequencies, S, and Sprime populated.
  */
-- (NSArray *) internalModesFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k latitude: (GLFloat) latitude;
+- (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k forLatitude: (GLFloat) latitude;
 
 /** Compute the internal wave modes a set of wavenumbers.
  @param rho Density profile given as a function of z only.
  @param dimensions A set of vertical and horizontal dimensions. The same vertical dimensions (z) must be included, and at least one horizontal dimension.
  @param latitude Latitude at which the modes will be used (for the Coriolis frequency).
- @returns A GLInternalModes object with N2, eigenfrequencies, S, and Sprime populated.
+ @returns A GLInternalModes object with N2, eigendepths, eigenfrequencies, S, and Sprime populated.
  */
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude;
-- (NSArray *) internalWaveModesGIPFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude;
 
-/// Set the maximum number of modes to be used in the transformation matrix.
-@property NSUInteger maximumModes;
+// Coriolis frequency (in radians!) given the latitude.
+@property GLFloat f0;
 
 /// Stratification profile as compute for the mode calculation. N^2(z) = -g/mean(rho) * d/dz(rho)
 @property(strong) GLFunction *N2;
 
-/// Wavenumber function associated with x. This may be nil.
+/// Wavenumber function associated with x. Horizontal dimensions are spectral, vertical is z. This may be nil.
 @property(strong) GLFunction *k;
 
-/// Wavenumber function associated with y. This may be nil.
+/// Wavenumber function associated with y. Horizontal dimensions are spectral, vertical is z. This may be nil.
 @property(strong) GLFunction *l;
 
-// Not used yet.
+/// The eigenvalue omega (will be zero for geostrophic modes)
 @property(strong) GLFunction *eigenfrequencies;
+
+/// The eigenvalue h, the equivalent depth.
 @property(strong) GLFunction *eigendepths;
+
+/// Rossby radii associated with each mode (given its equivalent depth and latitude)
+@property(strong) GLFunction *rossbyRadius;
+
+/// Transformation from the eigenbasis for the w-modes to z.
 @property(strong) GLLinearTransform *S;
+
+/// Transformation from the eigenbasis for the (u,v)-modes to z.
 @property(strong) GLLinearTransform *Sprime;
 
 
