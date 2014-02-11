@@ -25,7 +25,7 @@ int main(int argc, const char * argv[])
 		NSUInteger Nz = 100;
 		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
-		GLFloat horizontalFloatSpacingInMeters = 100;
+		GLFloat horizontalFloatSpacingInMeters = 1000;
 		GLFloat verticalFloatSpacingInMeters = 25;
 		
 		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
@@ -35,11 +35,11 @@ int main(int argc, const char * argv[])
         // This is good for unit testing.
         BOOL shouldUnitTest = YES;
         NSUInteger modeUnit = 1;
-		NSUInteger kUnit = 1;
-		NSUInteger lUnit = 0;
+		NSUInteger kUnit = 0;
+		NSUInteger lUnit = 1;
 		NSInteger omegaSign = 1;
         GLFloat U_max = .025;
-        NSUInteger numStepsPerCycle = 4;
+        NSUInteger numStepsPerCycle = 20;
 		GLFloat omega = 0.0; // Don't set this value, it will be set for you based on the modes.
         
         /************************************************************************************************/
@@ -86,16 +86,13 @@ int main(int argc, const char * argv[])
 		NSArray * (^timeToUV) (GLScalar *) = ^( GLScalar *t ) {
 			GLFunction *time_phase_plus = [[iOmega multiply: t] exponentiate];
 			GLFunction *time_phase_minus = [[minusiOmega multiply: t] exponentiate];
-			
-            GLFunction *tmp = [wave.Sprime transform: [[wave.u_plus multiply: time_phase_plus] plus: [wave.u_minus multiply: time_phase_minus]]];
-
-            
 			GLFunction *u = [[wave.Sprime transform: [[wave.u_plus multiply: time_phase_plus] plus: [wave.u_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
 			GLFunction *v = [[wave.Sprime transform: [[wave.v_plus multiply: time_phase_plus] plus: [wave.v_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
 			GLFunction *w = [[wave.S transform: [[wave.w_plus multiply: time_phase_plus] plus: [wave.w_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
             GLFunction *rho = [[[[wave.S transform: [[wave.rho_plus multiply: time_phase_plus] plus: [wave.rho_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]] times: wave.N2] plus: rho_bar];
+            GLFunction *zeta = [[wave.S transform: [[wave.zeta_plus multiply: time_phase_plus] plus: [wave.zeta_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
 			
-			return @[u,v,w,rho];
+			return @[u,v,w,rho,zeta];
 		};
         		
 		GLScalar *t = [GLScalar scalarWithValue: 0.0*2*M_PI/f0 forEquation: equation];
@@ -128,6 +125,8 @@ int main(int argc, const char * argv[])
 		GLFunction *xPosition = [GLFunction functionFromFunction: xFloat];
 		GLFunction *yPosition = [GLFunction functionFromFunction: yFloat];
 		GLFunction *zPosition = [GLFunction functionFromFunction: zFloat];
+        GLFunction *isopycnalDeviation = [uv[4] interpolateAtPoints:@[zPosition, xPosition, yPosition]];
+        zPosition = [zPosition plus: isopycnalDeviation];
 		
 		CGFloat cfl = 0.25;
         GLFloat timeStep = cfl * xDim.sampleInterval / maxSpeed;
@@ -191,13 +190,14 @@ int main(int argc, const char * argv[])
 		/************************************************************************************************/
 		
 		GLFloat maxTime = shouldUnitTest ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
+        NSLog(@"Maximum wave period %d @ %02d:%02d (HH:MM)", (int) floor(maxTime/86400), ((int) floor(maxTime/3600))%24, ((int) floor(maxTime/60))%60);
         GLFloat sampleTime = shouldUnitTest ? maxTime/numStepsPerCycle : sampleTimeInMinutes*60;
-        for (GLFloat time = sampleTime; time <= maxTime-sampleTime; time += sampleTime)
+        for (GLFloat time = sampleTime; time <= maxTime-0*sampleTime; time += sampleTime)
 		//while( integrator.currentTime < maxTime + integrator.stepSize/2)
         {
             @autoreleasepool {
-                //NSArray *yout = [integrator stepForward];
-				NSArray *yout = [integrator stepForwardToTime: time];
+                NSArray *yout = [integrator stepForward];
+				//NSArray *yout = [integrator stepForwardToTime: time];
                 
 				GLFloat time = integrator.currentTime;
                 NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));

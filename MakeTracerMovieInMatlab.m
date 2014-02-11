@@ -87,8 +87,8 @@ deltaRho = (max(rho_bar)-min(rho_bar))/3;
 density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
 density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max(rho_bar)-min(rho_bar)) );
 
-%for iTime=1:length(t)
-for iTime=20:20
+for iTime=1:length(t)
+%for iTime=1:1
 	
 	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
 % 	rho3d(end+1,:,:) = rho3d(1,:,:);
@@ -137,8 +137,8 @@ for iTime=20:20
 	hold off
 	
 	% write everything out	
-% 	output = sprintf('%s/%03d', FramesFolder,iTime-1);
-% 	print('-depsc2', output)
+	output = sprintf('%s/%03d', FramesFolder,iTime-1);
+	print('-depsc2', output)
 end
 
 error = xpos-xposInitial;
