@@ -23,7 +23,7 @@
 
 /** Compute the internal wave modes for a given wavenumber.
  @param rho Density profile given as a function of z only.
- @param k Wavenumber given in cycles/meter.
+ @param k Wavenumber given in radians/meter.
  @param latitude Latitude at which the modes will be used (for the Coriolis frequency).
  @returns A GLInternalModes object with N2, eigendepths, eigenfrequencies, S, and Sprime populated.
  */
@@ -43,10 +43,10 @@
 /// Stratification profile as compute for the mode calculation. N^2(z) = -g/mean(rho) * d/dz(rho)
 @property(strong) GLFunction *N2;
 
-/// Wavenumber function associated with x. Horizontal dimensions are spectral, vertical is z. This may be nil.
+/// Wavenumber function associated with x (in radians!). Horizontal dimensions are spectral, vertical is z. This may be nil.
 @property(strong) GLFunction *k;
 
-/// Wavenumber function associated with y. Horizontal dimensions are spectral, vertical is z. This may be nil.
+/// Wavenumber function associated with y (in radians!). Horizontal dimensions are spectral, vertical is z. This may be nil.
 @property(strong) GLFunction *l;
 
 /// The eigenvalue omega (will be zero for geostrophic modes)

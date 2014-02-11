@@ -137,8 +137,8 @@
 	}
 	
 	GLEquation *equation = rho.equation;
-	self.k = [GLFunction functionOfRealTypeFromDimension: kDim withDimensions: transformedDimensions forEquation: equation];
-	self.l = [GLFunction functionOfRealTypeFromDimension: lDim withDimensions: transformedDimensions forEquation: equation];
+	self.k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: transformedDimensions forEquation: equation] scalarMultiply: 2*M_PI];
+	self.l = [[GLFunction functionOfRealTypeFromDimension: lDim withDimensions: transformedDimensions forEquation: equation] scalarMultiply: 2*M_PI];
 	GLFunction *K2 = [[self.k multiply: self.k] plus: [self.l multiply: self.l]];
 		
     [self createStratificationProfileFromDensity: rho atLatitude: latitude];
@@ -157,8 +157,8 @@
 	[self normalizeEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2 minus: @(self.f0*self.f0)] times: @(1/g)]];
     
     NSArray *spectralDimensions = self.eigendepths.dimensions;
-    GLFunction *k = [GLFunction functionOfRealTypeFromDimension: kDim withDimensions: spectralDimensions forEquation: equation];
-	GLFunction *l = [GLFunction functionOfRealTypeFromDimension: lDim withDimensions: spectralDimensions forEquation: equation];
+    GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: spectralDimensions forEquation: equation] scalarMultiply: 2*M_PI];
+	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: lDim withDimensions: spectralDimensions forEquation: equation] scalarMultiply: 2*M_PI];
 	GLFunction *K2_spectral = [[k multiply: k] plus: [l multiply: l]];
     self.eigenfrequencies = [[[[self.eigendepths abs] multiply: [K2_spectral times: @(g)]] plus: @(self.f0*self.f0)] sqrt];
 	    

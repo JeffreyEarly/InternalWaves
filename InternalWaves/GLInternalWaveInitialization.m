@@ -9,6 +9,8 @@
 #import "GLInternalWaveInitialization.h"
 #import "GLInternalModes.h"
 
+#define g 9.81
+
 @interface GLInternalWaveInitialization ()
 
 @property(strong) GLDimension *kDim;
@@ -131,11 +133,13 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	
 	GLInternalModes *internalModes = [[GLInternalModes alloc] init];
 	internalModes.maximumModes = self.maximumModes;
-	NSArray *system = [internalModes internalWaveModesFromDensityProfile: self.rho withFullDimensions: self.fullDimensions forLatitude: self.latitude];
+	[internalModes internalWaveModesFromDensityProfile: self.rho withFullDimensions: self.fullDimensions forLatitude: self.latitude];
 	
-	self.eigenfrequencies = system[0];
-	self.S = system[1];
-	self.Sprime = system[2];
+	self.eigenfrequencies = internalModes.eigenfrequencies;
+    self.eigendepths = internalModes.eigendepths;
+    self.rossbyRadius = internalModes.rossbyRadius;
+	self.S = internalModes.S;
+	self.Sprime = internalModes.Sprime;
 	self.N2 = internalModes.N2;
 	self.spectralDimensions = self.eigenfrequencies.dimensions;
 	
@@ -271,28 +275,29 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 
 - (void) generateWavePhasesFromPositive: (GLFunction *) G_plus negative: (GLFunction *) G_minus
 {
-    GLFloat g = 9.81; // [ m/s^2 ]
+    GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
+	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
+    GLFunction *K_H = [[[k multiply: k] plus: [l multiply: l]] sqrt];
+	K_H = [K_H setValue: 1 atIndices: @":,0,0"]; // prevent divide by zero.
+    GLFunction *sqrtH = [self.eigendepths sqrt];
+    
 	GLScalar *rho0 = [self.rho mean];
     
-    self.zeta_minus = G_minus;
-	self.zeta_plus = G_plus;
+	self.zeta_plus = [G_plus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
+    self.zeta_minus = [G_minus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
 	
-	self.rho_minus = [[G_minus times: rho0] times: @(1/g)];
-	self.rho_plus = [[G_plus times: rho0] times: @(1/g)];
+	self.rho_plus = [[self.zeta_plus times: rho0] times: @(1/g)];
+    self.rho_minus = [[self.zeta_minus times: rho0] times: @(1/g)];
 	
-	self.w_minus = [[[G_minus multiply: self.eigenfrequencies] swapComplex] negate];
-	self.w_plus = [[G_plus multiply: self.eigenfrequencies] swapComplex];
-	
-	GLFunction *k = [GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation];
-	GLFunction *l = [GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation];
-    GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
-	K2 = [K2 setValue: 1 atIndices: @":,0,0"]; // prevent divide by zero.
+	self.w_plus = [[[G_plus multiply: [K_H multiply: sqrtH]] swapComplex] makeHermitian];
+    self.w_minus = [[[[G_minus multiply: [K_H multiply: sqrtH]] swapComplex] negate] makeHermitian];
     
-	self.u_minus = [G_minus multiply: [[[k multiply: self.eigenfrequencies] plus: [[l times: @(self.f0)] swapComplex]] dividedBy: K2]];
-	self.u_plus = [G_plus multiply: [[[[k multiply: self.eigenfrequencies] minus: [[l times: @(self.f0)] swapComplex]] dividedBy: K2] negate]];
+    GLFunction *denominator = [[self.eigenfrequencies multiply: K_H] multiply: sqrtH];
+	self.u_plus = [[G_plus multiply: [[[[k multiply: self.eigenfrequencies] minus: [[l times: @(self.f0)] swapComplex]] dividedBy: denominator] negate]] makeHermitian];
+    self.u_minus = [[G_minus multiply: [[[k multiply: self.eigenfrequencies] plus: [[l times: @(self.f0)] swapComplex]] dividedBy: denominator]] makeHermitian];
 	
-	self.v_minus = [G_minus multiply: [[[l multiply: self.eigenfrequencies] minus: [[k times: @(self.f0)] swapComplex]] dividedBy: K2]];
-	self.v_plus = [G_plus multiply: [[[[l multiply: self.eigenfrequencies] minus: [[k times: @(self.f0)] swapComplex]] dividedBy: K2] negate]];
+	self.v_plus = [[G_plus multiply: [[[[l multiply: self.eigenfrequencies] plus: [[k times: @(self.f0)] swapComplex]] dividedBy: denominator] negate]] makeHermitian];
+    self.v_minus = [[G_minus multiply: [[[l multiply: self.eigenfrequencies] minus: [[k times: @(self.f0)] swapComplex]] dividedBy: denominator]] makeHermitian];
 }
 
 

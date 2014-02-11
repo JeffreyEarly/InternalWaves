@@ -53,6 +53,7 @@ int main(int argc, const char * argv[])
         [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
         
 		[internalModes.eigendepths dumpToConsole];
+        [internalModes.eigenfrequencies dumpToConsole];
 		[internalModes.S dumpToConsole];
 	}
     return 0;

@@ -71,15 +71,21 @@ for iTime=1:4
 	u2d = squeeze(u3d(1,:,1:5:end));
 	w2d = squeeze(w3d(1,:,1:5:end));
 	hold on
-	quiver(x,z(1:5:end),u2d',w2d',0.8)
+	quiver(x,z(1:5:end),u2d',w2d',0.5)
 	
 end	
 
+% figure
+% plot(squeeze(v(:,16,zIndex,1))), hold on
+% for iTime=2:length(t)
+% 	plot(squeeze(v(:,16,zIndex,iTime)))
+% end
+% 
+% [X,Y,Z]=meshgrid(x,y,z);
+% p = patch(isosurface(X,Y,Z,rho3d,1025.5));
+% isonormals(X,Y,Z,rho3d,p)
+% set(p,'FaceColor','red','EdgeColor','none');
 
-[X,Y,Z]=meshgrid(x,y,z);
-p = patch(isosurface(X,Y,Z,rho3d,1025.5));
-isonormals(X,Y,Z,rho3d,p)
-set(p,'FaceColor','red','EdgeColor','none');
 % %daspect([1,1,1])
 % view(3); axis tight
 % camlight 

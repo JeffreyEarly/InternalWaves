@@ -52,8 +52,19 @@
 /// Stratification profile used in the calculations.
 @property(strong) GLFunction *N2;
 
+/// The eigenvalue omega (will be zero for geostrophic modes)
 @property(strong) GLFunction *eigenfrequencies;
+
+/// The eigenvalue h, the equivalent depth.
+@property(strong) GLFunction *eigendepths;
+
+/// Rossby radii associated with each mode (given its equivalent depth and latitude)
+@property(strong) GLFunction *rossbyRadius;
+
+/// Transformation from the eigenbasis for the w-modes to z.
 @property(strong) GLLinearTransform *S;
+
+/// Transformation from the eigenbasis for the (u,v)-modes to z.
 @property(strong) GLLinearTransform *Sprime;
 
 @property(strong) GLFunction *zeta_plus;
