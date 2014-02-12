@@ -35,6 +35,7 @@
 	// First construct N^2
     self.diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:self.zDim forEquation: self.equation];
     self.N2 = [self.diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
+    self.N2.name = @"N2";
 }
 
 - (void) normalizeEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
@@ -58,8 +59,8 @@
 		lambda = [lambda variableFromIndexRangeString:fromIndexString];
 	}
     
-    self.eigendepths = [lambda scalarDivide: 1.0];
-    self.S = [S normalizeWithFunction: norm];
+    self.eigendepths = [lambda scalarDivide: 1.0]; self.eigendepths.name = @"eigendepths";
+    self.S = [S normalizeWithFunction: norm]; self.S.name = @"S_transform";
     
     GLLinearTransform *diffZ;
     if (S.toDimensions.count == diffZ.fromDimensions.count) {
@@ -68,8 +69,8 @@
         diffZ = [self.diffZ expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
     }
     
-    self.Sprime = [diffZ multiply: S];
-    self.rossbyRadius = [[self.eigendepths times: @(g/(self.f0*self.f0))] sqrt];
+    self.Sprime = [diffZ multiply: S]; self.Sprime.name = @"Sprime_transform";
+    self.rossbyRadius = [[self.eigendepths times: @(g/(self.f0*self.f0))] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
 }
 
 
