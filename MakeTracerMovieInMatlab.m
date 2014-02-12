@@ -1,5 +1,5 @@
 file = '/Users/jearly/Desktop/InternalWaves.nc';
-FramesFolder ='/Users/jearly/Desktop/InternalWaves';
+FramesFolder ='/Users/jearly/Desktop/InternalWavesGM';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

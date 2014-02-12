@@ -235,26 +235,21 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	[self computeInternalModes];
 	
 	// We follow Winters and D'Asaro (1997) for the creation of the Garrett-Munk spectrum
-	GLFloat j_star = 6;
-	GLFloat E = 4000*energyLevel; // [ J/m^{2} ]
+	GLFloat j_star = 3;
+	GLFloat E = (2.2e-6)*energyLevel; // [ m^{2}/s ]
 	
 	// The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
 	GLFunction *j = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation] plus: @(1)];
 	// H(j) = 2*j_star/(pi*(j^2 + j_star^2)) [unitless]
-	GLFunction *H = [[[j multiply: j] plus: @(j_star*j_star)] scalarDivide: 2*j_star/M_PI];
+	GLFunction *H = [[[j plus: @(j_star)] pow: -5/2] scalarDivide: 2*pow(j_star,3/2)/M_PI];
 	
-	// k_j = (pi*f0/( \int N(z) ))*j [m^{-1}]
-	GLScalar *NSum = [[[self.N2 abs] sqrt] integrate];
-	GLFunction *k_j = [[j dividedBy: NSum] multiply: @(M_PI*self.f0)];
+	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
+	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
+    GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
 	
-	// B(alpha,j) = (4/pi) * k_j * k^2/(k^2 + k_j^2)^2 [m]
-	GLFunction *k = [GLFunction functionOfRealTypeFromDimension: self.horizontalDimensions[0] withDimensions: self.spectralDimensions forEquation:self.equation];
-	GLFunction *K2 = [k multiply: k];
-	for (NSUInteger iDim=1; iDim < self.horizontalDimensions.count; iDim++) {
-		k = [GLFunction functionOfRealTypeFromDimension: self.horizontalDimensions[iDim] withDimensions: self.spectralDimensions forEquation:self.equation];
-		K2 = [K2 plus: [k multiply: k]];
-	}
-	GLFunction *B = [[[K2 dividedBy: [[K2 plus: [k_j multiply: k_j]] multiply: [K2 plus: [k_j multiply: k_j]]]] multiply: k_j] multiply: @(4./M_PI)];
+	// B(alpha,j) = (2/pi) * 1/R_j * 1/(k^2 + R_j^-2) [m]
+	GLFunction *invR_j = [self.rossbyRadius scalarDivide: 1.0];
+	GLFunction *B = [[invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]] multiply: @(2./M_PI)];
 	
 	// G^2(alpha, j) = E*H(j)*B(alpha,j)	[J/m]
 	GLFunction *G2 = [[H multiply: B] multiply: @(E)];

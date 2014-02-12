@@ -16,7 +16,7 @@ int main(int argc, const char * argv[])
 
 	@autoreleasepool {
 		GLFloat latitude = 45;
-		GLFloat N2 = 1e-4;
+		GLFloat N2 = 1e-2;
 		GLFloat depth = 100;
 		GLFloat width = 15e3;
         GLFloat height = 7.5e3;
@@ -33,9 +33,9 @@ int main(int argc, const char * argv[])
 		GLFloat g = 9.81;
 		
         // This is good for unit testing.
-        BOOL shouldUnitTest = YES;
+        BOOL shouldUnitTest = NO;
         NSUInteger modeUnit = 1;
-		NSUInteger kUnit = 0;
+		NSUInteger kUnit = 1;
 		NSUInteger lUnit = 1;
 		NSInteger omegaSign = 1;
         GLFloat U_max = .025;
@@ -72,7 +72,7 @@ int main(int argc, const char * argv[])
             omega = [wave createUnitWaveWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit omegaSign: omegaSign];
         } else {
             wave.maximumModes = 2;
-            [wave createGarrettMunkSpectrumWithEnergy: 1.0];
+            [wave createGarrettMunkSpectrumWithEnergy: 0.1];
 		}
         
 		/************************************************************************************************/
@@ -129,8 +129,11 @@ int main(int argc, const char * argv[])
         zPosition = [zPosition plus: isopycnalDeviation];
 		
 		CGFloat cfl = 0.25;
-        GLFloat timeStep = cfl * xDim.sampleInterval / maxSpeed;
-		timeStep = shouldUnitTest ? 2*M_PI/(numStepsPerCycle*omega*ceil(2*M_PI/(numStepsPerCycle*omega*timeStep))) : timeStep;
+        GLFloat cflTimeStep = cfl * xDim.sampleInterval / maxSpeed;
+		GLFloat outputTimeStep = shouldUnitTest ? 2*M_PI/(numStepsPerCycle*omega) : sampleTimeInMinutes*60;
+		
+		GLFloat timeStep = cflTimeStep > outputTimeStep ? outputTimeStep : outputTimeStep / ceil(outputTimeStep/cflTimeStep);
+		
         GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta4AdvanceY: @[xPosition, yPosition, zPosition] stepSize: timeStep fFromTY:^(GLScalar *time, NSArray *yNew) {
 			NSArray *uv = timeToUV(time);
 			GLFunction *u2 = uv[0];
@@ -196,10 +199,10 @@ int main(int argc, const char * argv[])
 		//while( integrator.currentTime < maxTime + integrator.stepSize/2)
         {
             @autoreleasepool {
-                NSArray *yout = [integrator stepForward];
-				//NSArray *yout = [integrator stepForwardToTime: time];
+                //NSArray *yout = [integrator stepForward];
+				NSArray *yout = [integrator stepForwardToTime: time];
                 
-				GLFloat time = integrator.currentTime;
+				//GLFloat time = integrator.currentTime;
                 NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
 				NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(integrator.currentTime/86400), ((int) floor(integrator.currentTime/3600))%24, ((int) floor(integrator.currentTime/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
 				//NSLog(@"Logging day %d @ %02d:%02d (HH:MM)", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60);
