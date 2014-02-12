@@ -14,10 +14,20 @@
 			<key>orderHint</key>
 			<integer>0</integer>
 		</dict>
+		<key>InternalWavesWithGMSpectrum.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>9</integer>
+		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>811A019D18A5962000BD8682</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>8140A09118AB37D0007727CC</key>
 		<dict>
 			<key>primary</key>
 			<true/>
