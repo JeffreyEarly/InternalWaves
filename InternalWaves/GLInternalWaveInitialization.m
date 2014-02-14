@@ -305,8 +305,8 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	self.zeta_plus = [G_plus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
     self.zeta_minus = [G_minus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
 	
-	self.rho_plus = [[self.zeta_plus times: rho0] times: @(-1/g)];
-    self.rho_minus = [[self.zeta_minus times: rho0] times: @(-1/g)];
+	self.rho_plus = [[self.zeta_plus times: rho0] times: @(1/g)];
+    self.rho_minus = [[self.zeta_minus times: rho0] times: @(1/g)];
 	
 	self.w_plus = [[[G_plus multiply: [K_H multiply: sqrtH]] swapComplex] makeHermitian];
     self.w_minus = [[[[G_minus multiply: [K_H multiply: sqrtH]] swapComplex] negate] makeHermitian];
