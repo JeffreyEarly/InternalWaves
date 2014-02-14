@@ -9,10 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <GLNumericalModelingKit/GLNumericalModelingKit.h>
 
-@interface GLInternalModes : NSObject
-
-/// Set the maximum number of modes to be used in the transformation matrix. Set this first!!!
-@property NSUInteger maximumModes;
+@interface GLInternalModes : NSObject <NSCoding>
 
 /** Compute the internal geostrophic (omega=0) modes.
  @param rho Density profile given as a function of z only.
@@ -40,7 +37,10 @@
 // Coriolis frequency (in radians!) given the latitude.
 @property GLFloat f0;
 
-/// Stratification profile as compute for the mode calculation. N^2(z) = -g/mean(rho) * d/dz(rho)
+/// Density profile
+@property(strong) GLFunction *rho;
+
+/// Stratification profile as computed for the mode calculation. N^2(z) = -g/mean(rho) * d/dz(rho)
 @property(strong) GLFunction *N2;
 
 /// Wavenumber function associated with x (in radians!). Horizontal dimensions are spectral, vertical is z. This may be nil.

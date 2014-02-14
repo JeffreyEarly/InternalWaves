@@ -20,12 +20,55 @@
 
 @implementation GLInternalModes
 
+static NSString *GLInternalModeF0Key = @"GLInternalModeF0Key";
+static NSString *GLInternalModeRhoKey = @"GLInternalModeRhoKey";
+static NSString *GLInternalModeN2Key = @"GLInternalModeN2Key";
+static NSString *GLInternalModeEigenfrequenciesKey = @"GLInternalModeEigenfrequenciesKey";
+static NSString *GLInternalModeEigendepthsKey = @"GLInternalModeEigendepthsKey";
+static NSString *GLInternalModeRossbyRadiiKey = @"GLInternalModeRossbyRadiiKey";
+static NSString *GLInternalModeSKey = @"GLInternalModeSKey";
+static NSString *GLInternalModeSprimeKey = @"GLInternalModeSprimeKey";
+static NSString *GLInternalModeKDimKey = @"GLInternalModeKDimKey";
+static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
+
+- (void)encodeWithCoder:(NSCoder *)coder
+{
+    [coder encodeObject: @(self.f0) forKey:GLInternalModeF0Key];
+    [coder encodeObject: self.rho forKey:GLInternalModeRhoKey];
+    [coder encodeObject: self.N2 forKey:GLInternalModeN2Key];
+    [coder encodeObject: self.eigenfrequencies forKey:GLInternalModeEigenfrequenciesKey];
+    [coder encodeObject: self.eigendepths forKey:GLInternalModeEigendepthsKey];
+    [coder encodeObject: self.rossbyRadius forKey:GLInternalModeRossbyRadiiKey];
+    [coder encodeObject: self.S forKey:GLInternalModeSKey];
+    [coder encodeObject: self.Sprime forKey:GLInternalModeSprimeKey];
+    [coder encodeObject: self.k forKey:GLInternalModeKDimKey];
+    [coder encodeObject: self.l forKey:GLInternalModeLDimKey];
+}
+
+- (id)initWithCoder:(NSCoder *)decoder
+{
+    if ((self=[super init])) {
+        _f0 = [[decoder decodeObjectForKey: GLInternalModeF0Key] doubleValue];
+        _rho = [decoder decodeObjectForKey: GLInternalModeRhoKey];
+        _N2 = [decoder decodeObjectForKey: GLInternalModeN2Key];
+        _eigenfrequencies = [decoder decodeObjectForKey: GLInternalModeEigenfrequenciesKey];
+        _eigendepths = [decoder decodeObjectForKey: GLInternalModeEigendepthsKey];
+        _rossbyRadius = [decoder decodeObjectForKey: GLInternalModeRossbyRadiiKey];
+        _S = [decoder decodeObjectForKey: GLInternalModeSKey];
+        _Sprime = [decoder decodeObjectForKey: GLInternalModeSprimeKey];
+        _k = [decoder decodeObjectForKey: GLInternalModeKDimKey];
+        _l = [decoder decodeObjectForKey: GLInternalModeLDimKey];
+    }
+    return self;
+}
+
 - (void) createStratificationProfileFromDensity: (GLFunction *) rho atLatitude: (GLFloat) latitude
 {
     if (rho.dimensions.count != 1) {
         [NSException raise:@"InvalidDimensions" format:@"Only one dimension allowed, at this point"];
     }
     
+    self.rho = rho;
     GLScalar *rho0 = [rho mean];
     self.f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
     
@@ -42,22 +85,6 @@
 {
     lambda = [lambda makeRealIfPossible];
     S = [S makeRealIfPossible];
-	
-	if (self.maximumModes) {
-        NSArray *dimensions = S.toDimensions;
-        NSMutableString *fromIndexString = [NSMutableString stringWithFormat: @""];
-        NSMutableString *toIndexString = [NSMutableString stringWithFormat: @""];
-        for (GLDimension *dim in dimensions) {
-            dim==self.zDim ? [fromIndexString appendFormat: @"0:%lu", self.maximumModes-1] : [fromIndexString appendFormat: @":"];
-            [toIndexString appendFormat: @":"];
-            if ([dimensions indexOfObject: dim] < dimensions.count-1) {
-                [fromIndexString appendFormat: @","];
-                [toIndexString appendFormat: @","];
-            }
-        }
-        S = [S reducedFromDimensions: fromIndexString toDimension: toIndexString];
-		lambda = [lambda variableFromIndexRangeString:fromIndexString];
-	}
     
     self.eigendepths = [lambda scalarDivide: 1.0]; self.eigendepths.name = @"eigendepths";
     self.S = [S normalizeWithFunction: norm]; self.S.name = @"S_transform";
@@ -70,7 +97,7 @@
     }
     
     self.Sprime = [diffZ multiply: S]; self.Sprime.name = @"Sprime_transform";
-    self.rossbyRadius = [[self.eigendepths times: @(g/(self.f0*self.f0))] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
+    self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
 }
 
 
@@ -178,129 +205,129 @@
 
 
 
-- (NSArray *) internalModesGIPFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k latitude: (GLFloat) latitude
-{
-    if (rho.dimensions.count != 1) {
-        [NSException raise:@"InvalidDimensions" format:@"Only one dimension allowed, at this point"];
-    }
-	
-	GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
-    GLScalar *rho0 = [rho mean];
-	
-    GLEquation *equation = rho.equation;
-    GLDimension *zDim = rho.dimensions[0];
-    
-	// First construct N^2
-    GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    self.N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
-	
-	// Now construct A = k*k*eye(N) - Diff2;
-	GLLinearTransform *k2 = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[zDim] toDimensions: @[zDim] inFormat: @[@(kGLDiagonalMatrixFormat)] forEquation:equation matrix:^( NSUInteger *row, NSUInteger *col ) {
-		return (GLFloatComplex) (row[0]==col[0] ? k*k : 0);
-	}];
-    GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-	GLLinearTransform *A = [k2 minus: diffZZ];
-    
-	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
-	GLLinearTransform *B = [[[GLLinearTransform linearTransformFromFunction: self.N2] times: @(k*k)] minus: [diffZZ times: @(f0*f0)]];
-	
-    NSArray *system = [B generalizedEigensystemWith: A];
-	
-	GLFunction *lambda = [system[0] makeRealIfPossible];
-    GLLinearTransform *S = [system[1] makeRealIfPossible];
-	
-	if (self.maximumModes) {
-		S = [S reducedFromDimensions: [NSString stringWithFormat: @"0:%lu", self.maximumModes-1] toDimension: @":"];
-		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @"0:%lu", self.maximumModes-1]];
-	}
-	
-    S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: rho0]];
-	GLLinearTransform *Sprime = [diffZ multiply: S];
-	
-	GLFunction *omega = [[lambda abs] sqrt];
-	
-    return @[omega, S, Sprime];
-}
-
-- (NSArray *) internalWaveModesGIPFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
-{
-	// create an array with the intended transformation (this is agnostic to dimension ordering).
-	NSMutableArray *basis = [NSMutableArray array];
-	GLDimension *zDim;
-	for (GLDimension *dim in dimensions) {
-		if ( [dim.name isEqualToString: @"x"] || [dim.name isEqualToString: @"y"]) {
-			[basis addObject: @(kGLExponentialBasis)];
-		} else {
-			zDim = dim;
-			[basis addObject: @(dim.basisFunction)];
-		}
-	}
-	
-	NSArray *transformedDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: dimensions transformedToBasis: basis];
-	GLDimension *kDim, *lDim;
-	for (GLDimension *dim in transformedDimensions) {
-		if ( [dim.name isEqualToString: @"k"]) {
-			kDim = dim;
-		} else if ( [dim.name isEqualToString: @"l"]) {
-			lDim = dim;
-		}
-	}
-	
-	GLEquation *equation = rho.equation;
-	GLFunction *k = [GLFunction functionOfRealTypeFromDimension: kDim withDimensions: transformedDimensions forEquation: equation];
-	GLFunction *l = [GLFunction functionOfRealTypeFromDimension: lDim withDimensions: transformedDimensions forEquation: equation];
-	GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
-	self.k = k;
-	self.l = l;
-	
-	GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
-	GLScalar *rho0 = [rho mean];
-	
-	// First construct N^2
-    GLLinearTransform *diffZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-    self.N2 = [diffZ1D transform: [[rho dividedBy: rho0] times: @(-g)]];
-	
-	// Now construct A = k*k*eye(N) - Diff2;
-    GLLinearTransform *diffZZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-	GLLinearTransform *diffZZ = [diffZZ1D expandedWithFromDimensions: transformedDimensions toDimensions: transformedDimensions];
-	GLLinearTransform *A = [[GLLinearTransform linearTransformFromFunction:K2] minus: diffZZ];
-	
-	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
-	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [K2 multiply: self.N2]] minus: [diffZZ times: @(f0*f0)]];
-	
-	NSArray *system = [B generalizedEigensystemWith: A];
-	
-	GLFunction *lambda = [system[0] makeRealIfPossible];
-	GLLinearTransform *S = [system[1] makeRealIfPossible];
-	
-	if (self.maximumModes) {
-		S = [S reducedFromDimensions: [NSString stringWithFormat: @"0:%lu,:,:", self.maximumModes-1] toDimension: @":,:,:"];
-		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @"0:%lu,:,:", self.maximumModes-1]];
-//        S = [S reducedFromDimensions: [NSString stringWithFormat: @":,:,0:%lu", self.maximumModes-1] toDimension: @":,:,:"];
-//		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @":,:,0:%lu", self.maximumModes-1]];
-	}
-	
-	lambda = [lambda setValue: 0.0 atIndices: @":,0,0"];
-	//GLFloat deltaK = lDim.nPoints * kDim.nPoints;
-    S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: rho0]];
-	
-	NSUInteger index = 0;
-	//	NSUInteger totalVectors = S.matrixDescription.nPoints / S.matrixDescription.strides[index].nPoints;
-	//	NSUInteger vectorStride = S.matrixDescription.strides[index].columnStride;
-	NSUInteger vectorLength = S.matrixDescription.strides[index].nRows;
-	NSUInteger vectorElementStride = S.matrixDescription.strides[index].rowStride;
-	//	NSUInteger complexStride = S.matrixDescription.strides[index].complexStride;
-	
-	for (NSUInteger i=0; i<vectorLength; i++) {
-		S.pointerValue[i*vectorElementStride] = 0;
-	}
-    
-    GLLinearTransform *diffZ = [diffZ1D expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
-    GLLinearTransform *Sprime = [diffZ multiply: S];
-	
-	GLFunction *omega = [[lambda abs] sqrt];
-	
-    return @[omega, S, Sprime];
-}
+//- (NSArray *) internalModesGIPFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k latitude: (GLFloat) latitude
+//{
+//    if (rho.dimensions.count != 1) {
+//        [NSException raise:@"InvalidDimensions" format:@"Only one dimension allowed, at this point"];
+//    }
+//	
+//	GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
+//    GLScalar *rho0 = [rho mean];
+//	
+//    GLEquation *equation = rho.equation;
+//    GLDimension *zDim = rho.dimensions[0];
+//    
+//	// First construct N^2
+//    GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
+//    self.N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
+//	
+//	// Now construct A = k*k*eye(N) - Diff2;
+//	GLLinearTransform *k2 = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[zDim] toDimensions: @[zDim] inFormat: @[@(kGLDiagonalMatrixFormat)] forEquation:equation matrix:^( NSUInteger *row, NSUInteger *col ) {
+//		return (GLFloatComplex) (row[0]==col[0] ? k*k : 0);
+//	}];
+//    GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
+//	GLLinearTransform *A = [k2 minus: diffZZ];
+//    
+//	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
+//	GLLinearTransform *B = [[[GLLinearTransform linearTransformFromFunction: self.N2] times: @(k*k)] minus: [diffZZ times: @(f0*f0)]];
+//	
+//    NSArray *system = [B generalizedEigensystemWith: A];
+//	
+//	GLFunction *lambda = [system[0] makeRealIfPossible];
+//    GLLinearTransform *S = [system[1] makeRealIfPossible];
+//	
+//	if (self.maximumModes) {
+//		S = [S reducedFromDimensions: [NSString stringWithFormat: @"0:%lu", self.maximumModes-1] toDimension: @":"];
+//		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @"0:%lu", self.maximumModes-1]];
+//	}
+//	
+//    S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: rho0]];
+//	GLLinearTransform *Sprime = [diffZ multiply: S];
+//	
+//	GLFunction *omega = [[lambda abs] sqrt];
+//	
+//    return @[omega, S, Sprime];
+//}
+//
+//- (NSArray *) internalWaveModesGIPFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
+//{
+//	// create an array with the intended transformation (this is agnostic to dimension ordering).
+//	NSMutableArray *basis = [NSMutableArray array];
+//	GLDimension *zDim;
+//	for (GLDimension *dim in dimensions) {
+//		if ( [dim.name isEqualToString: @"x"] || [dim.name isEqualToString: @"y"]) {
+//			[basis addObject: @(kGLExponentialBasis)];
+//		} else {
+//			zDim = dim;
+//			[basis addObject: @(dim.basisFunction)];
+//		}
+//	}
+//	
+//	NSArray *transformedDimensions = [GLDimension dimensionsForRealFunctionWithDimensions: dimensions transformedToBasis: basis];
+//	GLDimension *kDim, *lDim;
+//	for (GLDimension *dim in transformedDimensions) {
+//		if ( [dim.name isEqualToString: @"k"]) {
+//			kDim = dim;
+//		} else if ( [dim.name isEqualToString: @"l"]) {
+//			lDim = dim;
+//		}
+//	}
+//	
+//	GLEquation *equation = rho.equation;
+//	GLFunction *k = [GLFunction functionOfRealTypeFromDimension: kDim withDimensions: transformedDimensions forEquation: equation];
+//	GLFunction *l = [GLFunction functionOfRealTypeFromDimension: lDim withDimensions: transformedDimensions forEquation: equation];
+//	GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
+//	self.k = k;
+//	self.l = l;
+//	
+//	GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
+//	GLScalar *rho0 = [rho mean];
+//	
+//	// First construct N^2
+//    GLLinearTransform *diffZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
+//    self.N2 = [diffZ1D transform: [[rho dividedBy: rho0] times: @(-g)]];
+//	
+//	// Now construct A = k*k*eye(N) - Diff2;
+//    GLLinearTransform *diffZZ1D = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
+//	GLLinearTransform *diffZZ = [diffZZ1D expandedWithFromDimensions: transformedDimensions toDimensions: transformedDimensions];
+//	GLLinearTransform *A = [[GLLinearTransform linearTransformFromFunction:K2] minus: diffZZ];
+//	
+//	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
+//	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [K2 multiply: self.N2]] minus: [diffZZ times: @(f0*f0)]];
+//	
+//	NSArray *system = [B generalizedEigensystemWith: A];
+//	
+//	GLFunction *lambda = [system[0] makeRealIfPossible];
+//	GLLinearTransform *S = [system[1] makeRealIfPossible];
+//	
+//	if (self.maximumModes) {
+//		S = [S reducedFromDimensions: [NSString stringWithFormat: @"0:%lu,:,:", self.maximumModes-1] toDimension: @":,:,:"];
+//		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @"0:%lu,:,:", self.maximumModes-1]];
+////        S = [S reducedFromDimensions: [NSString stringWithFormat: @":,:,0:%lu", self.maximumModes-1] toDimension: @":,:,:"];
+////		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @":,:,0:%lu", self.maximumModes-1]];
+//	}
+//	
+//	lambda = [lambda setValue: 0.0 atIndices: @":,0,0"];
+//	//GLFloat deltaK = lDim.nPoints * kDim.nPoints;
+//    S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: rho0]];
+//	
+//	NSUInteger index = 0;
+//	//	NSUInteger totalVectors = S.matrixDescription.nPoints / S.matrixDescription.strides[index].nPoints;
+//	//	NSUInteger vectorStride = S.matrixDescription.strides[index].columnStride;
+//	NSUInteger vectorLength = S.matrixDescription.strides[index].nRows;
+//	NSUInteger vectorElementStride = S.matrixDescription.strides[index].rowStride;
+//	//	NSUInteger complexStride = S.matrixDescription.strides[index].complexStride;
+//	
+//	for (NSUInteger i=0; i<vectorLength; i++) {
+//		S.pointerValue[i*vectorElementStride] = 0;
+//	}
+//    
+//    GLLinearTransform *diffZ = [diffZ1D expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
+//    GLLinearTransform *Sprime = [diffZ multiply: S];
+//	
+//	GLFunction *omega = [[lambda abs] sqrt];
+//	
+//    return @[omega, S, Sprime];
+//}
 
 @end

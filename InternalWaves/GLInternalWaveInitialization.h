@@ -8,6 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <GLNumericalModelingKit/GLNumericalModelingKit.h>
+#import "GLInternalModes.h"
 
 @interface GLInternalWaveInitialization : NSObject <NSCoding>
 
@@ -33,6 +34,9 @@
 
 /// The equation used for all computations.
 @property(strong) GLEquation *equation;
+
+/// The object used to generate the internal modes. This contains the untruncated (not limited to maximumModes) matrices.
+@property(strong) GLInternalModes *internalModes;
 
 /// The spatial dimensions, e.g., (x, y, z), although they will be in the order given during initialization.
 @property(strong) NSArray *fullDimensions;

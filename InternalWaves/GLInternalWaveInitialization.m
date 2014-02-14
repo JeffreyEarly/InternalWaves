@@ -24,6 +24,7 @@
 
 static NSString *GLInternalWaveMaximumModesKey = @"GLInternalWaveMaximumModesKey";
 static NSString *GLInternalWaveEquationKey = @"GLInternalWaveEquationKey";
+static NSString *GLInternalWaveInternalModeKey = @"GLInternalWaveInternalModeKey";
 static NSString *GLInternalWaveFullDimensionsKey = @"GLInternalWaveFullDimensionsKey";
 static NSString *GLInternalWaveSpectralDimensionsKey = @"GLInternalWaveSpectralDimensionsKey";
 static NSString *GLInternalWaveLatitudeKey = @"GLInternalWaveLatitudeKey";
@@ -52,6 +53,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 {
     [coder encodeObject: @(self.maximumModes) forKey:GLInternalWaveMaximumModesKey];
     [coder encodeObject: self.equation forKey:GLInternalWaveEquationKey];
+    [coder encodeObject: self.internalModes forKey:GLInternalWaveInternalModeKey];
     [coder encodeObject: self.fullDimensions forKey:GLInternalWaveFullDimensionsKey];
     [coder encodeObject: self.spectralDimensions forKey:GLInternalWaveSpectralDimensionsKey];
     [coder encodeObject: @(self.latitude) forKey:GLInternalWaveLatitudeKey];
@@ -80,6 +82,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     if ((self=[super init])) {
         _maximumModes = [[decoder decodeObjectForKey: GLInternalWaveMaximumModesKey] unsignedIntegerValue];
         _equation = [decoder decodeObjectForKey: GLInternalWaveEquationKey];
+        _internalModes = [decoder decodeObjectForKey: GLInternalWaveInternalModeKey];
         _fullDimensions = [decoder decodeObjectForKey: GLInternalWaveFullDimensionsKey];
         _spectralDimensions = [decoder decodeObjectForKey: GLInternalWaveSpectralDimensionsKey];
         _latitude = [[decoder decodeObjectForKey: GLInternalWaveLatitudeKey] doubleValue];
@@ -129,24 +132,41 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 		self.rho = rho;
 		self.latitude = latitude;
 		self.f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
+        
+        self.internalModes = [[GLInternalModes alloc] init];
+        [self.internalModes internalWaveModesFromDensityProfile: self.rho withFullDimensions: self.fullDimensions forLatitude: self.latitude];
     }
     return self;
 }
 
 - (void) computeInternalModes
 {
-	NSLog(@"Computing internal modes...");
-	
-	GLInternalModes *internalModes = [[GLInternalModes alloc] init];
-	internalModes.maximumModes = self.maximumModes;
-	[internalModes internalWaveModesFromDensityProfile: self.rho withFullDimensions: self.fullDimensions forLatitude: self.latitude];
-	
-	self.eigenfrequencies = internalModes.eigenfrequencies;
-    self.eigendepths = internalModes.eigendepths;
-    self.rossbyRadius = internalModes.rossbyRadius;
-	self.S = internalModes.S;
-	self.Sprime = internalModes.Sprime;
-	self.N2 = internalModes.N2;
+    if (self.maximumModes) {
+        NSArray *dimensions = self.internalModes.S.toDimensions;
+        NSMutableString *fromIndexString = [NSMutableString stringWithFormat: @""];
+        NSMutableString *toIndexString = [NSMutableString stringWithFormat: @""];
+        for (GLDimension *dim in dimensions) {
+            [dim.name isEqualToString: @"z"] ? [fromIndexString appendFormat: @"0:%lu", self.maximumModes-1] : [fromIndexString appendFormat: @":"];
+            [toIndexString appendFormat: @":"];
+            if ([dimensions indexOfObject: dim] < dimensions.count-1) {
+                [fromIndexString appendFormat: @","];
+                [toIndexString appendFormat: @","];
+            }
+        }
+        self.S = [self.internalModes.S reducedFromDimensions: fromIndexString toDimension: toIndexString];
+        self.Sprime = [self.internalModes.Sprime reducedFromDimensions: fromIndexString toDimension: toIndexString];
+        self.eigenfrequencies = [self.internalModes.eigenfrequencies variableFromIndexRangeString:fromIndexString];
+        self.eigendepths = [self.internalModes.eigendepths variableFromIndexRangeString:fromIndexString];
+        self.rossbyRadius = [self.internalModes.rossbyRadius variableFromIndexRangeString:fromIndexString];
+    } else {
+        self.S = self.internalModes.S;
+        self.Sprime = self.internalModes.Sprime;
+        self.eigenfrequencies = self.internalModes.eigenfrequencies;
+        self.eigendepths = self.internalModes.eigendepths;
+        self.rossbyRadius = self.internalModes.rossbyRadius;
+    }
+    
+	self.N2 = self.internalModes.N2;
 	self.spectralDimensions = self.eigenfrequencies.dimensions;
 	
 	for (GLDimension *dim in self.spectralDimensions) {
@@ -171,8 +191,6 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     }
     // The 1st baroclinic mode is in position 0.
     mode = mode-1;
-    
-
     
     GLFunction *U_mag = [GLFunction functionOfRealTypeWithDimensions: self.spectralDimensions forEquation: self.equation];
     [U_mag zero];
@@ -287,8 +305,8 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	self.zeta_plus = [G_plus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
     self.zeta_minus = [G_minus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
 	
-	self.rho_plus = [[self.zeta_plus times: rho0] times: @(1/g)];
-    self.rho_minus = [[self.zeta_minus times: rho0] times: @(1/g)];
+	self.rho_plus = [[self.zeta_plus times: rho0] times: @(-1/g)];
+    self.rho_minus = [[self.zeta_minus times: rho0] times: @(-1/g)];
 	
 	self.w_plus = [[[G_plus multiply: [K_H multiply: sqrtH]] swapComplex] makeHermitian];
     self.w_minus = [[[[G_minus multiply: [K_H multiply: sqrtH]] swapComplex] negate] makeHermitian];

@@ -17,9 +17,9 @@ int main(int argc, const char * argv[])
 {
     
 	@autoreleasepool {
-        
-        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesUnitTest.internalwaves"];
-        
+        // @"InternalWavesLatmix2011_16_16_128.internalwaves"
+        // @"InternalWavesLatmix2011_128_128_128.internalwaves"
+        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWaves2.internalwaves"];
         
         NSFileManager *manager = [[NSFileManager alloc] init];
         GLInternalWaveInitialization *wave;
@@ -35,12 +35,12 @@ int main(int argc, const char * argv[])
         {
             GLFloat latitude = 45;
             GLFloat N2 = 1e-4; //2.5e-3;
-            GLFloat depth = 300;
             GLFloat width = 15e3;
-            GLFloat height = 7.5e3;
-            NSUInteger Nx = 16;
+            GLFloat height = 15e3;
+            GLFloat depth = 300;
+            NSUInteger Nx = 8;
             NSUInteger Ny = 8;
-            NSUInteger Nz = 100;
+            NSUInteger Nz = 128;
             
             /************************************************************************************************/
             /*		Define the problem dimensions															*/
@@ -56,22 +56,31 @@ int main(int argc, const char * argv[])
             /************************************************************************************************/
             /*		Create a density profile and compute the internal wave phases                           */
             /************************************************************************************************/
-            GLFloat rho0 = 1025;
-            GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
-            GLFunction *rho_bar = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
-            rho_bar.name = @"rho_bar";
+            GLFunction *rho_bar;
+            if (1) {
+                GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile.nc"] forEquation:equation];
+                GLFunction *rho_profile = profile.variables[0];
+                GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+                rho_bar = [rho_profile interpolateAtPoints:@[z]];
+                rho_bar.name = @"rho_bar";
+            } else {
+                GLFloat rho0 = 1025;
+                GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+                rho_bar = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
+                rho_bar.name = @"rho_bar";
+            }
             
             // The ordering the dimensions is very deliberate here, for two reasons:
             // 1. The z-dimension is in the first position, so that the horizontal fft will act on contiguous chunks of memory, and
             // 2. The last two dimensions are ordered (x,y) to appease pcolor, meshgrid, and all the standard matlab formating.
-            wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
-            wave.maximumModes = 25;
-            //[wave createGarrettMunkSpectrumWithEnergy: 0.00001];
-            [wave createUnitWaveWithSpeed: 0.025 verticalMode: 1 k: 1 l: 1 omegaSign: 1];
+            wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation]; //@[zDim, xDim, yDim]
             
-            BOOL success = [NSKeyedArchiver archiveRootObject: wave toFile: restartFile];
-            
+            [NSKeyedArchiver archiveRootObject: wave toFile: restartFile];
         }
+        
+        wave.maximumModes = 20;
+        //[wave createGarrettMunkSpectrumWithEnergy: 0.0000001];
+        [wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 1 omegaSign: 1];
         
         GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
         tDim.name = @"time";

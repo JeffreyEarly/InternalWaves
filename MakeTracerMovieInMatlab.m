@@ -127,7 +127,7 @@ for iTime=1:1%length(t)
 	
 	xlim([minX maxX])
 	ylim([minY maxY])
-	zlim([min(zDomain) max(zDomain)])
+	zlim([-60 max(zDomain)])
 	
 	lighting gouraud
 	camlight(30,20)
@@ -137,8 +137,8 @@ for iTime=1:1%length(t)
 	hold off
 	
 	% write everything out	
-	output = sprintf('%s/%03d', FramesFolder,iTime-1);
-	print('-depsc2', output)
+% 	output = sprintf('%s/%03d', FramesFolder,iTime-1);
+% 	print('-depsc2', output)
 end
 
 error = xpos-xposInitial;
