@@ -19,7 +19,7 @@ int main(int argc, const char * argv[])
 	@autoreleasepool {
         // @"InternalWavesLatmix2011_16_16_128.internalwaves"
         // @"InternalWavesLatmix2011_128_128_128.internalwaves"
-        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWaves2.internalwaves"];
+        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_128_128_128.internalwaves"];
         
         NSFileManager *manager = [[NSFileManager alloc] init];
         GLInternalWaveInitialization *wave;
@@ -38,8 +38,8 @@ int main(int argc, const char * argv[])
             GLFloat width = 15e3;
             GLFloat height = 15e3;
             GLFloat depth = 300;
-            NSUInteger Nx = 8;
-            NSUInteger Ny = 8;
+            NSUInteger Nx = 128;
+            NSUInteger Ny = 128;
             NSUInteger Nz = 128;
             
             /************************************************************************************************/
