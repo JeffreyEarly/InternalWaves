@@ -70,7 +70,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     }
     
     self.rho = rho;
-    GLScalar *rho0 = [rho mean];
+    GLScalar *rho0 = [rho min];
     self.f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
     
     self.equation = rho.equation;

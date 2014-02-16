@@ -14,7 +14,7 @@ int main(int argc, const char * argv[])
 {
 
 	@autoreleasepool {
-		GLFloat latitude = 45;
+		GLFloat latitude = 33;
 		GLFloat N2_0 = 1e-2;
 		GLFloat depth = 100;
 		GLFloat width = 1000;
@@ -48,6 +48,10 @@ int main(int argc, const char * argv[])
             GLFunction *rho_profile = profile.variables[0];
             GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
             rho_bar = [rho_profile interpolateAtPoints:@[z]];
+        } else if (1) {
+            GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile_Stretched_64.nc"] forEquation:equation];
+            rho_bar = profile.variables[0];
+            zDim = rho_bar.dimensions[0];
         } else {
             GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
             rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
@@ -55,8 +59,8 @@ int main(int argc, const char * argv[])
 	    
 		GLInternalModes *internalModes = [[GLInternalModes alloc] init];
  		//[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
-        //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: .01 forLatitude: latitude];
-        [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
+        [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: .01 forLatitude: latitude];
+        //[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
         
 		[internalModes.eigendepths dumpToConsole];
         [internalModes.eigenfrequencies dumpToConsole];
