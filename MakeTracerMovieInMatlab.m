@@ -1,5 +1,5 @@
-file = '/Users/jearly/Desktop/InternalWavesGM.nc';
-FramesFolder ='/Users/jearly/Desktop/InternalWavesGM';
+file = '/Users/jearly/Desktop/InternalWavesConstStratGM.nc';
+FramesFolder ='/Users/jearly/Desktop/InternalWavesConstStratGM';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -87,7 +87,7 @@ deltaRho = (max(rho_bar)-min(rho_bar))/3;
 density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
 density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max(rho_bar)-min(rho_bar)) );
 
-for iTime=10:10%length(t)
+for iTime=1:length(t)
 %for iTime=1:1
 	
 %	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
@@ -98,7 +98,16 @@ for iTime=10:10%length(t)
 	rho3d = zeros(size(zeta3d));
 	for m=1:size(rho3d,1)
 		for n=1:size(rho3d,2)
-			rho3d(m,n,:) = interp1( squeeze(zeta3d(m,n,:))+zDomain, rho_bar, zDomain );
+			coordinate = squeeze(zeta3d(m,n,:))+zDomain;
+			negIndex = find(diff(coordinate)<=0);
+			if (length(negIndex) ~= 0)
+				for j=(min(negIndex)+1):(max(negIndex)+1)
+					if (coordinate(j)<=coordinate(j-1))
+						coordinate(j)=coordinate(j-1)+0.001;
+					end
+				end
+			end
+			rho3d(m,n,:) = interp1( coordinate, rho_bar, zDomain );
 		end
 	end
 	
@@ -146,8 +155,8 @@ for iTime=10:10%length(t)
 	hold off
 	
 	% write everything out	
-% 	output = sprintf('%s/%03d', FramesFolder,iTime-1);
-% 	print('-depsc2', output)
+	output = sprintf('%s/%03d', FramesFolder,iTime-1);
+	print('-depsc2', output)
 end
 
 error = xpos-xposInitial;

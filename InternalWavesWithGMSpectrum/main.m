@@ -19,9 +19,9 @@ int main(int argc, const char * argv[])
 	@autoreleasepool {
         // @"InternalWavesLatmix2011_16_16_128.internalwaves"
         // @"InternalWavesLatmix2011_128_128_128.internalwaves"
-//        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_128_128_128.internalwaves"];
+        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_256_256_301.internalwaves"];
         
-        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesUnitTest_128_128_128.internalwaves"];
+        //NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesUnitTest_128_128_128.internalwaves"];
         
         NSFileManager *manager = [[NSFileManager alloc] init];
         GLInternalWaveInitialization *wave;
@@ -40,9 +40,9 @@ int main(int argc, const char * argv[])
             GLFloat width = 15e3;
             GLFloat height = 15e3;
             GLFloat depth = 300;
-            NSUInteger Nx = 128;
-            NSUInteger Ny = 128;
-            NSUInteger Nz = 128;
+            NSUInteger Nx = 256;
+            NSUInteger Ny = 256;
+            NSUInteger Nz = 301;
             
             /************************************************************************************************/
             /*		Define the problem dimensions															*/
@@ -59,7 +59,7 @@ int main(int argc, const char * argv[])
             /*		Create a density profile and compute the internal wave phases                           */
             /************************************************************************************************/
             GLFunction *rho_bar;
-            if (0) {
+            if (1) {
                 GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile.nc"] forEquation:equation];
                 GLFunction *rho_profile = profile.variables[0];
                 GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
@@ -81,8 +81,8 @@ int main(int argc, const char * argv[])
         }
         
         wave.maximumModes = 64;
-        [wave createGarrettMunkSpectrumWithEnergy: 0.5];
-        //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
+        //[wave createGarrettMunkSpectrumWithEnergy: 0.5];
+        [wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
         
         GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
         tDim.name = @"time";
