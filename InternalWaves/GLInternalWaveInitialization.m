@@ -166,6 +166,11 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
         self.rossbyRadius = self.internalModes.rossbyRadius;
     }
     
+    GLFloat minTime = 2*M_PI/[self.eigenfrequencies maxNow];
+    GLFloat maxTime = 2*M_PI/self.f0;
+    NSLog(@"Maximum wave period (based on the Coriolis frequency) is %02d:%02d (HH:MM)", ((int) floor(maxTime/3600))%24, ((int) floor(maxTime/60))%60);
+    NSLog(@"Minimum wave period (based on the modes and horizontal resolution) is %02d:%02d (HH:MM)", ((int) floor(minTime/3600))%24, ((int) floor(minTime/60))%60);
+    
 	self.N2 = self.internalModes.N2;
 	self.spectralDimensions = self.eigenfrequencies.dimensions;
 	
@@ -204,6 +209,9 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 //    GLFloat k = [self.kDim valueAtIndex: kUnit];
 //    GLFloat l = [self.lDim valueAtIndex: lUnit];
 	GLFloat omega = self.eigenfrequencies.pointerValue[(mode*kDimNPoints+kUnit)*lDimNPoints+lUnit];
+    
+    GLFloat ratio = (omega*omega-self.f0*self.f0)/(omega*omega+self.f0*self.f0);
+    NSLog(@"PE/KE ratio: %f", ratio);
 //
 //    GLFloat G = U_max*(k*k+l*l)/(k*omega);
 
@@ -258,15 +266,23 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 {
 	[self computeInternalModes];
 	
+    GLFloat L_GM = 1.3E3;       // [m]
+    GLFloat invT_GM = 5.2E-3;   // [1/s]
+    GLFloat E_GM = 6.3E-5;      // [unitless]
+    
 	// We follow Winters and D'Asaro (1997) for the creation of the Garrett-Munk spectrum
 	GLFloat j_star = 3;
-	GLFloat E = (2.2e-6)*energyLevel; // [ m^{2}/s ]
+	GLFloat E = (L_GM*invT_GM*invT_GM*E_GM)*energyLevel; // [ m/s^{2} ]
 	
 	// The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
 	GLFunction *j = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation] plus: @(1)];
 	// H(j) = 2*j_star/(pi*(j^2 + j_star^2)) [unitless]
-	GLFunction *H = [[[j plus: @(j_star)] pow: -5/2] scalarDivide: 2*pow(j_star,3/2)/M_PI];
-	
+	GLFunction *H = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 2*pow(j_star,3/2)/M_PI];
+
+	// This sums to about 1/2, so not quite right.
+//    GLFunction *Hsum = [H sum: 0];
+//    [Hsum dumpToConsole];
+    
 	GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: self.kDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
 	GLFunction *l = [[GLFunction functionOfRealTypeFromDimension: self.lDim withDimensions: self.spectralDimensions forEquation:self.equation] scalarMultiply: 2*M_PI];
     GLFunction *K2 = [[k multiply: k] plus: [l multiply: l]];
@@ -274,14 +290,33 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	// B(alpha,j) = (2/pi) * 1/R_j * 1/(k^2 + R_j^-2) [m]
 	GLFunction *invR_j = [self.rossbyRadius scalarDivide: 1.0];
 	GLFunction *B = [[invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]] multiply: @(2./M_PI)];
-	
-	// G^2(alpha, j) = E*H(j)*B(alpha,j)	[J/m]
+    
+    // Alternative scalings.
+    //GLFunction *B = [invR_j dividedBy: [K2 plus: [invR_j multiply: invR_j]]];
+    //GLFunction *B_norm = [[[[invR_j times: @(M_PI*L_GM)] tanh] scalarDivide: M_PI/2] plus: [self.rossbyRadius times:@(-0.5/L_GM)]];
+    //GLFunction *B_norm = [[[invR_j times: @(M_PI*L_GM)] tanh] scalarDivide: M_PI/2];
+    //B = [B dividedBy: B_norm];
+    
+    // Distributed over (k,l), now [m^2]
+    B = [B dividedBy: [[K2 sqrt] times: @(2*M_PI)]];
+    // We just divided by zero, so we need to get rid of that component.
+	B = [B setValue: 0.0 atIndices: @":,0,0"];
+    
+    // This sums a bit off, should come back and fix this.
+//    GLFunction *Bsum = [[[B times: @(1/(L_GM*L_GM))] sum: 2] sum: 1];
+//    [Bsum dumpToConsole];
+    
+    
+	// G^2(alpha, j) = E*H(j)*B(alpha,j)	[ m^{3}/s^{2} ]
 	GLFunction *G2 = [[H multiply: B] multiply: @(E)];
+    
+    // This should only contain half the energy (the other half comes from hermitian symmetry).
+//    GLFunction *G2sum = [[[[G2 times: @(1/(L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM))] sum: 2] sum: 1] sum: 0];
+//    [G2sum dumpToConsole];
 	
 	// G(j,l,k) = G(alpha,j)/sqrt(2*pi*alpha) where alpha = sqrt(k^2 + l^2); [sqrt(kg) m/s]
 	// We cut the value in half, because we will want the expectation of the the positive and negative sides to add up to this value.
-	GLFunction *G = [[[G2 dividedBy: [[K2 sqrt] times: @(2*M_PI)]] sqrt] times: @(0.5)];
-	G = [G setValue: 0 atIndices: @":,0,0"]; // We just divided by zero, so we need to get rid of that component.
+	GLFunction *G = [[G2 sqrt] times: @(0.5)];
 	
 	// <G_+> = 1/2 <G> = <G_->
 	GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];

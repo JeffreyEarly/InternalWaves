@@ -1,4 +1,4 @@
-file = '/Users/jearly/Desktop/InternalWaves.nc';
+file = '/Users/jearly/Desktop/InternalWavesGM.nc';
 FramesFolder ='/Users/jearly/Desktop/InternalWavesGM';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -27,10 +27,10 @@ t = ncread(file, 'time');
 rho_bar = double(ncread(file, 'rho_bar'));
 
 % read in the dynamical variables
-u = double(ncread(file, 'u'));
-v = double(ncread(file, 'v'));
-w = double(ncread(file, 'w'));
-rho = double(ncread(file, 'rho'));
+% u = double(ncread(file, 'u'));
+% v = double(ncread(file, 'v'));
+% w = double(ncread(file, 'w'));
+% rho = double(ncread(file, 'rho'));
 
 deltaX = xDomain(2)-xDomain(1);
 minX = min(xDomain);
@@ -87,12 +87,20 @@ deltaRho = (max(rho_bar)-min(rho_bar))/3;
 density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
 density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max(rho_bar)-min(rho_bar)) );
 
-for iTime=1:1%length(t)
+for iTime=10:10%length(t)
 %for iTime=1:1
 	
-	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
+%	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
 % 	rho3d(end+1,:,:) = rho3d(1,:,:);
 % 	rho3d(:,end+1,:) = rho3d(:,1,:);
+
+	zeta3d = double(ncread(file, 'zeta', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
+	rho3d = zeros(size(zeta3d));
+	for m=1:size(rho3d,1)
+		for n=1:size(rho3d,2)
+			rho3d(m,n,:) = interp1( squeeze(zeta3d(m,n,:))+zDomain, rho_bar, zDomain );
+		end
+	end
 	
 	hsurfaces = slice(X,Y,Z,rho3d,[min(xDomain)],[max(yDomain)],[minZ]);
 	set(hsurfaces,'FaceColor','interp','EdgeColor','none')
@@ -127,7 +135,8 @@ for iTime=1:1%length(t)
 	
 	xlim([minX maxX])
 	ylim([minY maxY])
-	zlim([-60 max(zDomain)])
+	%zlim([-60 max(zDomain)])
+	zlim([min(zDomain) max(zDomain)])
 	
 	lighting gouraud
 	camlight(30,20)

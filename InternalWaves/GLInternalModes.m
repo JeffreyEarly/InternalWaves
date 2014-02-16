@@ -7,6 +7,7 @@
 //
 
 #import "GLInternalModes.h"
+#import <GLNumericalModelingKit/GLLinearTransformationOperations.h>
 
 #define g 9.81
 
@@ -96,7 +97,13 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
         diffZ = [self.diffZ expandedWithFromDimensions: S.toDimensions toDimensions:S.toDimensions];
     }
     
-    self.Sprime = [diffZ multiply: S]; self.Sprime.name = @"Sprime_transform";
+    self.Sprime = [diffZ multiply: self.S];
+    GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: self.eigendepths];
+    GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: self.Sprime secondOperand: scaling];
+    self.Sprime = op.result[0]; self.Sprime.name = @"Sprime_transform";
+    
+    
+    
     self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
 }
 
