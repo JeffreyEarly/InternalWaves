@@ -59,8 +59,8 @@ int main(int argc, const char * argv[])
 	    
 		GLInternalModes *internalModes = [[GLInternalModes alloc] init];
  		//[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
-        [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: .01 forLatitude: latitude];
-        //[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
+        //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: .01 forLatitude: latitude];
+        [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
         
 		[internalModes.eigendepths dumpToConsole];
         [internalModes.eigenfrequencies dumpToConsole];
