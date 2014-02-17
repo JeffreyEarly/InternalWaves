@@ -24,6 +24,12 @@
 /// Optional maximum number of modes to be included in the transformation matrices. Setting this to 0 will use all modes.
 @property NSUInteger maximumModes;
 
+// Optionally restrict the depth of the modes (after they've been compute for their full depth)
+@property GLFloat minDepth;
+
+// Optionally restrict the depth of the modes (after they've been compute for their full depth)
+@property GLFloat maxDepth;
+
 /** Initializes all variables with the Garrett-Munk spectrum.
  @param energyLevel A multiplicative factor, use 1.0 for default settings.
  */

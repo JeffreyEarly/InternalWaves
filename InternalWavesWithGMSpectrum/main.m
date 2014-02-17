@@ -19,7 +19,8 @@ int main(int argc, const char * argv[])
 	@autoreleasepool {
         // @"InternalWavesLatmix2011_16_16_128.internalwaves"
         // @"InternalWavesLatmix2011_128_128_128.internalwaves"
-        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_256_256_301.internalwaves"];
+        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_128_128_64_stretched.internalwaves"];
+        NSString *outputFile = @"InternalWavesLatmix.nc";
         
         //NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesUnitTest_128_128_128.internalwaves"];
         
@@ -40,9 +41,9 @@ int main(int argc, const char * argv[])
             GLFloat width = 15e3;
             GLFloat height = 15e3;
             GLFloat depth = 300;
-            NSUInteger Nx = 256;
-            NSUInteger Ny = 256;
-            NSUInteger Nz = 301;
+            NSUInteger Nx = 128;
+            NSUInteger Ny = 128;
+            NSUInteger Nz = 64;
             
             /************************************************************************************************/
             /*		Define the problem dimensions															*/
@@ -59,12 +60,17 @@ int main(int argc, const char * argv[])
             /*		Create a density profile and compute the internal wave phases                           */
             /************************************************************************************************/
             GLFunction *rho_bar;
-            if (1) {
+            if (0) {
                 GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile.nc"] forEquation:equation];
                 GLFunction *rho_profile = profile.variables[0];
                 GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
                 rho_bar = [rho_profile interpolateAtPoints:@[z]];
                 rho_bar.name = @"rho_bar";
+            }  else if (1) {
+                GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile_Stretched_64.nc"] forEquation:equation];
+                rho_bar = profile.variables[0];
+                rho_bar.name = @"rho_bar";
+                zDim = rho_bar.dimensions[0];
             } else {
                 GLFloat rho0 = 1025;
                 GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
@@ -80,9 +86,11 @@ int main(int argc, const char * argv[])
             [NSKeyedArchiver archiveRootObject: wave toFile: restartFile];
         }
         
-        wave.maximumModes = 64;
-        //[wave createGarrettMunkSpectrumWithEnergy: 0.5];
-        [wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
+        wave.maximumModes = 2;
+        //wave.maxDepth = -300;
+        [wave createGarrettMunkSpectrumWithEnergy: 0.01];
+        //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
+        zDim = wave.rho.dimensions[0];
         
         GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
         tDim.name = @"time";
@@ -90,7 +98,7 @@ int main(int argc, const char * argv[])
 		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
 		GLFloat horizontalFloatSpacingInMeters = 1000;
-		GLFloat verticalFloatSpacingInMeters = 75;
+		GLFloat verticalFloatSpacingInMeters = 17;
         
 		/************************************************************************************************/
 		/*		Create the dynamical variables from the analytical solution								*/
@@ -133,7 +141,7 @@ int main(int argc, const char * argv[])
 		xFloatDim.name = @"x-float";
 		GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:ceil(yDim.domainLength/horizontalFloatSpacingInMeters) domainMin: -yDim.domainLength/2  length:yDim.domainLength];
 		yFloatDim.name = @"y-float";
-		GLDimension *zFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints:ceil(zDim.domainLength/verticalFloatSpacingInMeters) domainMin: -zDim.domainLength  length:zDim.domainLength];
+		GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-38), @(-31.5), @(-25)]];
 		zFloatDim.name = @"z-float";
         
 		// For consistency, we order the float dimensions the same as the dynamical variable dimensions.
@@ -169,12 +177,18 @@ int main(int argc, const char * argv[])
 		/*		Create a NetCDF file and mutable variables in order to record some of the time steps.	*/
 		/************************************************************************************************/
 		
-		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesGM.nc"];
+		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:outputFile];
 		GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: [NSURL URLWithString: path] forEquation: wave.equation overwriteExisting: YES];
 		
         [netcdfFile setGlobalAttribute: @(wave.f0) forKey: @"f0"];
 		
 		[netcdfFile addVariable: wave.rho];
+        
+//        [(GLDimension *)wave.internalModes.rho.dimensions[0] setName: @"z_full"];
+//        [(GLFunction *)wave.internalModes.rho setName: @"rho_bar_full"];
+//        [(GLFunction *)wave.internalModes.N2 setName: @"N2_full"];
+//        [netcdfFile addVariable: wave.internalModes.rho];
+//        [netcdfFile addVariable: wave.internalModes.N2];
         
 		GLMutableVariable *uHistory = [u variableByAddingDimension: tDim];
 		uHistory.name = @"u";
@@ -219,14 +233,13 @@ int main(int argc, const char * argv[])
             //while( integrator.currentTime < maxTime + integrator.stepSize/2)
         {
             @autoreleasepool {
+                NSLog(@"Logging day %d @ %02d:%02d (HH:MM)", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60);
                 //NSArray *yout = [integrator stepForward];
-				NSArray *yout = [integrator stepForwardToTime: time];
-                
-				//GLFloat time = integrator.currentTime;
-                NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
-				NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(integrator.currentTime/86400), ((int) floor(integrator.currentTime/3600))%24, ((int) floor(integrator.currentTime/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
-				//NSLog(@"Logging day %d @ %02d:%02d (HH:MM)", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60);
-                
+//				NSArray *yout = [integrator stepForwardToTime: time];
+//                
+//				//GLFloat time = integrator.currentTime;
+//                NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
+//				NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(integrator.currentTime/86400), ((int) floor(integrator.currentTime/3600))%24, ((int) floor(integrator.currentTime/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
                 
                 NSArray *uv = timeToUV([GLScalar scalarWithValue: time forEquation: wave.equation]);
 				
@@ -237,9 +250,9 @@ int main(int argc, const char * argv[])
 				[rhoHistory concatenateWithLowerDimensionalVariable: uv[3] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
                 [zetaHistory concatenateWithLowerDimensionalVariable: uv[4] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
 				
-                [xPositionHistory concatenateWithLowerDimensionalVariable: yout[0] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-                [yPositionHistory concatenateWithLowerDimensionalVariable: yout[1] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-				[zPositionHistory concatenateWithLowerDimensionalVariable: yout[2] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+//                [xPositionHistory concatenateWithLowerDimensionalVariable: yout[0] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+//                [yPositionHistory concatenateWithLowerDimensionalVariable: yout[1] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+//				[zPositionHistory concatenateWithLowerDimensionalVariable: yout[2] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
                 
                 [netcdfFile waitUntilAllOperationsAreFinished];
             }

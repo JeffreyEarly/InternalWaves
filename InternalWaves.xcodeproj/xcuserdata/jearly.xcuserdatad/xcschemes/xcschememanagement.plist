@@ -19,10 +19,20 @@
 			<key>orderHint</key>
 			<integer>9</integer>
 		</dict>
+		<key>RandomWalk.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>10</integer>
+		</dict>
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
 		<key>811A019D18A5962000BD8682</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>81271F3418B1E02D001057FE</key>
 		<dict>
 			<key>primary</key>
 			<true/>

@@ -4,7 +4,7 @@ E_GM = 6.3E-5;      % [unitless]
 
 E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
 
-file = '/Users/jearly/Desktop/InternalWavesGM.nc';
+file = '/Users/jearly/Desktop/InternalWavesLatmix.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -34,8 +34,8 @@ GM_relative = (E_p+E_k)/E_GM_total
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-u3d = double(squeeze(ncread(file, 'u', [1 1 64 1], [length(y) length(x) 1 length(t)], [1 1 1 1])));
-v3d = double(squeeze(ncread(file, 'v', [1 1 64 1], [length(y) length(x) 1 length(t)], [1 1 1 1])));
+u3d = double(squeeze(ncread(file, 'u', [1 1 20 1], [length(y) length(x) 1 length(t)], [1 1 1 1])));
+v3d = double(squeeze(ncread(file, 'v', [1 1 20 1], [length(y) length(x) 1 length(t)], [1 1 1 1])));
 
 f0 = ncreadatt(file, '/', 'f0');
 dt = t(2)-t(1)

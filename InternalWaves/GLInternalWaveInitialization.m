@@ -141,13 +141,42 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 
 - (void) computeInternalModes
 {
-    if (self.maximumModes) {
+    if (self.maximumModes || self.maxDepth || self.minDepth) {
+        // Identify the z dimension
         NSArray *dimensions = self.internalModes.S.toDimensions;
+        GLDimension *zDim;
+        for (GLDimension *dim in dimensions) {
+            if ([dim.name isEqualToString: @"z"]) zDim = dim;
+        }
+        if (!zDim) {
+            [NSException raise:@"BadAssumptions" format:@"Cannot locate a variable name 'z'. This is a requirement."];
+        }
+        
+        NSUInteger maxDepthIndex = 0;
+        NSUInteger minDepthIndex = zDim.nPoints-1;;
+        
+        if (self.maxDepth) {
+            for (NSUInteger iPoint = 0; iPoint<zDim.nPoints; iPoint++) {
+                if ( [zDim valueAtIndex: iPoint] < self.maxDepth) maxDepthIndex=iPoint;
+            }
+        }
+        
+        if (self.minDepth) {
+            for (NSInteger iPoint = zDim.nPoints-1; iPoint>=0; iPoint--) {
+                if ( [zDim valueAtIndex: iPoint] > self.minDepth) minDepthIndex=iPoint;
+            }
+        }
+        
         NSMutableString *fromIndexString = [NSMutableString stringWithFormat: @""];
         NSMutableString *toIndexString = [NSMutableString stringWithFormat: @""];
         for (GLDimension *dim in dimensions) {
-            [dim.name isEqualToString: @"z"] ? [fromIndexString appendFormat: @"0:%lu", self.maximumModes-1] : [fromIndexString appendFormat: @":"];
-            [toIndexString appendFormat: @":"];
+            if (dim==zDim) {
+                [fromIndexString appendFormat: @"0:%lu", self.maximumModes-1];
+                [toIndexString appendFormat: @"%lu:%lu", maxDepthIndex, minDepthIndex];
+            } else {
+                [fromIndexString appendFormat: @":"];
+                [toIndexString appendFormat: @":"];
+            }
             if ([dimensions indexOfObject: dim] < dimensions.count-1) {
                 [fromIndexString appendFormat: @","];
                 [toIndexString appendFormat: @","];
@@ -158,20 +187,24 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
         self.eigenfrequencies = [self.internalModes.eigenfrequencies variableFromIndexRangeString:fromIndexString];
         self.eigendepths = [self.internalModes.eigendepths variableFromIndexRangeString:fromIndexString];
         self.rossbyRadius = [self.internalModes.rossbyRadius variableFromIndexRangeString:fromIndexString];
+        self.rho = [self.internalModes.rho variableFromIndexRangeString:[NSString stringWithFormat: @"%lu:%lu", maxDepthIndex, minDepthIndex]];
+        self.N2 = [self.internalModes.N2 variableFromIndexRangeString:[NSString stringWithFormat: @"%lu:%lu", maxDepthIndex, minDepthIndex]];
     } else {
         self.S = self.internalModes.S;
         self.Sprime = self.internalModes.Sprime;
         self.eigenfrequencies = self.internalModes.eigenfrequencies;
         self.eigendepths = self.internalModes.eigendepths;
         self.rossbyRadius = self.internalModes.rossbyRadius;
+        self.rho = self.internalModes.rho;
+        self.N2 = self.internalModes.N2;
     }
+    self.rho.name = @"rho_bar";
     
     GLFloat minTime = 2*M_PI/[self.eigenfrequencies maxNow];
     GLFloat maxTime = 2*M_PI/self.f0;
     NSLog(@"Maximum wave period (based on the Coriolis frequency) is %02d:%02d (HH:MM)", ((int) floor(maxTime/3600))%24, ((int) floor(maxTime/60))%60);
     NSLog(@"Minimum wave period (based on the modes and horizontal resolution) is %02d:%02d (HH:MM)", ((int) floor(minTime/3600))%24, ((int) floor(minTime/60))%60);
     
-	self.N2 = self.internalModes.N2;
 	self.spectralDimensions = self.eigenfrequencies.dimensions;
 	
 	for (GLDimension *dim in self.spectralDimensions) {
@@ -335,7 +368,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	K_H = [K_H setValue: 1 atIndices: @":,0,0"]; // prevent divide by zero.
     GLFunction *sqrtH = [self.eigendepths sqrt];
     
-	GLScalar *rho0 = [self.rho mean];
+	GLScalar *rho0 = [self.rho min];
     
 	self.zeta_plus = [G_plus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];
     self.zeta_minus = [G_minus multiply: [[K_H multiply: sqrtH] dividedBy: self.eigenfrequencies]];

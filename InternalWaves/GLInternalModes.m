@@ -129,7 +129,8 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 - (NSArray *) internalWaveModesFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k forLatitude: (GLFloat) latitude
 {
     [self createStratificationProfileFromDensity: rho atLatitude: latitude];
-    	
+    
+    // -g/(N2-f*f)
     GLFunction *invN2 = [[self.N2 minus: @(self.f0*self.f0)] scalarDivide: -g];
 	
     GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:self.zDim forEquation:self.equation];
