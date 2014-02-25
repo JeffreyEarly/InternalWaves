@@ -41,8 +41,8 @@ int main(int argc, const char * argv[])
             GLFloat width = 15e3;
             GLFloat height = 15e3;
             GLFloat depth = 300;
-            NSUInteger Nx = 128;
-            NSUInteger Ny = 128;
+            NSUInteger Nx = 256;
+            NSUInteger Ny = 256;
             NSUInteger Nz = 64;
             
             /************************************************************************************************/
@@ -87,7 +87,7 @@ int main(int argc, const char * argv[])
         }
         
         wave.maximumModes = 60;
-        wave.maxDepth = -80;
+        wave.maxDepth = -100;
         [wave createGarrettMunkSpectrumWithEnergy: 0.125];
         //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
         zDim = wave.rho.dimensions[0];
@@ -95,9 +95,9 @@ int main(int argc, const char * argv[])
         GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
         tDim.name = @"time";
 
-		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
-		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
-		GLFloat horizontalFloatSpacingInMeters = xDim.sampleInterval*2;
+		GLFloat maxWavePeriods = 10; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
+		GLFloat sampleTimeInMinutes = 15; // This will be overriden for the unit test.
+		GLFloat horizontalFloatSpacingInMeters = 500;
         
 		/************************************************************************************************/
 		/*		Create the dynamical variables from the analytical solution								*/
@@ -136,9 +136,9 @@ int main(int argc, const char * argv[])
 		/*		Let's also plop a float at a bunch of grid points.                                      */
 		/************************************************************************************************/
         
-        GLDimension *xFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: ceil(xDim.domainLength/horizontalFloatSpacingInMeters) domainMin: -xDim.domainLength/4 length:xDim.domainLength/2];
+        GLDimension *xFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: ceil(4000/horizontalFloatSpacingInMeters) domainMin: -2000 length:4000];
 		xFloatDim.name = @"x-float";
-		GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:ceil(yDim.domainLength/horizontalFloatSpacingInMeters) domainMin: -yDim.domainLength/4  length:yDim.domainLength/2];
+		GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: ceil(4000/horizontalFloatSpacingInMeters) domainMin: -2000 length:4000];
 		yFloatDim.name = @"y-float";
 		//GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-38), @(-31.5), @(-25)]];
         GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-32) ]];
@@ -150,28 +150,75 @@ int main(int argc, const char * argv[])
 		GLFunction *yFloat = [GLFunction functionOfRealTypeFromDimension: yFloatDim withDimensions: floatDimensions forEquation: wave.equation];
 		GLFunction *zFloat = [GLFunction functionOfRealTypeFromDimension: zFloatDim withDimensions: floatDimensions forEquation: wave.equation];
         
-		GLFunction *xPosition = [GLFunction functionFromFunction: xFloat];
-		GLFunction *yPosition = [GLFunction functionFromFunction: yFloat];
-		GLFunction *zPosition = [GLFunction functionFromFunction: zFloat];
-        GLFunction *isopycnalDeviation = [zeta interpolateAtPoints:@[zPosition, xPosition, yPosition]];
-        zPosition = [zPosition plus: isopycnalDeviation];
+		GLFunction *xIsopycnal = [GLFunction functionFromFunction: xFloat];
+		GLFunction *yIsopycnal = [GLFunction functionFromFunction: yFloat];
+		GLFunction *zIsopycnal = [GLFunction functionFromFunction: zFloat];
+        GLFunction *isopycnalDeviation = [zeta interpolateAtPoints:@[zIsopycnal, xIsopycnal, yIsopycnal]];
+        zIsopycnal = [zIsopycnal plus: isopycnalDeviation];
+        
+        GLFunction *xIsopycnalDiffusive = [GLFunction functionFromFunction: xIsopycnal];
+		GLFunction *yIsopycnalDiffusive = [GLFunction functionFromFunction: yIsopycnal];
+		GLFunction *zIsopycnalDiffusive = [GLFunction functionFromFunction: zIsopycnal];
+        
+        GLFunction *xFixedDepth = [GLFunction functionFromFunction: xFloat];
+		GLFunction *yFixedDepth = [GLFunction functionFromFunction: yFloat];
+		GLFunction *zFixedDepth = [GLFunction functionFromFunction: zFloat];
+        
+        GLFunction *xDrifter = [GLFunction functionFromFunction: xFloat];
+		GLFunction *yDrifter = [GLFunction functionFromFunction: yFloat];
+		GLFunction *zDrifter = [GLFunction functionFromFunction: zFloat];
+        
 		
 		CGFloat cfl = 0.25;
         GLFloat cflTimeStep = cfl * xDim.sampleInterval / maxSpeed;
 		GLFloat outputTimeStep = sampleTimeInMinutes*60;
-		
 		GLFloat timeStep = cflTimeStep > outputTimeStep ? outputTimeStep : outputTimeStep / ceil(outputTimeStep/cflTimeStep);
 		
-        GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta4AdvanceY: @[xPosition, yPosition, zPosition] stepSize: timeStep fFromTY:^(GLScalar *time, NSArray *yNew) {
+        GLFloat drogueMin = -33;
+        GLFloat drogueMax = -27;
+        NSUInteger drogueMinIndex = NSNotFound;
+        NSUInteger drogueMaxIndex = NSNotFound;
+        for (NSUInteger iPoint=0; iPoint < zDim.nPoints; iPoint++) {
+            if ([zDim valueAtIndex: iPoint] < drogueMin ) drogueMinIndex=iPoint;
+            if ([zDim valueAtIndex: iPoint] < drogueMax ) drogueMaxIndex=iPoint;
+        }
+        NSRange drogueRange = NSMakeRange(drogueMaxIndex, drogueMaxIndex-drogueMinIndex+1);
+        
+        GLFloat kappa = 5e-6; // m^2/s
+        GLFloat norm = sqrt(timeStep*2*kappa);
+        norm = sqrt(4)*norm/timeStep; // the integrator multiplies by deltaT, so we account for that here.
+        // RK4: dt/3 f(0) + dt/6 f(1) + dt/6 *f(4) + dt/3*f(3)
+        // Mean of 1/3 and 1/6? 1/4. It's  the geometric mean to get the same norm, hence, sqrt 4.
+        
+        NSArray *y=@[xIsopycnal, yIsopycnal, zIsopycnal, xIsopycnalDiffusive, yIsopycnalDiffusive, zIsopycnalDiffusive, xFixedDepth, yFixedDepth, xDrifter, yDrifter];
+        GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta4AdvanceY: y stepSize: timeStep fFromTY:^(GLScalar *time, NSArray *yNew) {
 			NSArray *uv = timeToUV(time);
-			GLFunction *u2 = uv[0];
-			GLFunction *v2 = uv[1];
-			GLFunction *w2 = uv[2];
-			GLSimpleInterpolationOperation *interp = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[u2, v2, w2] secondOperand: @[yNew[2], yNew[0], yNew[1]]];
-			return interp.result;
+            GLFunction *xStep = [GLFunction functionWithNormallyDistributedValueWithDimensions: floatDimensions forEquation: wave.equation];
+            GLFunction *yStep = [GLFunction functionWithNormallyDistributedValueWithDimensions: floatDimensions forEquation: wave.equation];
+            GLFunction *zStep = [GLFunction functionWithNormallyDistributedValueWithDimensions: floatDimensions forEquation: wave.equation];
+            xStep = [xStep times: @(norm)];
+            yStep = [yStep times: @(norm)];
+            zStep = [zStep times: @(norm)];
+            
+			GLSimpleInterpolationOperation *interpIso = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[uv[0], uv[1], uv[2]] secondOperand: @[yNew[2], yNew[0], yNew[1]]];
+            NSMutableArray *f = [interpIso.result mutableCopy];
+            
+            GLSimpleInterpolationOperation *interpIsoDiff = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[uv[0], uv[1], uv[2]] secondOperand: @[yNew[5], yNew[3], yNew[4]]];
+            NSArray *f2 = @[[interpIsoDiff.result[0] plus: xStep], [interpIsoDiff.result[1] plus: yStep], [interpIsoDiff.result[2] plus: zStep]];
+            [f addObjectsFromArray: f2];
+            
+            GLSimpleInterpolationOperation *interpFixedDepth = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[uv[0], uv[1]] secondOperand: @[zFixedDepth, yNew[6], yNew[7]]];
+            NSArray *f3 = @[[interpFixedDepth.result[0] plus: xStep], [interpFixedDepth.result[1] plus: yStep]];
+            [f addObjectsFromArray: f3];
+            
+            GLFunction *uMean = [uv[0] mean: 0 range: drogueRange];
+            GLFunction *vMean = [uv[1] mean: 0 range: drogueRange];
+            GLSimpleInterpolationOperation *interpDrifter = [[GLSimpleInterpolationOperation alloc] initWithFirstOperand: @[uMean, vMean] secondOperand: @[yNew[8], yNew[9]]];
+            NSArray *f4 = @[[interpDrifter.result[0] plus: xStep], [interpDrifter.result[1] plus: yStep]];
+            [f addObjectsFromArray: f4];
+            
+			return f;
 		}];
-		//integrator.absoluteTolerance = @[ @(1e0), @(1e0)];
-		//integrator.relativeTolerance = @[ @(1e-6), @(1e-6), @(1e-6)];
         
         /************************************************************************************************/
 		/*		Create a NetCDF file and mutable variables in order to record some of the time steps.	*/
@@ -205,17 +252,53 @@ int main(int argc, const char * argv[])
 		zetaHistory.name = @"zeta";
 		zetaHistory = [netcdfFile addVariable: zetaHistory];
 		
-		GLMutableVariable *xPositionHistory = [xPosition variableByAddingDimension: tDim];
+		GLMutableVariable *xPositionHistory = [xIsopycnal variableByAddingDimension: tDim];
 		xPositionHistory.name = @"x-position";
 		xPositionHistory = [netcdfFile addVariable: xPositionHistory];
         
-		GLMutableVariable *yPositionHistory = [yPosition variableByAddingDimension: tDim];
+		GLMutableVariable *yPositionHistory = [yIsopycnal variableByAddingDimension: tDim];
 		yPositionHistory.name = @"y-position";
 		yPositionHistory = [netcdfFile addVariable: yPositionHistory];
 		
-		GLMutableVariable *zPositionHistory = [zPosition variableByAddingDimension: tDim];
+		GLMutableVariable *zPositionHistory = [zIsopycnal variableByAddingDimension: tDim];
 		zPositionHistory.name = @"z-position";
 		zPositionHistory = [netcdfFile addVariable: zPositionHistory];
+        
+        GLMutableVariable *xIsopycnalDiffusiveHistory = [xIsopycnalDiffusive variableByAddingDimension: tDim];
+		xIsopycnalDiffusiveHistory.name = @"x-position-diffusive";
+		xIsopycnalDiffusiveHistory = [netcdfFile addVariable: xIsopycnalDiffusiveHistory];
+        
+		GLMutableVariable *yIsopycnalDiffusiveHistory = [yIsopycnalDiffusive variableByAddingDimension: tDim];
+		yIsopycnalDiffusiveHistory.name = @"y-position-diffusive";
+		yIsopycnalDiffusiveHistory = [netcdfFile addVariable: yIsopycnalDiffusiveHistory];
+		
+		GLMutableVariable *zIsopycnalDiffusiveHistory = [zIsopycnalDiffusive variableByAddingDimension: tDim];
+		zIsopycnalDiffusiveHistory.name = @"z-position-diffusive";
+		zIsopycnalDiffusiveHistory = [netcdfFile addVariable: zIsopycnalDiffusiveHistory];
+        
+        GLMutableVariable *xFixedDepthHistory = [xFixedDepth variableByAddingDimension: tDim];
+		xFixedDepthHistory.name = @"x-position-fixed-depth";
+		xFixedDepthHistory = [netcdfFile addVariable: xFixedDepthHistory];
+        
+		GLMutableVariable *yFixedDepthHistory = [yFixedDepth variableByAddingDimension: tDim];
+		yFixedDepthHistory.name = @"y-position-fixed-depth";
+		yFixedDepthHistory = [netcdfFile addVariable: yFixedDepthHistory];
+		
+		GLMutableVariable *zFixedDepthHistory = [zFixedDepth variableByAddingDimension: tDim];
+		zFixedDepthHistory.name = @"z-position-fixed-depth";
+		zFixedDepthHistory = [netcdfFile addVariable: zFixedDepthHistory];
+        
+        GLMutableVariable *xDrifterHistory = [xDrifter variableByAddingDimension: tDim];
+		xDrifterHistory.name = @"x-position-drifter";
+		xDrifterHistory = [netcdfFile addVariable: xDrifterHistory];
+        
+		GLMutableVariable *yDrifterHistory = [yDrifter variableByAddingDimension: tDim];
+		yDrifterHistory.name = @"y-position-drifter";
+		yDrifterHistory = [netcdfFile addVariable: yDrifterHistory];
+		
+		GLMutableVariable *zDrifterHistory = [zDrifter variableByAddingDimension: tDim];
+		zDrifterHistory.name = @"z-position-drifter";
+		zDrifterHistory = [netcdfFile addVariable: zDrifterHistory];
 		
 		/************************************************************************************************/
 		/*		Time step the analytical solution and the integrator forward, then write out the data.	*/
@@ -247,6 +330,18 @@ int main(int argc, const char * argv[])
                 [xPositionHistory concatenateWithLowerDimensionalVariable: yout[0] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
                 [yPositionHistory concatenateWithLowerDimensionalVariable: yout[1] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
 				[zPositionHistory concatenateWithLowerDimensionalVariable: yout[2] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                
+                [xIsopycnalDiffusiveHistory concatenateWithLowerDimensionalVariable: yout[3] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                [yIsopycnalDiffusiveHistory concatenateWithLowerDimensionalVariable: yout[4] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+				[zIsopycnalDiffusiveHistory concatenateWithLowerDimensionalVariable: yout[5] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                
+                [xFixedDepthHistory concatenateWithLowerDimensionalVariable: yout[6] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                [yFixedDepthHistory concatenateWithLowerDimensionalVariable: yout[7] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+				[zFixedDepthHistory concatenateWithLowerDimensionalVariable: zFixedDepth alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+            
+                [xDrifterHistory concatenateWithLowerDimensionalVariable: yout[8] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                [yDrifterHistory concatenateWithLowerDimensionalVariable: yout[9] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+				[zDrifterHistory concatenateWithLowerDimensionalVariable: zDrifter alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
                 
                 [netcdfFile waitUntilAllOperationsAreFinished];
             }

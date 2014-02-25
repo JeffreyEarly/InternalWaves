@@ -13,7 +13,7 @@ t = ncread(file, 'time');
 rho_bar = double(ncread(file, 'rho_bar'));
 N2 = double(ncread(file, 'N2'));
 
-iTime=20;
+iTime=1;
 zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 % rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
@@ -44,15 +44,13 @@ GM_relative = (E_p+E_k)/E_GM_total
 % Let's see how much the pycnocline varies with depth
 [val,pycnocline_index]=max(N2);
 zeta_pycnocline = reshape(zeta3d(:,:,pycnocline_index), length(x)*length(y),1);
-var(zeta_pycnocline)
+std(zeta_pycnocline)
 
 rhodamine_index = find(z<-32,1,'last');
 zeta_rhodamine = reshape(zeta3d(:,:,rhodamine_index), length(x)*length(y),1);
-var(zeta_rhodamine)
+std(zeta_rhodamine)
 
 figure, hist(zeta_rhodamine)
-
-return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -70,7 +68,7 @@ dt = t(2)-t(1)
 
 % Compute a few 'mooring' time series
 cv_mooring = zeros([length(t) 1]);
-subsample = 8;
+subsample = 16;
 iMooring = 0;
 for i=1:subsample:M
 	for j=1:subsample:N
