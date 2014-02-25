@@ -86,9 +86,9 @@ int main(int argc, const char * argv[])
             [NSKeyedArchiver archiveRootObject: wave toFile: restartFile];
         }
         
-        wave.maximumModes = 2;
-        //wave.maxDepth = -300;
-        [wave createGarrettMunkSpectrumWithEnergy: 0.01];
+        wave.maximumModes = 60;
+        wave.maxDepth = -80;
+        [wave createGarrettMunkSpectrumWithEnergy: 0.125];
         //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
         zDim = wave.rho.dimensions[0];
         
@@ -97,8 +97,7 @@ int main(int argc, const char * argv[])
 
 		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
-		GLFloat horizontalFloatSpacingInMeters = 1000;
-		GLFloat verticalFloatSpacingInMeters = 17;
+		GLFloat horizontalFloatSpacingInMeters = xDim.sampleInterval*2;
         
 		/************************************************************************************************/
 		/*		Create the dynamical variables from the analytical solution								*/
@@ -137,11 +136,12 @@ int main(int argc, const char * argv[])
 		/*		Let's also plop a float at a bunch of grid points.                                      */
 		/************************************************************************************************/
         
-        GLDimension *xFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: ceil(xDim.domainLength/horizontalFloatSpacingInMeters) domainMin: -xDim.domainLength/2 length:xDim.domainLength];
+        GLDimension *xFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: ceil(xDim.domainLength/horizontalFloatSpacingInMeters) domainMin: -xDim.domainLength/4 length:xDim.domainLength/2];
 		xFloatDim.name = @"x-float";
-		GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:ceil(yDim.domainLength/horizontalFloatSpacingInMeters) domainMin: -yDim.domainLength/2  length:yDim.domainLength];
+		GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:ceil(yDim.domainLength/horizontalFloatSpacingInMeters) domainMin: -yDim.domainLength/4  length:yDim.domainLength/2];
 		yFloatDim.name = @"y-float";
-		GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-38), @(-31.5), @(-25)]];
+		//GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-38), @(-31.5), @(-25)]];
+        GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-32) ]];
 		zFloatDim.name = @"z-float";
         
 		// For consistency, we order the float dimensions the same as the dynamical variable dimensions.
@@ -183,12 +183,7 @@ int main(int argc, const char * argv[])
         [netcdfFile setGlobalAttribute: @(wave.f0) forKey: @"f0"];
 		
 		[netcdfFile addVariable: wave.rho];
-        
-//        [(GLDimension *)wave.internalModes.rho.dimensions[0] setName: @"z_full"];
-//        [(GLFunction *)wave.internalModes.rho setName: @"rho_bar_full"];
-//        [(GLFunction *)wave.internalModes.N2 setName: @"N2_full"];
-//        [netcdfFile addVariable: wave.internalModes.rho];
-//        [netcdfFile addVariable: wave.internalModes.N2];
+        [netcdfFile addVariable: wave.N2];
         
 		GLMutableVariable *uHistory = [u variableByAddingDimension: tDim];
 		uHistory.name = @"u";
@@ -234,8 +229,7 @@ int main(int argc, const char * argv[])
         {
             @autoreleasepool {
                 NSLog(@"Logging day %d @ %02d:%02d (HH:MM)", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60);
-                //NSArray *yout = [integrator stepForward];
-//				NSArray *yout = [integrator stepForwardToTime: time];
+				NSArray *yout = [integrator stepForwardToTime: time];
 //                
 //				//GLFloat time = integrator.currentTime;
 //                NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
@@ -250,9 +244,9 @@ int main(int argc, const char * argv[])
 				[rhoHistory concatenateWithLowerDimensionalVariable: uv[3] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
                 [zetaHistory concatenateWithLowerDimensionalVariable: uv[4] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
 				
-//                [xPositionHistory concatenateWithLowerDimensionalVariable: yout[0] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-//                [yPositionHistory concatenateWithLowerDimensionalVariable: yout[1] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-//				[zPositionHistory concatenateWithLowerDimensionalVariable: yout[2] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                [xPositionHistory concatenateWithLowerDimensionalVariable: yout[0] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+                [yPositionHistory concatenateWithLowerDimensionalVariable: yout[1] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
+				[zPositionHistory concatenateWithLowerDimensionalVariable: yout[2] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
                 
                 [netcdfFile waitUntilAllOperationsAreFinished];
             }

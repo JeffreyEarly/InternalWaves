@@ -199,6 +199,12 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
         self.N2 = self.internalModes.N2;
     }
     self.rho.name = @"rho_bar";
+    self.N2.name = @"N2";
+    
+    GLFloat minH = [self.eigendepths minNow];
+    if (minH <= 0.0) {
+        NSLog(@"You have eigendepths with negative values. This is not physical, so you should probably try limiting the number of modes you use.");
+    }
     
     GLFloat minTime = 2*M_PI/[self.eigenfrequencies maxNow];
     GLFloat maxTime = 2*M_PI/self.f0;
@@ -351,6 +357,8 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	// We cut the value in half, because we will want the expectation of the the positive and negative sides to add up to this value.
 	GLFunction *G = [[G2 sqrt] times: @(0.5)];
 	
+    [self zeroOutUnphysicalComponentsInAmplitudeFunction: G];
+    
 	// <G_+> = 1/2 <G> = <G_->
 	GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
 	GLFunction *G_minus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
@@ -358,6 +366,22 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	G_minus = [G_minus multiply: G];
 	
     [self generateWavePhasesFromPositive: G_plus negative: G_minus];
+}
+
+- (void) zeroOutUnphysicalComponentsInAmplitudeFunction: (GLFunction *) G
+{
+    NSUInteger zeroed = 0;
+    NSUInteger notZeroed = 0;
+    GLFloat Nmin = sqrt(fabs([self.N2 minNow]));
+    for (NSUInteger i=0; i<self.eigenfrequencies.nDataPoints; i++) {
+        if (self.eigenfrequencies.pointerValue[i] > Nmin) {
+            G.pointerValue[i] = 0;
+            zeroed++;
+        } else {
+            notZeroed++;
+        }
+    }
+    NSLog(@"Zeroed %lu frequencies, left %lu untouched", zeroed, notZeroed);
 }
 
 - (void) generateWavePhasesFromPositive: (GLFunction *) G_plus negative: (GLFunction *) G_minus

@@ -13,7 +13,9 @@
 
 @interface GLInternalModes ()
 - (void) createStratificationProfileFromDensity: (GLFunction *) rho atLatitude: (GLFloat) latitude;
-- (void) normalizeEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
+- (void) normalizeDepthBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
+- (void) normalizeFrequencyBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
+- (void) normalizeEigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm;
 @property(strong) GLEquation *equation;
 @property(strong) GLDimension *zDim;
 @property(strong) GLLinearTransform *diffZ;
@@ -78,16 +80,29 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     
 	// First construct N^2
     self.diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:self.zDim forEquation: self.equation];
+    //self.diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:self.zDim forEquation: self.equation];
     self.N2 = [self.diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
     self.N2.name = @"N2";
 }
 
-- (void) normalizeEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
+- (void) normalizeDepthBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
 {
     lambda = [lambda makeRealIfPossible];
-    S = [S makeRealIfPossible];
-    
     self.eigendepths = [lambda scalarDivide: 1.0]; self.eigendepths.name = @"eigendepths";
+    self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
+    [self normalizeEigenvectors:S withNorm: norm];
+}
+
+- (void) normalizeFrequencyBasedEigenvalues: (GLFunction *) lambda eigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
+{
+    lambda = [lambda makeRealIfPossible];
+    self.eigenfrequencies = [[lambda abs] sqrt]; self.eigenfrequencies.name = @"eigenfrequencies";
+    [self normalizeEigenvectors:S withNorm: norm];
+}
+
+- (void) normalizeEigenvectors: (GLLinearTransform *) S withNorm: (GLFunction *) norm
+{
+    S = [S makeRealIfPossible];
     self.S = [S normalizeWithFunction: norm]; self.S.name = @"S_transform";
     
     GLLinearTransform *diffZ;
@@ -101,12 +116,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     GLLinearTransform *scaling = [GLLinearTransform linearTransformFromFunction: self.eigendepths];
     GLMatrixMatrixDiagonalDenseMultiplicationOperation *op = [[GLMatrixMatrixDiagonalDenseMultiplicationOperation alloc] initWithFirstOperand: self.Sprime secondOperand: scaling];
     self.Sprime = op.result[0]; self.Sprime.name = @"Sprime_transform";
-    
-    
-    
-    self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
 }
-
 
 - (NSArray *) internalGeostrophicModesFromDensityProfile: (GLFunction *) rho forLatitude: (GLFloat) latitude
 {
@@ -120,7 +130,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	
     NSArray *system = [diffOp eigensystemWithOrder: NSOrderedAscending];
 	
-    [self normalizeEigenvalues: system[0] eigenvectors: system[1] withNorm: [self.N2 times: @(1/g)]];
+    [self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [self.N2 times: @(1/g)]];
 	
     self.eigenfrequencies = [self.eigendepths times: @(0)];
     return @[self.eigendepths, self.S, self.Sprime];
@@ -139,10 +149,11 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 		return (GLFloatComplex) (row[0]==col[0] ? k*k : 0);
 	}];
     GLLinearTransform *diffOp = [invN2_trans multiply: [diffZZ minus: k2]];
+    self.diffOp = diffOp;
 	
     NSArray *system = [diffOp eigensystemWithOrder: NSOrderedAscending];
 	
-    [self normalizeEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2 minus: @(self.f0*self.f0)] times: @(1/g)]];
+    [self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2 minus: @(self.f0*self.f0)] times: @(1/g)]];
 	   
     self.eigenfrequencies = [[[[self.eigendepths abs] times: @(g*k*k)] plus: @(self.f0*self.f0)] sqrt];
     return @[self.eigendepths, self.S, self.Sprime];
@@ -190,7 +201,7 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
 	
     NSArray *system = [diffOp eigensystemWithOrder: NSOrderedAscending];
     
-	[self normalizeEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2 minus: @(self.f0*self.f0)] times: @(1/g)]];
+	[self normalizeDepthBasedEigenvalues: system[0] eigenvectors: system[1] withNorm: [[self.N2 minus: @(self.f0*self.f0)] times: @(1/g)]];
     
     NSArray *spectralDimensions = self.eigendepths.dimensions;
     GLFunction *k = [[GLFunction functionOfRealTypeFromDimension: kDim withDimensions: spectralDimensions forEquation: equation] scalarMultiply: 2*M_PI];
@@ -201,62 +212,32 @@ static NSString *GLInternalModeLDimKey = @"GLInternalModeLDimKey";
     return @[self.eigendepths, self.S, self.Sprime];
 }
 
+- (NSArray *) internalWaveModesUsingGEPFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k forLatitude: (GLFloat) latitude
+{
+    [self createStratificationProfileFromDensity: rho atLatitude: latitude];
+	
+	// Now construct A = k*k*eye(N) - Diff2;
+	GLLinearTransform *k2 = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[self.zDim] toDimensions: @[self.zDim] inFormat: @[@(kGLDiagonalMatrixFormat)] forEquation:self.equation matrix:^( NSUInteger *row, NSUInteger *col ) {
+		return (GLFloatComplex) (row[0]==col[0] ? k*k : 0);
+	}];
+    GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:self.zDim forEquation:self.equation];
+	GLLinearTransform *A = [k2 minus: diffZZ];
+    
+	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
+	GLLinearTransform *B = [[GLLinearTransform linearTransformFromFunction: [self.N2 times: @(k*k)]] minus: [diffZZ times: @(self.f0*self.f0)]];
+	
+    NSArray *system = [B generalizedEigensystemWith: A];
+	
+    self.eigenfrequencies = [[[(GLFunction *) system[0] makeRealIfPossible] abs] sqrt]; self.eigenfrequencies.name = @"eigenfrequencies";
+    self.eigendepths = [[[self.eigenfrequencies multiply: self.eigenfrequencies] minus: @(self.f0*self.f0)] dividedBy: @(g*k*k)]; self.eigendepths.name = @"eigendepths";
+    self.rossbyRadius = [[[self.eigendepths times: @(g/(self.f0*self.f0))] abs] sqrt]; self.rossbyRadius.name = @"rossbyRadii";
+    
+    // This will populate eigenfrequences, S, and Sprime
+    [self normalizeEigenvectors: system[1] withNorm: [[self.N2 minus: @(self.f0*self.f0)] times: @(1/g)]];
 
+    return @[self.eigendepths, self.S, self.Sprime];
+}
 
-
-
-
-
-
-
-
-
-
-
-//- (NSArray *) internalModesGIPFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k latitude: (GLFloat) latitude
-//{
-//    if (rho.dimensions.count != 1) {
-//        [NSException raise:@"InvalidDimensions" format:@"Only one dimension allowed, at this point"];
-//    }
-//	
-//	GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
-//    GLScalar *rho0 = [rho mean];
-//	
-//    GLEquation *equation = rho.equation;
-//    GLDimension *zDim = rho.dimensions[0];
-//    
-//	// First construct N^2
-//    GLLinearTransform *diffZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 1 leftBC: kGLNeumannBoundaryCondition rightBC:kGLNeumannBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-//    self.N2 = [diffZ transform: [[rho dividedBy: rho0] times: @(-g)]];
-//	
-//	// Now construct A = k*k*eye(N) - Diff2;
-//	GLLinearTransform *k2 = [GLLinearTransform transformOfType: kGLRealDataFormat withFromDimensions: @[zDim] toDimensions: @[zDim] inFormat: @[@(kGLDiagonalMatrixFormat)] forEquation:equation matrix:^( NSUInteger *row, NSUInteger *col ) {
-//		return (GLFloatComplex) (row[0]==col[0] ? k*k : 0);
-//	}];
-//    GLLinearTransform *diffZZ = [GLLinearTransform finiteDifferenceOperatorWithDerivatives: 2 leftBC: kGLDirichletBoundaryCondition rightBC:kGLDirichletBoundaryCondition bandwidth:1 fromDimension:zDim forEquation:equation];
-//	GLLinearTransform *A = [k2 minus: diffZZ];
-//    
-//	// Now construct B = k*k*diag(N2) - f0*f0*Diff2;
-//	GLLinearTransform *B = [[[GLLinearTransform linearTransformFromFunction: self.N2] times: @(k*k)] minus: [diffZZ times: @(f0*f0)]];
-//	
-//    NSArray *system = [B generalizedEigensystemWith: A];
-//	
-//	GLFunction *lambda = [system[0] makeRealIfPossible];
-//    GLLinearTransform *S = [system[1] makeRealIfPossible];
-//	
-//	if (self.maximumModes) {
-//		S = [S reducedFromDimensions: [NSString stringWithFormat: @"0:%lu", self.maximumModes-1] toDimension: @":"];
-//		lambda = [lambda variableFromIndexRangeString:[NSString stringWithFormat: @"0:%lu", self.maximumModes-1]];
-//	}
-//	
-//    S = [S normalizeWithFunction: [[self.N2 minus: @(f0*f0)] times: rho0]];
-//	GLLinearTransform *Sprime = [diffZ multiply: S];
-//	
-//	GLFunction *omega = [[lambda abs] sqrt];
-//	
-//    return @[omega, S, Sprime];
-//}
-//
 //- (NSArray *) internalWaveModesGIPFromDensityProfile: (GLFunction *) rho withFullDimensions: (NSArray *) dimensions forLatitude: (GLFloat) latitude
 //{
 //	// create an array with the intended transformation (this is agnostic to dimension ordering).

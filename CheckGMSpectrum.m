@@ -11,22 +11,48 @@ y = ncread(file, 'y');
 z = ncread(file, 'z');
 t = ncread(file, 'time');
 rho_bar = double(ncread(file, 'rho_bar'));
-dz=z(2)-z(1);
-N2 = (-9.81/vmean(rho_bar,1))*vdiff(dz,rho_bar,1);
+N2 = double(ncread(file, 'N2'));
 
-iTime=1;
+iTime=20;
 zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+% rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 v3d = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 
 
-E_p = 0.5*dz*trapz(N2.*squeeze(vmean(vmean(zeta3d.*zeta3d,1),2)));
+E_p = 0.5*trapz(z,N2.*squeeze(vmean(vmean(zeta3d.*zeta3d,1),2)));
 
-E_k = 0.5*dz*trapz(squeeze(vmean(vmean(u3d.*u3d+v3d.*v3d,1),2)));
+E_k = 0.5*trapz(z,squeeze(vmean(vmean(u3d.*u3d+v3d.*v3d,1),2)));
 
 potential_kinetic_ratio = E_p/E_k
 GM_relative = (E_p+E_k)/E_GM_total
 
+
+% rho_dye = interp1(z,rho_bar,-32);
+% [M, N, K] = size(rho3d);
+% dye_depth = zeros(M*N,1);
+% for i=1:M
+% 	for j=1:N
+% 		%dye_depth( (i-1)*N+j ) = interp1(squeeze(rho3d(i,j,:)), z, rho_dye);
+% 		dye_depth( (i-1)*N+j ) = find( squeeze(rho3d(i,j,:)) < rho_dye, 1, 'first');
+% 	end
+% end
+% 
+% figure, hist(dye_depth)
+% var(dye_depth)
+
+% Let's see how much the pycnocline varies with depth
+[val,pycnocline_index]=max(N2);
+zeta_pycnocline = reshape(zeta3d(:,:,pycnocline_index), length(x)*length(y),1);
+var(zeta_pycnocline)
+
+rhodamine_index = find(z<-32,1,'last');
+zeta_rhodamine = reshape(zeta3d(:,:,rhodamine_index), length(x)*length(y),1);
+var(zeta_rhodamine)
+
+figure, hist(zeta_rhodamine)
+
+return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -70,7 +96,7 @@ plot(-f1sided, s1sided, 'k')
 fn = f1sided;
 sn = s1sided;
 % grab indices between the Coriolis and half the nyquist
-fitIndices = find( fn > 1.5*f0/(2*pi) & fn < 0.5*1/(2*dt));
+fitIndices = find( fn > 1.5*f0/(2*pi) & fn < 0.4*1/(2*dt));
 [P,S] = polyfit(log10(fn(fitIndices)), log10(sn(fitIndices)),1);
 fit = 10^(P(2))*fn.^(P(1));
 hold on
@@ -86,7 +112,7 @@ plot(fn,vmean(spp+snn,2))
 
 sn = vmean(spp+snn,2);
 % grab indices between the Coriolis and half the nyquist
-fitIndices = find( fn > 1.5*f0/(2*pi) & fn < 0.5*1/(2*dt));
+fitIndices = find( fn > 1.5*f0/(2*pi) & fn < 0.4*1/(2*dt));
 [P,S] = polyfit(log10(fn(fitIndices)), log10(sn(fitIndices)),1);
 fit = 10^(P(2))*fn.^(P(1));
 hold on

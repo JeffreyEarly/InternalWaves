@@ -64,5 +64,15 @@
 /// Transformation from the eigenbasis for the (u,v)-modes to z.
 @property(strong) GLLinearTransform *Sprime;
 
+@property(strong) GLLinearTransform *diffOp;
+
+/** Compute the internal wave modes for a given wavenumber.
+ @discussion This method differs from the above, primary methods, by solving the generalized eigenvalue from for omega, rather than h.
+ @param rho Density profile given as a function of z only.
+ @param k Wavenumber given in radians/meter.
+ @param latitude Latitude at which the modes will be used (for the Coriolis frequency).
+ @returns A GLInternalModes object with N2, eigendepths, eigenfrequencies, S, and Sprime populated.
+ */
+- (NSArray *) internalWaveModesUsingGEPFromDensityProfile: (GLFunction *) rho wavenumber: (GLFloat) k forLatitude: (GLFloat) latitude;
 
 @end
