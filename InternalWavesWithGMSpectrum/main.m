@@ -19,8 +19,11 @@ int main(int argc, const char * argv[])
 	@autoreleasepool {
         // @"InternalWavesLatmix2011_16_16_128.internalwaves"
         // @"InternalWavesLatmix2011_128_128_128.internalwaves"
-        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_128_128_64_stretched.internalwaves"];
-        NSString *outputFile = @"InternalWavesLatmix.nc";
+//        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_128_128_64_lat31.internalwaves"];
+//        NSString *outputFile = @"InternalWavesLatmix2011_128_128_64_lat31_unit_test_no_diffusivity.nc";
+        
+        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesConstantN_64_64_64_lat31.internalwaves"];
+        NSString *outputFile = @"InternalWavesConstantN_64_64_64_lat31_unit_test_no_diffusivity.nc";
         
         //NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesUnitTest_128_128_128.internalwaves"];
         
@@ -36,13 +39,13 @@ int main(int argc, const char * argv[])
         }
         else
         {
-            GLFloat latitude = 45;
+            GLFloat latitude = 31;
             GLFloat N2 = 1e-3; //2.5e-3;
             GLFloat width = 15e3;
             GLFloat height = 15e3;
             GLFloat depth = 300;
-            NSUInteger Nx = 256;
-            NSUInteger Ny = 256;
+            NSUInteger Nx = 64;
+            NSUInteger Ny = 64;
             NSUInteger Nz = 64;
             
             /************************************************************************************************/
@@ -66,7 +69,7 @@ int main(int argc, const char * argv[])
                 GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
                 rho_bar = [rho_profile interpolateAtPoints:@[z]];
                 rho_bar.name = @"rho_bar";
-            }  else if (1) {
+            }  else if (0) {
                 GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile_Stretched_64.nc"] forEquation:equation];
                 rho_bar = profile.variables[0];
                 rho_bar.name = @"rho_bar";
@@ -87,15 +90,15 @@ int main(int argc, const char * argv[])
         }
         
         wave.maximumModes = 60;
-        wave.maxDepth = -100;
-        [wave createGarrettMunkSpectrumWithEnergy: 0.125];
-        //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
+        //wave.maxDepth = -100;
+        //[wave createGarrettMunkSpectrumWithEnergy: 0.125];
+        [wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
         zDim = wave.rho.dimensions[0];
         
         GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
         tDim.name = @"time";
 
-		GLFloat maxWavePeriods = 10; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
+		GLFloat maxWavePeriods = 2; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 15; // This will be overriden for the unit test.
 		GLFloat horizontalFloatSpacingInMeters = 500;
         

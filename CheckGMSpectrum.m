@@ -4,7 +4,7 @@ E_GM = 6.3E-5;      % [unitless]
 
 E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
 
-file = '/Users/jearly/Desktop/InternalWavesLatmix.nc';
+file = '/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_all_floats.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -15,7 +15,7 @@ N2 = double(ncread(file, 'N2'));
 
 iTime=1;
 zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
-% rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 v3d = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 
@@ -27,20 +27,6 @@ E_k = 0.5*trapz(z,squeeze(vmean(vmean(u3d.*u3d+v3d.*v3d,1),2)));
 potential_kinetic_ratio = E_p/E_k
 GM_relative = (E_p+E_k)/E_GM_total
 
-
-% rho_dye = interp1(z,rho_bar,-32);
-% [M, N, K] = size(rho3d);
-% dye_depth = zeros(M*N,1);
-% for i=1:M
-% 	for j=1:N
-% 		%dye_depth( (i-1)*N+j ) = interp1(squeeze(rho3d(i,j,:)), z, rho_dye);
-% 		dye_depth( (i-1)*N+j ) = find( squeeze(rho3d(i,j,:)) < rho_dye, 1, 'first');
-% 	end
-% end
-% 
-% figure, hist(dye_depth)
-% var(dye_depth)
-
 % Let's see how much the pycnocline varies with depth
 [val,pycnocline_index]=max(N2);
 zeta_pycnocline = reshape(zeta3d(:,:,pycnocline_index), length(x)*length(y),1);
@@ -51,6 +37,38 @@ zeta_rhodamine = reshape(zeta3d(:,:,rhodamine_index), length(x)*length(y),1);
 std(zeta_rhodamine)
 
 figure, hist(zeta_rhodamine)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Show fake 'glider' profiles
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%rho = rhoFromZeta(zeta3d,z,rho_bar);
+rho = rho3d(1:5:end,1:5:end,:);
+rho = reshape( rho, size(rho,1)*size(rho,2), size(rho,3));
+sigma = rho-1000;
+meanSigma = vmean(sigma,1);
+stdSigma = std(sigma);
+
+titleFontSize = 16;
+axisFontSize = 12;
+figure('Position', [200 200 800 1000])
+
+subplot(1,2,1)
+plot( sigma, z)
+hold on
+plot(meanSigma, z, 'black', 'LineWidth', 2)
+plot(meanSigma+stdSigma, z, 'black', 'LineWidth', 1.5)
+plot(meanSigma-stdSigma, z, 'black', 'LineWidth', 1.5)
+xlabel('density (kg/m^3 - 1000) ', 'FontSize', axisFontSize)
+ylabel('z (meters)', 'FontSize', axisFontSize)
+xlim([24.4 26.3])
+ylim([-100 0])
+title('Density vs depth', 'FontSize', titleFontSize)
+
+return
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %

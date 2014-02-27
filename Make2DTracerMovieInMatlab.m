@@ -1,5 +1,5 @@
-file = '/Users/jearly/Desktop/InternalWaves.nc';
-FramesFolder ='/Users/jearly/Desktop/InternalWaves';
+file = '/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_unit_test.nc';
+FramesFolder ='/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_unit_testFrames';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -48,7 +48,7 @@ maxZ = max(zDomain);
 % 	The stride indicates how many floats we will skip
 %
 stride = 1;
-zStride = 4;
+zStride = 1;
 floatSize = 5;
 
 % Read in the initial position of the floats.
