@@ -37,11 +37,9 @@ int main(int argc, const char * argv[])
         GLFloat timeStep = 10;
         GLFloat kappa = 1; // m^2/s
         GLFloat norm = sqrt(timeStep*2*kappa);
-        norm = sqrt(4)*norm/timeStep; // the integrator multiplies by deltaT, so we account for that here.
-        // There's something else I'm not getting. Some reason why we need that sqrt(4) there. It's differen for RK5.
+        norm = sqrt(36./10.)*norm/timeStep; // the integrator multiplies by deltaT, so we account for that here.
         // RK4: dt/3 f(0) + dt/6 f(1) + dt/6 *f(4) + dt/3*f(3)
-        // Mean of 1/3 and 1/6? 1/4. It's like the geometric mean to get the same norm, yup. Hence, sqrt 4.
-        // RK5 will depend on those C coefficients.
+        // sqrt of ( (1/3)^2 + (1/6)^ + (1/6)^2 + (1/3)^2 )
         GLAdaptiveRungeKuttaOperation *integrator = [GLAdaptiveRungeKuttaOperation rungeKutta4AdvanceY: @[xPosition, yPosition] stepSize: timeStep fFromTY:^(GLScalar *time, NSArray *yNew) {
             GLFunction *xStep = [GLFunction functionWithNormallyDistributedValueWithDimensions: floatDimensions forEquation: equation];
             GLFunction *yStep = [GLFunction functionWithNormallyDistributedValueWithDimensions: floatDimensions forEquation: equation];
