@@ -35,6 +35,9 @@ int main(int argc, const char * argv[])
 		GLFunction *yPosition = [GLFunction functionFromFunction: yFloat];
         
         GLFloat timeStep = 10;
+		GLFloat maxTime = 1000;
+		GLDimension *tDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 1+round(maxTime/timeStep) domainMin: 0 length: maxTime];
+		tDim.name = @"t";
         GLFloat kappa = 1; // m^2/s
         GLFloat norm = sqrt(timeStep*2*kappa);
         norm = sqrt(36./10.)*norm/timeStep; // the integrator multiplies by deltaT, so we account for that here.
@@ -50,21 +53,34 @@ int main(int argc, const char * argv[])
 			return @[xStep, yStep];
 		}];
         
-        GLFloat maxTime = 10000;
-        NSArray *newPositions = [integrator stepForwardToTime: maxTime];
+		NSArray *newPositions = [integrator integrateAlongDimension: tDim];
+        
+        //NSArray *newPositions = [integrator stepForwardToTime: maxTime];
         GLFunction *x = newPositions[0];
         GLFunction *y = newPositions[1];
         
-        GLScalar *meanSquareSeparation0 = [[[yPosition times: yPosition] plus: [yPosition times: yPosition]] mean];
-        GLScalar *meanSquareSeparation = [[[x times: x] plus: [y times: y]] mean];
+        GLScalar *meanSquareSeparation = [[[[x times: x] plus: [y times: y]] mean: 2] mean: 1];
         
-        GLFloat a = *(meanSquareSeparation0.pointerValue);
-        GLFloat b = *(meanSquareSeparation.pointerValue);
-        [meanSquareSeparation0 dumpToConsole];
-        [meanSquareSeparation dumpToConsole];
-        
-        GLFloat kappaDeduced = (0.25)*(b-a)/maxTime;
+        GLFloat kappaDeduced = (0.25)*(meanSquareSeparation.pointerValue[tDim.nPoints-1]-meanSquareSeparation.pointerValue[0])/maxTime;
         NSLog(@"kappa: %f, actual kappa: %f", kappa, kappaDeduced);
+		
+		GLFunction *u = [x diff: @"t"];
+		GLFunction *v = [y diff: @"t"];
+		
+		GLScalar *uu = [[u times: u] mean];
+		GLScalar *vv = [[v times: v] mean];
+		GLScalar *uv = [[u times: v] mean];
+		
+		NSLog(@"(uu, vv, uv)=(%g, %g, %g)", (uu.pointerValue[0])*(timeStep/2.), (vv.pointerValue[0])*(timeStep/2.), (uv.pointerValue[0])*(timeStep/2.));
+		
+//		GLFunction *vx = [x diff:@"t"];
+//		GLFunction *vy = [y diff:@"t"];
+//		GLScalar *Vxx = [[vx times: vx] mean];
+//		GLScalar *Vyy = [[vy times: vy] mean];
+//		GLScalar *Vxy = [[vx times: vy] mean];
+//		
+//		NSLog(@"(kappa_xx, kappa_yy, kappa_xy)=(%g, %g, %g)", Vxx.pointerValue[0]*timeStep/2., Vyy.pointerValue[0]*timeStep/2., Vxy.pointerValue[0]*timeStep/2.);
+		
     }
     return 0;
 }
