@@ -50,6 +50,7 @@ int main(int argc, const char * argv[])
         
         GLScalar *meanSquareSeparation = [[[x times: x] plus: [y times: y]] mean: 1];
         
+		// kappa = 1/2 d/dt X^2 in *each* direction, hence 1/4.
         GLFloat kappaDeduced = (0.25)*(meanSquareSeparation.pointerValue[tDim.nPoints-1]-meanSquareSeparation.pointerValue[0])/maxTime;
         NSLog(@"kappa: %f, actual kappa: %f", kappa, kappaDeduced);
 		
@@ -60,6 +61,7 @@ int main(int argc, const char * argv[])
 		GLScalar *vv = [[v times: v] mean];
 		GLScalar *uv = [[u times: v] mean];
 		
+		// The decorrelation time is the interval itself, dt, so kappa = v^2 dt.
 		NSLog(@"(uu, vv, uv)=(%g, %g, %g)", (uu.pointerValue[0])*(timeStep), (vv.pointerValue[0])*(timeStep), (uv.pointerValue[0])*(timeStep));
     }
     return 0;
