@@ -17,6 +17,7 @@ int main(int argc, const char * argv[])
 {
     
 	@autoreleasepool {
+		NSLog(@"Starting");
         // @"InternalWavesLatmix2011_16_16_128.internalwaves"
         // @"InternalWavesLatmix2011_128_128_128.internalwaves"
 //        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_128_128_64_lat31.internalwaves"];
@@ -98,7 +99,10 @@ int main(int argc, const char * argv[])
             // 2. The last two dimensions are ordered (x,y) to appease pcolor, meshgrid, and all the standard matlab formating.
             wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation]; //@[zDim, xDim, yDim]
             
-            [NSKeyedArchiver archiveRootObject: wave toFile: restartFile];
+            if (![NSKeyedArchiver archiveRootObject: wave toFile: restartFile]) {
+				NSLog(@"Failed to save restart file.");
+			}
+			
         }
         
         //wave.maximumModes = 60;
