@@ -5,7 +5,7 @@ E_GM = 6.3E-5;      % [unitless]
 E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
 
 file = '/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_all_floats.nc';
-file = '/Users/jearly/Desktop/InternalWavesConstantN_64_64_64_lat31_unit_test_no_diffusivity.nc';
+file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_unit_test_no_diffusivity.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');

@@ -19,9 +19,9 @@ v3d = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(y) length(x) lengt
 w3d = double(squeeze(ncread(file, 'w', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 
 rho_prime = permute(rho3d, [2 1 3]);
-u = permute(u, [2 1 3]);
-v = permute(v, [2 1 3]);
-w = permute(w, [2 1 3]);
+u = permute(u3d, [2 1 3]);
+v = permute(v3d, [2 1 3]);
+w = permute(w3d, [2 1 3]);
 
 rho_prime = rho_prime - repmat(permute(rho_bar,[3 2 1]), [length(x) length(y) 1]);
 
