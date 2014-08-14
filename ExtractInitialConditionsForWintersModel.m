@@ -1,0 +1,28 @@
+file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_unit_test_no_diffusivity.nc';
+
+outputfile = 'InitialConditionsConstantN_256_256_128.mat';
+
+x = ncread(file, 'x');
+y = ncread(file, 'y');
+z = ncread(file, 'z');
+t = ncread(file, 'time');
+rho_bar = double(ncread(file, 'rho_bar'));
+N2 = double(ncread(file, 'N2'));
+f0 = ncreadatt(file, '/', 'f0');
+
+iTime=1;
+
+zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+v3d = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+w3d = double(squeeze(ncread(file, 'w', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+
+rho_prime = permute(rho3d, [2 1 3]);
+u = permute(u, [2 1 3]);
+v = permute(v, [2 1 3]);
+w = permute(w, [2 1 3]);
+
+rho_prime = rho_prime - repmat(permute(rho_bar,[3 2 1]), [length(x) length(y) 1]);
+
+save( outputfile, 'f0', 'u', 'v', 'w', 'rho_prime', 'rho_bar' );
