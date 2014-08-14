@@ -22,9 +22,12 @@ int main(int argc, const char * argv[])
 //        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_128_128_64_lat31.internalwaves"];
 //        NSString *outputFile = @"InternalWavesLatmix2011_128_128_64_lat31_unit_test_no_diffusivity.nc";
         
-        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesConstantN_64_64_64_lat31.internalwaves"];
-        NSString *outputFile = @"InternalWavesConstantN_64_64_64_lat31_unit_test_no_diffusivity.nc";
-        
+        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesConstantN_256_256_128_lat31.internalwaves"];
+        NSString *outputFile = @"InternalWavesConstantN_256_256_128_lat31_unit_test_no_diffusivity.nc";
+		
+//		NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesExpN_128_128_64_lat31.internalwaves"];
+//		NSString *outputFile = @"InternalWavesExpN_128_128_64_lat31_unit_test_no_diffusivity.nc";
+		
         //NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesUnitTest_128_128_128.internalwaves"];
         
         NSFileManager *manager = [[NSFileManager alloc] init];
@@ -40,13 +43,13 @@ int main(int argc, const char * argv[])
         else
         {
             GLFloat latitude = 31;
-            GLFloat N2 = 1e-3; //2.5e-3;
+            GLFloat N2 = 1.69e-4; //2.5e-3;
             GLFloat width = 15e3;
             GLFloat height = 15e3;
             GLFloat depth = 300;
-            NSUInteger Nx = 64;
-            NSUInteger Ny = 64;
-            NSUInteger Nz = 64;
+            NSUInteger Nx = 256;
+            NSUInteger Ny = 256;
+            NSUInteger Nz = 128;
             
             /************************************************************************************************/
             /*		Define the problem dimensions															*/
@@ -74,6 +77,15 @@ int main(int argc, const char * argv[])
                 rho_bar = profile.variables[0];
                 rho_bar.name = @"rho_bar";
                 zDim = rho_bar.dimensions[0];
+			}  else if (0) {
+				latitude = 31.7204;
+				GLFloat rho0 = 1027.;
+				GLFloat N0 = 0.0188;
+				GLFloat Nbot = 0.0034;
+				GLFloat B = 59.;
+				GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+				rho_bar = [[[[z times:@(Nbot*Nbot)] plus:[[[z times: @(2./B)] exponentiate] times: @((B/2.)*(N0*N0 - Nbot*Nbot))]] times: @(-rho0/g)] plus: @(rho0)];
+				rho_bar.name = @"rho_bar";
             } else {
                 GLFloat rho0 = 1025;
                 GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
@@ -89,16 +101,16 @@ int main(int argc, const char * argv[])
             [NSKeyedArchiver archiveRootObject: wave toFile: restartFile];
         }
         
-        wave.maximumModes = 60;
+        //wave.maximumModes = 60;
         //wave.maxDepth = -100;
-        //[wave createGarrettMunkSpectrumWithEnergy: 0.125];
-        [wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
+        [wave createGarrettMunkSpectrumWithEnergy: 0.5];
+        //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
         zDim = wave.rho.dimensions[0];
         
         GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
         tDim.name = @"time";
 
-		GLFloat maxWavePeriods = 2; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
+		GLFloat maxWavePeriods = 10; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 15; // This will be overriden for the unit test.
 		GLFloat horizontalFloatSpacingInMeters = 500;
         
@@ -118,8 +130,6 @@ int main(int argc, const char * argv[])
 			GLFunction *w = [[wave.S transform: [[wave.w_plus multiply: time_phase_plus] plus: [wave.w_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
             GLFunction *rho = [[[[wave.S transform: [[wave.rho_plus multiply: time_phase_plus] plus: [wave.rho_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]] times: wave.N2] plus: wave.rho];
             GLFunction *zeta = [[wave.S transform: [[wave.zeta_plus multiply: time_phase_plus] plus: [wave.zeta_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
-            
-            
 			
 			return @[u,v,w,rho,zeta];
 		};

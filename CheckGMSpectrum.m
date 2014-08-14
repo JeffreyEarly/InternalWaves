@@ -5,6 +5,7 @@ E_GM = 6.3E-5;      % [unitless]
 E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
 
 file = '/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_all_floats.nc';
+file = '/Users/jearly/Desktop/InternalWavesConstantN_64_64_64_lat31_unit_test_no_diffusivity.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -63,7 +64,7 @@ plot(meanSigma+stdSigma, z, 'black', 'LineWidth', 1.5)
 plot(meanSigma-stdSigma, z, 'black', 'LineWidth', 1.5)
 xlabel('density (kg/m^3 - 1000) ', 'FontSize', axisFontSize)
 ylabel('z (meters)', 'FontSize', axisFontSize)
-xlim([24.4 26.3])
+xlim([24.4 30.3])
 ylim([-100 0])
 title('Density vs depth', 'FontSize', titleFontSize)
 
@@ -108,6 +109,8 @@ figure, plot(fn, sn), ylog
 hold on, plot(f1sided, s1sided, 'k')
 plot(-f1sided, s1sided, 'k')
 
+
+return;
 
 fn = f1sided;
 sn = s1sided;
