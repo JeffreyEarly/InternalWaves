@@ -105,7 +105,7 @@ int main(int argc, const char * argv[])
 			
         }
         
-        //wave.maximumModes = 60;
+        wave.maximumModes = 64;
         //wave.maxDepth = -100;
         [wave createGarrettMunkSpectrumWithEnergy: 0.5];
         //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];

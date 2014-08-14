@@ -15,13 +15,13 @@ int main(int argc, const char * argv[])
 
 	@autoreleasepool {
 		GLFloat latitude = 33;
-		GLFloat N2_0 = 1e-2;
-		GLFloat depth = 100;
+		GLFloat N2_0 = 1.69e-4;
+		GLFloat depth = 300;
 		GLFloat width = 1000;
         GLFloat height = 500;
 		NSUInteger Nx = 4;
         NSUInteger Ny = 4;
-		NSUInteger Nz = 512;
+		NSUInteger Nz = 128;
 		
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
@@ -43,7 +43,7 @@ int main(int argc, const char * argv[])
 		/*		Create a density profile and compute the internal wave phases                           */
 		/************************************************************************************************/
         GLFunction *rho_bar;
-        if (1) {
+        if (0) {
             GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile.nc"] forEquation:equation];
             GLFunction *rho_profile = profile.variables[0];
             GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
@@ -60,17 +60,17 @@ int main(int argc, const char * argv[])
 		GLInternalModes *internalModes = [[GLInternalModes alloc] init];
  		//[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
         //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: 1 forLatitude: latitude];
-        [internalModes internalWaveModesUsingGEPFromDensityProfile: rho_bar wavenumber: 0.008 forLatitude: latitude];
-        //[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
+        //[internalModes internalWaveModesUsingGEPFromDensityProfile: rho_bar wavenumber: 0.008 forLatitude: latitude];
+        [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
         
-//		[internalModes.eigendepths dumpToConsole];
+		[internalModes.eigendepths dumpToConsole];
 //        [internalModes.eigenfrequencies dumpToConsole];
 //		[internalModes.Sprime dumpToConsole];
 //        [internalModes.S dumpToConsole];
         
         GLLinearTransform *op = [internalModes.diffOp times: internalModes.S];
         //[op dumpToConsole];
-        
+        return 0;
         NSUInteger nRows = internalModes.S.matrixDescription.strides[0].nRows;
         NSUInteger rowStride = internalModes.S.matrixDescription.strides[0].rowStride;
         NSUInteger colStride = internalModes.S.matrixDescription.strides[0].columnStride;
