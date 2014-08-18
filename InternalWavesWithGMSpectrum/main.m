@@ -26,6 +26,9 @@ int main(int argc, const char * argv[])
         NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesConstantN_256_256_128_lat31.internalwaves"];
         NSString *outputFile = @"InternalWavesConstantN_256_256_128_lat31_unit_test_no_diffusivity.nc";
 		
+		restartFile = @"/Volumes/Data/InternalWavesConstantN_256_256_128_lat31.internalwaves";
+		outputFile = @"/Volumes/Data/InternalWavesConstantN_256_256_128_lat31.nc";
+		
 //		NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesExpN_128_128_64_lat31.internalwaves"];
 //		NSString *outputFile = @"InternalWavesExpN_128_128_64_lat31_unit_test_no_diffusivity.nc";
 		
@@ -106,7 +109,7 @@ int main(int argc, const char * argv[])
         }
         
         wave.maximumModes = 64;
-        //wave.maxDepth = -100;
+        wave.maxDepth = -200;
         [wave createGarrettMunkSpectrumWithEnergy: 0.5];
         //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
         zDim = wave.rho.dimensions[0];
@@ -114,9 +117,9 @@ int main(int argc, const char * argv[])
         GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
         tDim.name = @"time";
 
-		GLFloat maxWavePeriods = 10; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
+		GLFloat maxWavePeriods = 5; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
 		GLFloat sampleTimeInMinutes = 15; // This will be overriden for the unit test.
-		GLFloat horizontalFloatSpacingInMeters = 500;
+		GLFloat horizontalFloatSpacingInMeters = 2*xDim.sampleInterval;
         
 		/************************************************************************************************/
 		/*		Create the dynamical variables from the analytical solution								*/
@@ -158,7 +161,8 @@ int main(int argc, const char * argv[])
 		GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: ceil(4000/horizontalFloatSpacingInMeters) domainMin: -2000 length:4000];
 		yFloatDim.name = @"y-float";
 		//GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-38), @(-31.5), @(-25)]];
-        GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-32) ]];
+		GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(0.), @(-50.), @(-100.), @(-150.)]];
+        //GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-32) ]];
 		zFloatDim.name = @"z-float";
         
 		// For consistency, we order the float dimensions the same as the dynamical variable dimensions.
@@ -242,6 +246,7 @@ int main(int argc, const char * argv[])
 		/************************************************************************************************/
 		
 		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:outputFile];
+		path=outputFile;
 		GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: [NSURL URLWithString: path] forEquation: wave.equation overwriteExisting: YES];
 		
         [netcdfFile setGlobalAttribute: @(wave.f0) forKey: @"f0"];

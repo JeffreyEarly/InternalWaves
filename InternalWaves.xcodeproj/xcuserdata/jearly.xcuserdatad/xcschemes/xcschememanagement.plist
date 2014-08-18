@@ -7,7 +7,7 @@
 		<key>InternalModeTest.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>9</integer>
+			<integer>4</integer>
 		</dict>
 		<key>InternalWaves.xcscheme</key>
 		<dict>
@@ -17,7 +17,7 @@
 		<key>InternalWavesWithGMSpectrum.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
-			<integer>10</integer>
+			<integer>5</integer>
 		</dict>
 		<key>RandomWalk.xcscheme</key>
 		<dict>
