@@ -1,4 +1,4 @@
-file = '/Users/jearly/Desktop/InternalWavesConstantN_64_64_64_lat31_unit_test_no_diffusivity.nc';
+file = '/Users/jearly/Desktop/InternalWavesConstantN_128_128_64_lat31.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -45,13 +45,13 @@ psi=[];
 omega = [ -flipud(omega_p(2:end)); omega_p];
 S = [flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 
-[S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, sqrt(N2(depth_index)) )
+[S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, sqrt(N2(depth_index)) );
 
 
 figure
 plot( omega, S, 'blue', 'LineWidth', 2), ylog
 hold on
-plot( omega, 2*S_gm, 'black', 'LineWidth', 2), ylog
+plot( omega, 6*S_gm, 'black', 'LineWidth', 2), ylog
 
 return;
 
