@@ -24,10 +24,10 @@ int main(int argc, const char * argv[])
 //        NSString *outputFile = @"InternalWavesLatmix2011_128_128_64_lat31_unit_test_no_diffusivity.nc";
         
         NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesConstantN_256_256_128_lat31.internalwaves"];
-        NSString *outputFile = @"InternalWavesConstantN_256_256_128_lat31_unit_test_no_diffusivity.nc";
+        NSString *outputFile = @"InternalWavesConstantN_256_256_128_lat31.nc";
 		
-		restartFile = @"/Volumes/Data/InternalWavesConstantN_256_256_128_lat31.internalwaves";
-		outputFile = @"/Volumes/Data/InternalWavesConstantN_256_256_128_lat31.nc";
+//		restartFile = @"/Volumes/Data/InternalWavesConstantN_256_256_128_lat31.internalwaves";
+//		outputFile = @"/Volumes/Data/InternalWavesConstantN_256_256_128_lat31.nc";
 		
 //		NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesExpN_128_128_64_lat31.internalwaves"];
 //		NSString *outputFile = @"InternalWavesExpN_128_128_64_lat31_unit_test_no_diffusivity.nc";
@@ -161,7 +161,7 @@ int main(int argc, const char * argv[])
 		GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: ceil(4000/horizontalFloatSpacingInMeters) domainMin: -2000 length:4000];
 		yFloatDim.name = @"y-float";
 		//GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-38), @(-31.5), @(-25)]];
-		GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(0.), @(-50.), @(-100.), @(-150.)]];
+		GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(0.), @(-25.), @(-50.), @(-75.), @(-100.), @(-150.)]];
         //GLDimension *zFloatDim = [[GLDimension alloc] initWithPoints: @[ @(-32) ]];
 		zFloatDim.name = @"z-float";
         
@@ -246,7 +246,6 @@ int main(int argc, const char * argv[])
 		/************************************************************************************************/
 		
 		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:outputFile];
-		path=outputFile;
 		GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: [NSURL URLWithString: path] forEquation: wave.equation overwriteExisting: YES];
 		
         [netcdfFile setGlobalAttribute: @(wave.f0) forKey: @"f0"];
