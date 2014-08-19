@@ -23,8 +23,8 @@ int main(int argc, const char * argv[])
 //        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesLatmix2011_128_128_64_lat31.internalwaves"];
 //        NSString *outputFile = @"InternalWavesLatmix2011_128_128_64_lat31_unit_test_no_diffusivity.nc";
         
-        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesConstantN_128_128_64_lat31.internalwaves"];
-        NSString *outputFile = @"InternalWavesConstantN_128_128_64_lat31.nc";
+        NSString *restartFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesConstantN_256_256_128_lat31.internalwaves"];
+        NSString *outputFile = @"InternalWavesConstantN_256_256_128_lat31.nc";
 		
 //		restartFile = @"/Volumes/Data/InternalWavesConstantN_256_256_128_lat31.internalwaves";
 //		outputFile = @"/Volumes/Data/InternalWavesConstantN_256_256_128_lat31.nc";
@@ -51,9 +51,9 @@ int main(int argc, const char * argv[])
             GLFloat width = 15e3;
             GLFloat height = 15e3;
             GLFloat depth = 300;
-            NSUInteger Nx = 256/4;
-            NSUInteger Ny = 256/4;
-            NSUInteger Nz = 128/4;
+            NSUInteger Nx = 256;
+            NSUInteger Ny = 256;
+            NSUInteger Nz = 128;
             
             /************************************************************************************************/
             /*		Define the problem dimensions															*/
@@ -108,7 +108,7 @@ int main(int argc, const char * argv[])
 			
         }
         
-        wave.maximumModes = 16;
+        wave.maximumModes = 64;
         wave.maxDepth = -200;
         [wave createGarrettMunkSpectrumWithEnergy: 0.5];
         //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
