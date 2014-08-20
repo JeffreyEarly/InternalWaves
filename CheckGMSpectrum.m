@@ -5,7 +5,7 @@ E_GM = 6.3E-5;      % [unitless]
 E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
 
 file = '/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_all_floats.nc';
-file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_unit_test_no_diffusivity.nc';
+file = '/Users/jearly/Desktop/InternalWavesConstantN_128_128_64_lat31.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -19,14 +19,19 @@ zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x)
 rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 v3d = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+w3d = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 
 
 E_p = 0.5*trapz(z,N2.*squeeze(vmean(vmean(zeta3d.*zeta3d,1),2)));
+pe = N2.*squeeze(vmean(vmean(zeta3d.*zeta3d,1),2));
 
-E_k = 0.5*trapz(z,squeeze(vmean(vmean(u3d.*u3d+v3d.*v3d,1),2)));
+E_k = 0.5*trapz(z,squeeze(vmean(vmean(u3d.*u3d+v3d.*v3d+w3d.*w3d,1),2)));
+ke = squeeze(vmean(vmean(u3d.*u3d+v3d.*v3d+w3d.*w3d,1),2));
 
 potential_kinetic_ratio = E_p/E_k
 GM_relative = (E_p+E_k)/E_GM_total
+
+return;
 
 % Let's see how much the pycnocline varies with depth
 [val,pycnocline_index]=max(N2);
