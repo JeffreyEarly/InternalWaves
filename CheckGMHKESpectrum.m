@@ -1,4 +1,4 @@
-file = '/Users/jearly/Desktop/InternalWavesConstantN_128_128_64_lat31.nc';
+file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -15,7 +15,7 @@ latitude = 31;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-depth = -45;
+depth = -150;
 [depth_index] = find(z >= depth, 1, 'first');
 
 u3d = double(squeeze(ncread(file, 'u', [1 1 depth_index 1], [length(y) length(x) 1 length(t)], [1 1 1 1])));
@@ -51,7 +51,9 @@ S = [flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 figure
 plot( omega, S, 'blue', 'LineWidth', 2), ylog
 hold on
-plot( omega, 6*S_gm, 'black', 'LineWidth', 2), ylog
+plot( omega, S_gm, 'black', 'LineWidth', 2), ylog
+vlines( -f0 )
+legend('Observed', 'GM81')
 
 return;
 

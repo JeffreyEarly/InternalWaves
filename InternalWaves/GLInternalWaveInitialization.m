@@ -316,7 +316,7 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
 	// The mode dimension, j, starts at zero, but we want it to start at 1... so we add 1!
 	GLFunction *j = [[GLFunction functionOfRealTypeFromDimension: self.modeDim withDimensions: self.spectralDimensions forEquation: self.equation] plus: @(1)];
 	// H(j) = 2*j_star/(pi*(j^2 + j_star^2)) [unitless]
-	GLFunction *H = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 2*pow(j_star,3/2)/M_PI];
+	GLFunction *H = [[[j plus: @(j_star)] pow: 5/2] scalarDivide: 3*pow(j_star,3/2)/2];
 
 	// This sums to about 1/2, so not quite right.
 //    GLFunction *Hsum = [H sum: 0];
@@ -360,8 +360,12 @@ static NSString *GLInternalWaveWMinusKey = @"GLInternalWaveWMinusKey";
     [self zeroOutUnphysicalComponentsInAmplitudeFunction: G];
     
 	// <G_+> = 1/2 <G> = <G_->
+    // We seed the random number generator, then call and resolve the randomized function so that their order isn't flipped.
+    srand(1);
 	GLFunction *G_plus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
+    [G_plus solve];
 	GLFunction *G_minus = [GLFunction functionWithNormallyDistributedValueWithDimensions: self.spectralDimensions forEquation: self.equation];
+    [G_plus solve];
 	G_plus = [G_plus multiply: G];
 	G_minus = [G_minus multiply: G];
 	

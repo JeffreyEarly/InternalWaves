@@ -109,7 +109,7 @@ int main(int argc, const char * argv[])
         }
         
         wave.maximumModes = 64;
-        wave.maxDepth = -200;
+       // wave.maxDepth = -200;
         [wave createGarrettMunkSpectrumWithEnergy: 0.5];
         //[wave createUnitWaveWithSpeed: 0.01 verticalMode: 1 k: 1 l: 0 omegaSign: 1];
         zDim = wave.rho.dimensions[0];
