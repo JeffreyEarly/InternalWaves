@@ -1,4 +1,4 @@
-file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31.nc';
+file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_2.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
