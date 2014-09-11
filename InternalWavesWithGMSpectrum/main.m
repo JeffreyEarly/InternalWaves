@@ -247,7 +247,7 @@ int main(int argc, const char * argv[])
 		
 		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:outputFile];
 		GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: [NSURL URLWithString: path] forEquation: wave.equation overwriteExisting: YES];
-		
+		netcdfFile.variableCompressionLevel = 1;
         [netcdfFile setGlobalAttribute: @(wave.f0) forKey: @"f0"];
 		
 		[netcdfFile addVariable: wave.rho];

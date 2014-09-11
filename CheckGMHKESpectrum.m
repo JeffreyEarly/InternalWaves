@@ -1,11 +1,16 @@
 file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_2.nc';
+file1 = '/Volumes/Data/InternalWaveSimulations/InternalWavesConstantN_256_256_128_lat31.nc';
+file = '/Volumes/Data/InternalWaveSimulations/XYZT.nc';
+file=file1;
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
 z = ncread(file, 'z');
 t = ncread(file, 'time');
-rho_bar = double(ncread(file, 'rho_bar'));
-N2 = double(ncread(file, 'N2'));
+
+rho_bar = double(ncread(file1, 'rho_bar'));
+N2 = double(ncread(file1, 'N2'));
+f0 = ncreadatt(file1, '/', 'f0');
 
 latitude = 31;
 
@@ -21,7 +26,6 @@ depth = -150;
 u3d = double(squeeze(ncread(file, 'u', [1 1 depth_index 1], [length(y) length(x) 1 length(t)], [1 1 1 1])));
 v3d = double(squeeze(ncread(file, 'v', [1 1 depth_index 1], [length(y) length(x) 1 length(t)], [1 1 1 1])));
 
-f0 = ncreadatt(file, '/', 'f0');
 dt = t(2)-t(1)
 
 [M, N, K] = size(u3d);
@@ -45,7 +49,7 @@ psi=[];
 omega = [ -flipud(omega_p(2:end)); omega_p];
 S = [flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 
-[S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, sqrt(N2(depth_index)) );
+[S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
 
 
 figure
