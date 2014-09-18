@@ -1,6 +1,6 @@
-file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_unit_test_no_diffusivity.nc';
+file = '/Users/jearly/Desktop/InternalWavesConstantN_UnitTest_128_128_65.nc';
 
-outputfile = 'InitialConditionsConstantN_256_256_128.mat';
+outputfile = 'InternalWavesConstantN_UnitTest_high_wavenumber.mat';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
