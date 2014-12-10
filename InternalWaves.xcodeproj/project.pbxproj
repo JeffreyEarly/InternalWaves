@@ -7,13 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23C1885AA8000213615 /* GLInternalModes.m */; };
-		8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */; };
 		811A019F18A5962000BD8682 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		811A01A218A5962000BD8682 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 811A01A118A5962000BD8682 /* main.m */; };
 		811A01A618A5962000BD8682 /* InternalModeTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 811A01A518A5962000BD8682 /* InternalModeTest.1 */; };
 		811A01AA18A5964800BD8682 /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */; };
-		811A01AB18A598B800BD8682 /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23C1885AA8000213615 /* GLInternalModes.m */; };
 		81271F3618B1E02D001057FE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		81271F3918B1E02D001057FE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81271F3818B1E02D001057FE /* main.m */; };
 		81271F3D18B1E02D001057FE /* RandomWalk.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 81271F3C18B1E02D001057FE /* RandomWalk.1 */; };
@@ -21,8 +18,6 @@
 		8140A09318AB37D0007727CC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		8140A09618AB37D0007727CC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 8140A09518AB37D0007727CC /* main.m */; };
 		8140A09A18AB37D0007727CC /* InternalWavesWithGMSpectrum.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8140A09918AB37D0007727CC /* InternalWavesWithGMSpectrum.1 */; };
-		8140A09E18AB382B007727CC /* GLInternalModes.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23C1885AA8000213615 /* GLInternalModes.m */; };
-		8140A09F18AB382E007727CC /* GLInternalWaveInitialization.m in Sources */ = {isa = PBXBuildFile; fileRef = 8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */; };
 		8140A0A018AB3831007727CC /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */; };
 		81C427481856844C00EAF7A1 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		81C4274B1856844C00EAF7A1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81C4274A1856844C00EAF7A1 /* main.m */; };
@@ -74,10 +69,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		8107F23B1885AA8000213615 /* GLInternalModes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalModes.h; sourceTree = "<group>"; };
-		8107F23C1885AA8000213615 /* GLInternalModes.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalModes.m; sourceTree = "<group>"; };
-		8107F23E1885AE0A00213615 /* GLInternalWaveInitialization.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GLInternalWaveInitialization.h; sourceTree = "<group>"; };
-		8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GLInternalWaveInitialization.m; sourceTree = "<group>"; };
 		8107F2411888A17C00213615 /* MakeTracerMovieInMatlab.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MakeTracerMovieInMatlab.m; sourceTree = SOURCE_ROOT; };
 		811A019E18A5962000BD8682 /* InternalModeTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = InternalModeTest; sourceTree = BUILT_PRODUCTS_DIR; };
 		811A01A118A5962000BD8682 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
@@ -234,10 +225,6 @@
 			isa = PBXGroup;
 			children = (
 				81C4274A1856844C00EAF7A1 /* main.m */,
-				8107F23B1885AA8000213615 /* GLInternalModes.h */,
-				8107F23C1885AA8000213615 /* GLInternalModes.m */,
-				8107F23E1885AE0A00213615 /* GLInternalWaveInitialization.h */,
-				8107F23F1885AE0A00213615 /* GLInternalWaveInitialization.m */,
 				81C4274E1856844C00EAF7A1 /* InternalWaves.1 */,
 				81C4274C1856844C00EAF7A1 /* Supporting Files */,
 			);
@@ -363,7 +350,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				811A01AB18A598B800BD8682 /* GLInternalModes.m in Sources */,
 				811A01A218A5962000BD8682 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -380,8 +366,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8140A09F18AB382E007727CC /* GLInternalWaveInitialization.m in Sources */,
-				8140A09E18AB382B007727CC /* GLInternalModes.m in Sources */,
 				8140A09618AB37D0007727CC /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -390,8 +374,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8107F23D1885AA8000213615 /* GLInternalModes.m in Sources */,
-				8107F2401885AE0A00213615 /* GLInternalWaveInitialization.m in Sources */,
 				81C4274B1856844C00EAF7A1 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -620,6 +602,7 @@
 				81271F3F18B1E02D001057FE /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 		8140A09D18AB37D0007727CC /* Build configuration list for PBXNativeTarget "InternalWavesWithGMSpectrum" */ = {
 			isa = XCConfigurationList;

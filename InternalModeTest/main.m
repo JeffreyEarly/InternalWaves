@@ -8,7 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <GLNumericalModelingKit/GLNumericalModelingKit.h>
-#import "GLInternalModes.h"
+#import <GLOceanKit/GLOceanKit.h>
 
 int main(int argc, const char * argv[])
 {

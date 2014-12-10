@@ -8,8 +8,7 @@
 
 #import <Foundation/Foundation.h>
 #import <GLNumericalModelingKit/GLNumericalModelingKit.h>
-#import "GLInternalModes.h"
-#import "GLInternalWaveInitialization.h"
+#import <GLOceanKit/GLOceanKit.h>
 
 #define g 9.81
 
