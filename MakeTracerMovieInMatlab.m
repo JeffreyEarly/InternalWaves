@@ -1,5 +1,5 @@
-file = '/Users/jearly/Desktop/InternalWavesGM.nc';
-FramesFolder ='/Users/jearly/Desktop/InternalWavesGM';
+file = '/Users/jearly/Desktop/InternalWaves.nc';
+FramesFolder ='/Users/jearly/Desktop/InternalWavesUnitTest';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -87,8 +87,8 @@ deltaRho = (max(rho_bar)-min(rho_bar))/3;
 density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
 density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max(rho_bar)-min(rho_bar)) );
 
-for iTime=1:1%length(t)
-%for iTime=1:1
+%for iTime=1:1%length(t)
+for iTime=1:1
 	
 %	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
 % 	rho3d(end+1,:,:) = rho3d(1,:,:);

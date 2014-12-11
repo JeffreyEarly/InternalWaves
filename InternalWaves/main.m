@@ -32,18 +32,20 @@ int main(int argc, const char * argv[])
 		GLFloat g = 9.81;
 		
         // This is good for unit testing.
-        BOOL shouldUnitTest = NO;
+        BOOL shouldUnitTest = YES;
         NSUInteger modeUnit = 1;
 		NSUInteger kUnit = 1;
 		NSUInteger lUnit = 1;
 		NSInteger omegaSign = 1;
-        GLFloat U_max = .025;
+        GLFloat U_max = .25;
         NSUInteger numStepsPerCycle = 20;
 		GLFloat omega = 0.0; // Don't set this value, it will be set for you based on the modes.
         
         /************************************************************************************************/
 		/*		Define the problem dimensions															*/
 		/************************************************************************************************/
+
+
 		GLEquation *equation = [[GLEquation alloc] init];
 		GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: Nz domainMin: -depth length: depth];
 		zDim.name = @"z";
@@ -51,9 +53,7 @@ int main(int argc, const char * argv[])
 		xDim.name = @"x";
 		GLDimension *yDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Ny domainMin: -height/2 length: height];
 		yDim.name = @"y";
-        GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
-		tDim.name = @"time";
-        
+
         /************************************************************************************************/
 		/*		Create a density profile and compute the internal wave phases                           */
 		/************************************************************************************************/
@@ -78,6 +78,13 @@ int main(int argc, const char * argv[])
             
             wave = [NSKeyedUnarchiver unarchiveObjectWithFile: path];
 		}
+        
+        // The time dimension must get set after we know what omega is.
+        GLFloat maxTime = shouldUnitTest ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
+        GLFloat sampleTime = shouldUnitTest ? maxTime/numStepsPerCycle : sampleTimeInMinutes*60;
+        NSLog(@"Maximum wave period %d @ %02d:%02d (HH:MM)", (int) floor(maxTime/86400), ((int) floor(maxTime/3600))%24, ((int) floor(maxTime/60))%60);
+        GLDimension *tDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 1 + round(maxTime/sampleTime)  domainMin:0 length:maxTime];
+        tDim.name = @"time"; tDim.units = @"s";
         
 		/************************************************************************************************/
 		/*		Create the dynamical variables from the analytical solution								*/
@@ -164,69 +171,24 @@ int main(int argc, const char * argv[])
 		
 		[netcdfFile addVariable: rho_bar];
         
-		GLMutableVariable *uHistory = [u variableByAddingDimension: tDim];
-		uHistory.name = @"u";
-		uHistory = [netcdfFile addVariable: uHistory];
-		
-		GLMutableVariable *vHistory = [v variableByAddingDimension: tDim];
-		vHistory.name = @"v";
-		vHistory = [netcdfFile addVariable: vHistory];
-        
-        GLMutableVariable *wHistory = [w variableByAddingDimension: tDim];
-		wHistory.name = @"w";
-		wHistory = [netcdfFile addVariable: wHistory];
-        
-        GLMutableVariable *rhoHistory = [rho variableByAddingDimension: tDim];
-		rhoHistory.name = @"rho";
-		rhoHistory = [netcdfFile addVariable: rhoHistory];
-		
-		GLMutableVariable *xPositionHistory = [xPosition variableByAddingDimension: tDim];
-		xPositionHistory.name = @"x-position";
-		xPositionHistory = [netcdfFile addVariable: xPositionHistory];
-        
-		GLMutableVariable *yPositionHistory = [yPosition variableByAddingDimension: tDim];
-		yPositionHistory.name = @"y-position";
-		yPositionHistory = [netcdfFile addVariable: yPositionHistory];
-		
-		GLMutableVariable *zPositionHistory = [zPosition variableByAddingDimension: tDim];
-		zPositionHistory.name = @"z-position";
-		zPositionHistory = [netcdfFile addVariable: zPositionHistory];
-		
-		/************************************************************************************************/
-		/*		Time step the analytical solution and the integrator forward, then write out the data.	*/
-		/************************************************************************************************/
-		
-		GLFloat maxTime = shouldUnitTest ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
-        NSLog(@"Maximum wave period %d @ %02d:%02d (HH:MM)", (int) floor(maxTime/86400), ((int) floor(maxTime/3600))%24, ((int) floor(maxTime/60))%60);
-        GLFloat sampleTime = shouldUnitTest ? maxTime/numStepsPerCycle : sampleTimeInMinutes*60;
-        for (GLFloat time = sampleTime; time <= maxTime-0*sampleTime; time += sampleTime)
-		//while( integrator.currentTime < maxTime + integrator.stepSize/2)
-        {
-            @autoreleasepool {
-                //NSArray *yout = [integrator stepForward];
-				NSArray *yout = [integrator stepForwardToTime: time];
-                
-				//GLFloat time = integrator.currentTime;
-                NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
-				NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(integrator.currentTime/86400), ((int) floor(integrator.currentTime/3600))%24, ((int) floor(integrator.currentTime/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
-				//NSLog(@"Logging day %d @ %02d:%02d (HH:MM)", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60);
+        // NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
 
-                
-                NSArray *uv = timeToUV([GLScalar scalarWithValue: time forEquation: equation]);
-				
-				[tDim addPoint: @(time)];
-				[uHistory concatenateWithLowerDimensionalVariable: uv[0] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-                [vHistory concatenateWithLowerDimensionalVariable: uv[1] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-				[wHistory concatenateWithLowerDimensionalVariable: uv[2] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-				[rhoHistory concatenateWithLowerDimensionalVariable: uv[3] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-				
-                [xPositionHistory concatenateWithLowerDimensionalVariable: yout[0] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-                [yPositionHistory concatenateWithLowerDimensionalVariable: yout[1] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-				[zPositionHistory concatenateWithLowerDimensionalVariable: yout[2] alongDimensionAtIndex:0 toIndex: (tDim.nPoints-1)];
-                
-                [netcdfFile waitUntilAllOperationsAreFinished];
-            }
-        }
+        integrator.shouldDisplayProgress = YES;
+        [integrator integrateAlongDimension: tDim withTimeScale: 1.0 file: netcdfFile output: ^(GLScalar *t, NSArray *y) {
+            NSMutableDictionary *scaledVariables = [NSMutableDictionary dictionary];
+            NSArray *uv = timeToUV(t);
+            
+            scaledVariables[@"u"] = [uv[0] scaleVariableBy: 1.0 withUnits: @"m/s" dimensionsBy: 1.0 units: @"m"];
+            scaledVariables[@"v"] = [uv[1] scaleVariableBy: 1.0 withUnits: @"m/s" dimensionsBy: 1.0 units: @"m"];
+            scaledVariables[@"w"] = [uv[2] scaleVariableBy: 1.0 withUnits: @"m/s" dimensionsBy: 1.0 units: @"m"];
+            scaledVariables[@"rho"] = [uv[3] scaleVariableBy: 1.0 withUnits: @"kg/m^3" dimensionsBy: 1.0 units: @"m"];
+            scaledVariables[@"zeta"] = [uv[4] scaleVariableBy: 1.0 withUnits: @"m" dimensionsBy: 1.0 units: @"m"];
+            scaledVariables[@"x-position"] = [y[0] scaleVariableBy: 1.0 withUnits: @"m" dimensionsBy: 1.0 units: @"float_id"];
+            scaledVariables[@"y-position"] = [y[1] scaleVariableBy: 1.0 withUnits: @"m" dimensionsBy: 1.0 units: @"float_id"];
+            scaledVariables[@"z-position"] = [y[2] scaleVariableBy: 1.0 withUnits: @"m" dimensionsBy: 1.0 units: @"float_id"];
+            
+            return scaledVariables;
+        }];
         
 		[netcdfFile close];
 	}

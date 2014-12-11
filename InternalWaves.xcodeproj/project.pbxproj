@@ -11,6 +11,9 @@
 		811A01A218A5962000BD8682 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 811A01A118A5962000BD8682 /* main.m */; };
 		811A01A618A5962000BD8682 /* InternalModeTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 811A01A518A5962000BD8682 /* InternalModeTest.1 */; };
 		811A01AA18A5964800BD8682 /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */; };
+		811C38F21A38F0E000C7DC69 /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */; };
+		811C38F31A38F0EE00C7DC69 /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */; };
+		811C38F41A38F0F200C7DC69 /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */; };
 		81271F3618B1E02D001057FE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		81271F3918B1E02D001057FE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81271F3818B1E02D001057FE /* main.m */; };
 		81271F3D18B1E02D001057FE /* RandomWalk.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 81271F3C18B1E02D001057FE /* RandomWalk.1 */; };
@@ -74,6 +77,7 @@
 		811A01A118A5962000BD8682 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		811A01A418A5962000BD8682 /* InternalModeTest-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "InternalModeTest-Prefix.pch"; sourceTree = "<group>"; };
 		811A01A518A5962000BD8682 /* InternalModeTest.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = InternalModeTest.1; sourceTree = "<group>"; };
+		811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = GLOceanKit.dylib; path = "../../../Library/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug/GLOceanKit.dylib"; sourceTree = "<group>"; };
 		81271F3518B1E02D001057FE /* RandomWalk */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = RandomWalk; sourceTree = BUILT_PRODUCTS_DIR; };
 		81271F3818B1E02D001057FE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		81271F3B18B1E02D001057FE /* RandomWalk-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RandomWalk-Prefix.pch"; sourceTree = "<group>"; };
@@ -100,6 +104,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				811C38F31A38F0EE00C7DC69 /* GLOceanKit.dylib in Frameworks */,
 				811A01AA18A5964800BD8682 /* GLNumericalModelingKit.dylib in Frameworks */,
 				811A019F18A5962000BD8682 /* Foundation.framework in Frameworks */,
 			);
@@ -118,6 +123,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				811C38F41A38F0F200C7DC69 /* GLOceanKit.dylib in Frameworks */,
 				8140A0A018AB3831007727CC /* GLNumericalModelingKit.dylib in Frameworks */,
 				8140A09318AB37D0007727CC /* Foundation.framework in Frameworks */,
 			);
@@ -127,6 +133,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				811C38F21A38F0E000C7DC69 /* GLOceanKit.dylib in Frameworks */,
 				81C42756185684AA00EAF7A1 /* GLNumericalModelingKit.dylib in Frameworks */,
 				81C427481856844C00EAF7A1 /* Foundation.framework in Frameworks */,
 			);
@@ -215,6 +222,7 @@
 		81C427461856844C00EAF7A1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */,
 				81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */,
 				81C427471856844C00EAF7A1 /* Foundation.framework */,
 			);
@@ -395,6 +403,10 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USER_HEADER_SEARCH_PATHS = "";
 			};
@@ -409,6 +421,10 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				USER_HEADER_SEARCH_PATHS = "";
@@ -461,6 +477,10 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
 				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug",
+				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -474,6 +494,10 @@
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -560,6 +584,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/InternalWavesWorkspace-eodpwbkpexluutdscuniuuyskzcg/Build/Products/Debug",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
@@ -578,6 +603,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/InternalWavesWorkspace-eodpwbkpexluutdscuniuuyskzcg/Build/Products/Debug",
+					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug",
 				);
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
