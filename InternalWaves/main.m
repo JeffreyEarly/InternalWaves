@@ -10,35 +10,50 @@
 #import <GLNumericalModelingKit/GLNumericalModelingKit.h>
 #import <GLOceanKit/GLOceanKit.h>
 
+typedef NS_ENUM(NSUInteger, ExperimentType) {
+    kSingleModeExperimentType = 0,
+    kGMSpectrumExperimentType = 1
+};
+
 int main(int argc, const char * argv[])
 {
-
 	@autoreleasepool {
-		GLFloat latitude = 45;
-		GLFloat N2 = 2.5e-3;
-		GLFloat depth = 100;
-		GLFloat width = 15e3;
-        GLFloat height = 7.5e3;
-		NSUInteger Nx = 16;
-        NSUInteger Ny = 8;
-		NSUInteger Nz = 300;
-		GLFloat maxWavePeriods = 1; // The wave period is the inertial period for the GM spectrum initialization, or omega for the unit test initialization
-		GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
+        ExperimentType experiment = kGMSpectrumExperimentType;
+        
+        GLFloat latitude = 45;
+        GLFloat N2 = 2.5e-3;
+        GLFloat depth, width, height;
+        NSUInteger Nx, Ny, Nz;
+        GLFloat maxWavePeriods = 1;
+        NSString *filename;
+        if (experiment == kSingleModeExperimentType) {
+            depth = 100;
+            width = 15e3;
+            height = 7.5e3;
+            Nx = 32;
+            Ny = 16;
+            Nz = 32;
+            filename = @"InternalWaveSingleMode.nc";
+        } else {
+            depth = 100;
+            width = 15e3;
+            height = 15e3;
+            Nx = 128;
+            Ny = 128;
+            Nz = 64;
+            maxWavePeriods = 1;
+            filename = @"InternalWavesGMSpectrum.nc";
+        }
+
 		GLFloat horizontalFloatSpacingInMeters = 1000;
 		GLFloat verticalFloatSpacingInMeters = 25;
 		
 		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
-		
-        // This is good for unit testing.
-        BOOL shouldUnitTest = YES;
-        NSUInteger modeUnit = 1;
-		NSUInteger kUnit = 1;
-		NSUInteger lUnit = 1;
-		NSInteger omegaSign = 1;
-        GLFloat U_max = .25;
-        NSUInteger numStepsPerCycle = 20;
+        
+        GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
+        NSUInteger numStepsPerCycle = 61; // Only relevant for the single mode test, otherwise the sampleTimeInMinutes will be used.
 		GLFloat omega = 0.0; // Don't set this value, it will be set for you based on the modes.
         
         /************************************************************************************************/
@@ -66,22 +81,25 @@ int main(int argc, const char * argv[])
 		// 2. The last two dimensions are ordered (x,y) to appease pcolor, meshgrid, and all the standard matlab formating.
         GLInternalWaveInitialization *wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
         
-        if (shouldUnitTest) {
+        if (experiment == kSingleModeExperimentType) {
+            NSUInteger modeUnit = 1;
+            NSUInteger kUnit = 1;
+            NSUInteger lUnit = 1;
+            NSInteger omegaSign = 1;
+            GLFloat U_max = .25;
             wave.maximumModes = modeUnit+2;
             omega = [wave createUnitWaveWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit omegaSign: omegaSign];
         } else {
             wave.maximumModes = 25;
-//            [wave createGarrettMunkSpectrumWithEnergy: 0.1];
-            
-            NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesGM.internalwaves"];
+            [wave createGarrettMunkSpectrumWithEnergy: 0.1];
+//            NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesGMSpectrum.internalwaves"];
 //            [NSKeyedArchiver archiveRootObject: wave toFile: path];
-            
-            wave = [NSKeyedUnarchiver unarchiveObjectWithFile: path];
+//            wave = [NSKeyedUnarchiver unarchiveObjectWithFile: path];
 		}
         
         // The time dimension must get set after we know what omega is.
-        GLFloat maxTime = shouldUnitTest ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
-        GLFloat sampleTime = shouldUnitTest ? maxTime/numStepsPerCycle : sampleTimeInMinutes*60;
+        GLFloat maxTime = experiment==kSingleModeExperimentType ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
+        GLFloat sampleTime = experiment==kSingleModeExperimentType ? maxTime/numStepsPerCycle : sampleTimeInMinutes*60;
         NSLog(@"Maximum wave period %d @ %02d:%02d (HH:MM)", (int) floor(maxTime/86400), ((int) floor(maxTime/3600))%24, ((int) floor(maxTime/60))%60);
         GLDimension *tDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 1 + round(maxTime/sampleTime)  domainMin:0 length:maxTime];
         tDim.name = @"time"; tDim.units = @"s";
@@ -141,7 +159,7 @@ int main(int argc, const char * argv[])
 		
 		CGFloat cfl = 0.25;
         GLFloat cflTimeStep = cfl * xDim.sampleInterval / maxSpeed;
-		GLFloat outputTimeStep = shouldUnitTest ? 2*M_PI/(numStepsPerCycle*omega) : sampleTimeInMinutes*60;
+		GLFloat outputTimeStep = experiment==kSingleModeExperimentType ? 2*M_PI/(numStepsPerCycle*omega) : sampleTimeInMinutes*60;
 		
 		GLFloat timeStep = cflTimeStep > outputTimeStep ? outputTimeStep : outputTimeStep / ceil(outputTimeStep/cflTimeStep);
 		
@@ -160,16 +178,17 @@ int main(int argc, const char * argv[])
 		/*		Create a NetCDF file and mutable variables in order to record some of the time steps.	*/
 		/************************************************************************************************/
 		
-		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWaves.nc"];
+		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:filename];
 		GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: [NSURL URLWithString: path] forEquation: equation overwriteExisting: YES];
 		
-        [netcdfFile setGlobalAttribute: @(U_max) forKey: @"U_max"];
 		[netcdfFile setGlobalAttribute: @(width) forKey: @"L_domain"];
         [netcdfFile setGlobalAttribute: @(latitude) forKey: @"latitude"];
         [netcdfFile setGlobalAttribute: @(f0) forKey: @"f0"];
         [netcdfFile setGlobalAttribute: @(depth) forKey: @"D"];
 		
-		[netcdfFile addVariable: rho_bar];
+        GLFunction *rhoScaled = [rho_bar scaleVariableBy: 1.0 withUnits: @"kg/m^3" dimensionsBy: 1.0 units: @"m"];
+        rhoScaled.name = rho_bar.name;
+		[netcdfFile addVariable: rhoScaled];
         
         // NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
 

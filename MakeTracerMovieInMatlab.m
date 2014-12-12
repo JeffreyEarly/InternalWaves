@@ -1,6 +1,17 @@
-file = '/Users/jearly/Desktop/InternalWaves.nc';
-FramesFolder ='/Users/jearly/Desktop/InternalWavesUnitTest';
+%experiment = 'kSingleModeExperimentType';
+experiment = 'kGMSpectrumExperimentType';
 
+if ( strcmp(experiment,'kSingleModeExperimentType') )
+    file = '/Users/jearly/Desktop/InternalWaveSingleMode.nc';
+    FramesFolder ='/Users/jearly/Desktop/InternalWaveSingleMode';
+    ExperimentTitle = 'Single mode internal wave';
+    floatSize = 10;
+else
+    file = '/Users/jearly/Desktop/InternalWavesGMSpectrum.nc';
+    FramesFolder ='/Users/jearly/Desktop/InternalWavesGMSpectrum';
+    ExperimentTitle = 'Spectrum of internal waves';
+    floatSize = 10;
+end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 	Make the frames folder
@@ -50,19 +61,19 @@ maxZ = max(zDomain);
 %
 stride = 1;
 zStride = 1;
-floatSize = 25;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % 	Setup the figure
 %
-figure('Position', [50 50 1920 1080])
+figure('Position', [50 50 1280 720])
 set(gcf,'PaperPositionMode','auto')
 set(gcf, 'Color', 'w');
 
 % Read in the initial position of the floats.
 % We will use this information to maintain a constant color on each float.
-colormap(jet(128))
+colormap(gray(128))
 coloraxis = linspace(0,1,length(colormap));
 
 xposInitial = double(ncread(file, 'x-position', [ceil(stride/2) ceil(stride/2) ceil(zStride/2) 1], [length(y)/stride length(x)/stride length(z)/zStride 1], [stride stride zStride 1]));
@@ -81,14 +92,15 @@ particle_size = floatSize*floatSize*ones(size(xposInitial));
 %
 % specify the density surface that we want to display, and find their color in the colormap
 %
-colormap(flipud(jet(128)))
+%colormap(flipud(jet(128)))
+colormap(jet(128))
 coloraxis = linspace(0,1,length(colormap));
 deltaRho = (max(rho_bar)-min(rho_bar))/3;
 density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
 density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max(rho_bar)-min(rho_bar)) );
 
-%for iTime=1:1%length(t)
-for iTime=1:1
+for iTime=1:length(t)
+%for iTime=50:50
 	
 %	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
 % 	rho3d(end+1,:,:) = rho3d(1,:,:);
@@ -153,10 +165,13 @@ for iTime=1:1
 	
 	
 	hold off
+    
+    title( sprintf('%s @ %02d minutes',ExperimentTitle, round(t(iTime)/60)), 'fontsize', 28, 'FontName', 'Helvetica' );
 	
 	% write everything out	
 	output = sprintf('%s/%03d', FramesFolder,iTime-1);
-	print('-depsc2', output)
+    export_fig(output,'-r300');
+	%print('-depsc2', output)
 end
 
 error = xpos-xposInitial;
