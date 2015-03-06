@@ -9,6 +9,7 @@
 #import <Foundation/Foundation.h>
 #import <GLNumericalModelingKit/GLNumericalModelingKit.h>
 #import <GLOceanKit/GLOceanKit.h>
+#import <GLOceanKit/GLInternalModesSpectral.h>
 
 int main(int argc, const char * argv[])
 {
@@ -21,7 +22,7 @@ int main(int argc, const char * argv[])
         GLFloat height = 500;
 		NSUInteger Nx = 4;
         NSUInteger Ny = 4;
-		NSUInteger Nz = 128;
+		NSUInteger Nz = 8;
 		
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
@@ -57,11 +58,11 @@ int main(int argc, const char * argv[])
             rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
         }
 	    
-		GLInternalModes *internalModes = [[GLInternalModes alloc] init];
- 		//[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
+		GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
+ 		[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
         //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: 1 forLatitude: latitude];
         //[internalModes internalWaveModesUsingGEPFromDensityProfile: rho_bar wavenumber: 0.008 forLatitude: latitude];
-        [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
+        //[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
         
 		[internalModes.eigendepths dumpToConsole];
 //        [internalModes.eigenfrequencies dumpToConsole];
