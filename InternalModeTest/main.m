@@ -22,7 +22,7 @@ int main(int argc, const char * argv[])
         GLFloat height = 500;
 		NSUInteger Nx = 4;
         NSUInteger Ny = 4;
-		NSUInteger Nz = 8;
+		NSUInteger Nz = 32;
 		
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
