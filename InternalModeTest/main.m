@@ -18,11 +18,11 @@ int main(int argc, const char * argv[])
 		GLFloat latitude = 33;
 		GLFloat N2_0 = 1.69e-4;
 		GLFloat depth = 300;
-		GLFloat width = 1000;
-        GLFloat height = 500;
-		NSUInteger Nx = 4;
-        NSUInteger Ny = 4;
-		NSUInteger Nz = 32;
+		GLFloat width = 10e3;
+        GLFloat height = 10e3;
+		NSUInteger Nx = 64;
+        NSUInteger Ny = 64;
+		NSUInteger Nz = 256;
 		
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
@@ -58,13 +58,18 @@ int main(int argc, const char * argv[])
             rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
         }
 	    
-		GLInternalModes *internalModes = [[GLInternalModes alloc] init];
+		GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
  		//[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
         //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: 1 forLatitude: latitude];
         //[internalModes internalWaveModesUsingGEPFromDensityProfile: rho_bar wavenumber: 0.008 forLatitude: latitude];
         [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
-        
-		[internalModes.eigendepths dumpToConsole];
+		
+		NSLog(@"Done!");
+		
+		//[internalModes.eigendepths dumpToConsole];
+		
+		return 0;
+		
 //        [internalModes.eigenfrequencies dumpToConsole];
 //		[internalModes.Sprime dumpToConsole];
 //        [internalModes.S dumpToConsole];
