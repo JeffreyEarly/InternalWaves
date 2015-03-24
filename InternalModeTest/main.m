@@ -15,20 +15,28 @@
 int main(int argc, const char * argv[])
 {
     @autoreleasepool {
-        GLFloat N2_0 = 1.69e-4;
-        GLFloat rho0 = 1025;
-        GLFloat g = 9.81;
-        GLFloat latitude = 33.0;
-        GLFloat H = 300;
-        GLFloat k = 0.1;
-        
-        GLEquation *equation = [[GLEquation alloc] init];
-        GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 512 domainMin: -H length: H]; zDim.name = @"z";
-        GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
-        GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
-        
-        GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
-        [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: k forLatitude: latitude maximumModes: 31 zOutDim: zDim];
+		GLFloat N2_0 = 1.69e-4;
+		GLFloat rho0 = 1025;
+		GLFloat g = 9.81;
+		GLFloat latitude = 33.0;
+		GLFloat H = 300;
+		
+		GLEquation *equation = [[GLEquation alloc] init];
+		GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: 32 domainMin: -H length: H]; zDim.name = @"z";
+		GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+		GLFunction *rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
+		
+		GLFloat width = 1000;
+		GLFloat height = 500;
+		NSUInteger Nx = 4;
+		NSUInteger Ny = 4;
+		GLDimension *xDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Nx domainMin: -width/2 length: width];
+		xDim.name = @"x";
+		GLDimension *yDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Ny domainMin: -height/2 length: height];
+		yDim.name = @"y";
+		
+		GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
+		[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude maximumModes: 31 zOutDim: zDim];
     }
 }
 
