@@ -12,7 +12,7 @@
 #import <GLOceanKit/GLInternalModesSpectral.h>
 
 
-int main(int argc, const char * argv[])
+int NOTmain(int argc, const char * argv[])
 {
     @autoreleasepool {
 		GLFloat N2_0 = 1.69e-4;
@@ -38,9 +38,11 @@ int main(int argc, const char * argv[])
 		GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
 		[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude maximumModes: 31 zOutDim: zDim];
     }
+    
+    return 0;
 }
 
-int mainer(int argc, const char * argv[])
+int main(int argc, const char * argv[])
 {
 
 	@autoreleasepool {
@@ -52,7 +54,7 @@ int mainer(int argc, const char * argv[])
         GLFloat height = 10e3;
 		NSUInteger Nx = 64;
         NSUInteger Ny = 64;
-		NSUInteger Nz = 256;
+		NSUInteger Nz = 512;
 		
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
@@ -69,6 +71,7 @@ int mainer(int argc, const char * argv[])
 		yDim.name = @"y";
         GLMutableDimension *tDim = [[GLMutableDimension alloc] initWithPoints: @[@(0.0)]];
 		tDim.name = @"time";
+        GLDimension *zOutDim;
         
         /************************************************************************************************/
 		/*		Create a density profile and compute the internal wave phases                           */
@@ -83,6 +86,59 @@ int mainer(int argc, const char * argv[])
             GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile_Stretched_64.nc"] forEquation:equation];
             rho_bar = profile.variables[0];
             zDim = rho_bar.dimensions[0];
+        }  else if (1) {
+            GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile_AllPoints.nc"] forEquation:equation];
+            GLFunction *rho_full = profile.variables[0];
+            GLFunction *N2_full = profile.variables[1];
+            GLDimension *zDim_full = rho_full.dimensions[0];
+            
+            // Interpolate the density onto the reduced grid (our z input grid).
+            zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: Nz domainMin: zDim_full.domainMin length: zDim_full.domainLength];
+            GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+            rho_bar = [rho_full interpolateAtPoints:@[z]];
+            [rho_bar solve];
+            
+            // Now create a stretched z-output grid
+            GLFunction *N_scaled = [[N2_full dividedBy: [N2_full min]] sqrt];
+            GLFunction *s = [N_scaled integrate]; // we now have s(z)
+            
+            NSUInteger Nz_out = 50;
+            GLFloat minDepth = -50;
+            GLFloat maxDepth = -15;
+            GLFloat sAtMinDepth = 0.0;
+            GLFloat sAtMaxDepth = 0.0;
+            
+            [s solve]; // Must solve before trying to use its data to initialize a dimension.
+            GLDimension *sDim = [[GLDimension alloc] initWithNPoints: s.nDataPoints values: s.data];
+            GLFunction *zOfs = [GLFunction functionOfRealTypeWithDimensions: @[sDim] forEquation: equation];
+            for (NSUInteger i=0; i<zOfs.nDataPoints; i++) {
+                zOfs.pointerValue[i] = [zDim_full valueAtIndex: i];
+                if ([zDim_full valueAtIndex: i] <= minDepth) {
+                    sAtMinDepth = s.pointerValue[i];
+                }
+                if ([zDim_full valueAtIndex: i] >= maxDepth && !sAtMaxDepth) {
+                    sAtMaxDepth = s.pointerValue[i];
+                }
+            }
+            
+            GLDimension *sDimOut = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: Nz_out domainMin: sAtMinDepth length: sAtMaxDepth-sAtMinDepth];
+            GLFunction *sOut = [GLFunction functionOfRealTypeFromDimension: sDimOut withDimensions:@[sDimOut] forEquation:equation];
+            GLFunction *zInterp = [zOfs interpolateAtPoints:@[sOut]];
+            
+            
+            // Note that we cap the endpoints with the top and bottom of zDim to ensure the chebyshev computation works.
+            // We should really fix this within the computation itself, by overriding the matrix creation.
+            NSMutableArray *points = [NSMutableArray array];
+            points[0] = @(zDim.domainMin);
+            for (NSUInteger i=0; i<zInterp.nDataPoints; i++) {
+                points[i+1] = @(zInterp.pointerValue[i]);
+            }
+            points[zInterp.nDataPoints+1] = @(zDim.domainMin+zDim.domainLength);
+            zOutDim = [[GLDimension alloc] initWithPoints: points];
+            
+//            zOutDim = [[GLDimension alloc] initWithNPoints: zInterp.nDataPoints values: zInterp.data];
+            
+            
         } else {
             GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
             rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
@@ -92,8 +148,16 @@ int mainer(int argc, const char * argv[])
  		//[internalModes internalGeostrophicModesFromDensityProfile: rho_bar forLatitude: latitude];
         //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: 1 forLatitude: latitude];
         //[internalModes internalWaveModesUsingGEPFromDensityProfile: rho_bar wavenumber: 0.008 forLatitude: latitude];
-        [internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude];
+        
+        //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: 0.0 forLatitude: latitude];
+        [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: 0.0 forLatitude: latitude maximumModes: 30 zOutDim: zOutDim];
+        //[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude maximumModes: 30 zOutDim: zOutDim];
 		
+        [internalModes.eigendepths dumpToConsole];
+        [internalModes.eigenfrequencies dumpToConsole];
+        [internalModes.S dumpToConsole];
+        [internalModes.Sprime dumpToConsole];
+        
 		NSLog(@"Done!");
 		
 		//[internalModes.eigendepths dumpToConsole];
