@@ -18,7 +18,7 @@ typedef NS_ENUM(NSUInteger, ExperimentType) {
 int main(int argc, const char * argv[])
 {
 	@autoreleasepool {
-        ExperimentType experiment = kGMSpectrumExperimentType;
+        ExperimentType experiment = kSingleModeExperimentType;
         
         GLFloat latitude = 45;
         GLFloat N2 = 2.5e-3;
@@ -32,7 +32,7 @@ int main(int argc, const char * argv[])
             height = 7.5e3;
             Nx = 32;
             Ny = 16;
-            Nz = 32;
+            Nz = 24;
             filename = @"InternalWaveSingleMode.nc";
         } else {
             depth = 100;
@@ -79,7 +79,7 @@ int main(int argc, const char * argv[])
 		// The ordering the dimensions is very deliberate here, for two reasons:
 		// 1. The z-dimension is in the first position, so that the horizontal fft will act on contiguous chunks of memory, and
 		// 2. The last two dimensions are ordered (x,y) to appease pcolor, meshgrid, and all the standard matlab formating.
-        GLInternalWaveInitialization *wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
+        GLInternalWaveInitialization *wave;
         
         if (experiment == kSingleModeExperimentType) {
             NSUInteger modeUnit = 1;
@@ -87,12 +87,13 @@ int main(int argc, const char * argv[])
             NSUInteger lUnit = 1;
             NSInteger omegaSign = 1;
             GLFloat U_max = .25;
-            wave.maximumModes = modeUnit+2;
+			wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude maxMode: modeUnit+2 equation:equation];
             omega = [wave createUnitWaveWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit omegaSign: omegaSign];
         } else {
-            wave.maximumModes = 25;
+			wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
             [wave createGarrettMunkSpectrumWithEnergy: 0.1];
-//            NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesGMSpectrum.internalwaves"];
+			
+//			NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesGMSpectrum.internalwaves"];
 //            [NSKeyedArchiver archiveRootObject: wave toFile: path];
 //            wave = [NSKeyedUnarchiver unarchiveObjectWithFile: path];
 		}
@@ -130,6 +131,7 @@ int main(int argc, const char * argv[])
 		GLFunction *v = uv[1];
 		GLFunction *w = uv[2];
         GLFunction *rho = uv[3];
+		GLFunction *zeta = uv[4];
         GLFunction *speed = [[[[u times: u] plus: [v times: v]] plus: [w times: w]] sqrt];
 		GLFloat maxSpeed = [speed maxNow];
 		NSLog(@"Initial maximum speed: %f", maxSpeed);
@@ -154,7 +156,7 @@ int main(int argc, const char * argv[])
 		GLFunction *xPosition = [GLFunction functionFromFunction: xFloat];
 		GLFunction *yPosition = [GLFunction functionFromFunction: yFloat];
 		GLFunction *zPosition = [GLFunction functionFromFunction: zFloat];
-        GLFunction *isopycnalDeviation = [uv[4] interpolateAtPoints:@[zPosition, xPosition, yPosition]];
+        GLFunction *isopycnalDeviation = [zeta interpolateAtPoints:@[zPosition, xPosition, yPosition]];
         zPosition = [zPosition plus: isopycnalDeviation];
 		
 		CGFloat cfl = 0.25;
@@ -189,9 +191,7 @@ int main(int argc, const char * argv[])
         GLFunction *rhoScaled = [rho_bar scaleVariableBy: 1.0 withUnits: @"kg/m^3" dimensionsBy: 1.0 units: @"m"];
         rhoScaled.name = rho_bar.name;
 		[netcdfFile addVariable: rhoScaled];
-        
-        // NSLog(@"Logging day %d @ %02d:%02d (HH:MM), last step size: %02d:%02.1f (MM:SS.S).", (int) floor(time/86400), ((int) floor(time/3600))%24, ((int) floor(time/60))%60, (int)floor(integrator.lastStepSize/60), fmod(integrator.lastStepSize,60));
-
+		
         integrator.shouldDisplayProgress = YES;
         [integrator integrateAlongDimension: tDim withTimeScale: 1.0 file: netcdfFile output: ^(GLScalar *t, NSArray *y) {
             NSMutableDictionary *scaledVariables = [NSMutableDictionary dictionary];

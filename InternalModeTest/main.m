@@ -124,21 +124,9 @@ int main(int argc, const char * argv[])
             GLDimension *sDimOut = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: Nz_out domainMin: sAtMinDepth length: sAtMaxDepth-sAtMinDepth];
             GLFunction *sOut = [GLFunction functionOfRealTypeFromDimension: sDimOut withDimensions:@[sDimOut] forEquation:equation];
             GLFunction *zInterp = [zOfs interpolateAtPoints:@[sOut]];
-            
-            
-            // Note that we cap the endpoints with the top and bottom of zDim to ensure the chebyshev computation works.
-            // We should really fix this within the computation itself, by overriding the matrix creation.
-            NSMutableArray *points = [NSMutableArray array];
-            points[0] = @(zDim.domainMin);
-            for (NSUInteger i=0; i<zInterp.nDataPoints; i++) {
-                points[i+1] = @(zInterp.pointerValue[i]);
-            }
-            points[zInterp.nDataPoints+1] = @(zDim.domainMin+zDim.domainLength);
-            zOutDim = [[GLDimension alloc] initWithPoints: points];
-            
-//            zOutDim = [[GLDimension alloc] initWithNPoints: zInterp.nDataPoints values: zInterp.data];
-            
-            
+			
+			[zInterp solve]; // required!!!
+            zOutDim = [[GLDimension alloc] initWithNPoints: zInterp.nDataPoints values: zInterp.data];
         } else {
             GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
             rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
