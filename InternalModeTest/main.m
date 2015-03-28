@@ -93,7 +93,7 @@ int main(int argc, const char * argv[])
             GLDimension *zDim_full = rho_full.dimensions[0];
             
             // Interpolate the density onto the reduced grid (our z input grid).
-            zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: Nz domainMin: zDim_full.domainMin length: zDim_full.domainLength];
+            zDim = [[GLDimension alloc] initDimensionWithGrid: kGLChebyshevEndpointGrid nPoints: Nz domainMin: zDim_full.domainMin length: zDim_full.domainLength];
             GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
             rho_bar = [rho_full interpolateAtPoints:@[z]];
             [rho_bar solve];
