@@ -36,7 +36,7 @@ int NOTmain(int argc, const char * argv[])
 		yDim.name = @"y";
 		
 		GLInternalModesSpectral *internalModes = [[GLInternalModesSpectral alloc] init];
-		[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude maximumModes: 31 zOutDim: zDim];
+		[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude maximumModes: 31];
     }
     
     return 0;
@@ -103,8 +103,8 @@ int main(int argc, const char * argv[])
             GLFunction *s = [N_scaled integrate]; // we now have s(z)
             
             NSUInteger Nz_out = 50;
-            GLFloat minDepth = -50;
-            GLFloat maxDepth = -15;
+            GLFloat minDepth = -60;
+            GLFloat maxDepth = 0;
             GLFloat sAtMinDepth = 0.0;
             GLFloat sAtMaxDepth = 0.0;
             

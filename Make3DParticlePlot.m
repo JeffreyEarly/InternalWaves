@@ -1,4 +1,5 @@
 file = '/Users/jearly/Desktop/InternalWaves.nc';
+file = '/Users/jearly/Desktop/InternalWavesLatmix_64_64_25.nc'
 
 xpos=double(ncread(file, 'x-position'));
 ypos=double(ncread(file, 'y-position'));
