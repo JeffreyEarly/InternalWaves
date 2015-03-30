@@ -18,7 +18,7 @@ typedef NS_ENUM(NSUInteger, ExperimentType) {
 int main(int argc, const char * argv[])
 {
 	@autoreleasepool {
-        ExperimentType experiment = kSingleModeExperimentType;
+        ExperimentType experiment = kGMSpectrumExperimentType;
         
         GLFloat latitude = 45;
         GLFloat N2 = 2.5e-3;
@@ -41,7 +41,7 @@ int main(int argc, const char * argv[])
             Nx = 128;
             Ny = 128;
             Nz = 64;
-            maxWavePeriods = 1;
+            maxWavePeriods = 10;
             filename = @"InternalWavesGMSpectrum.nc";
         }
 
@@ -180,7 +180,8 @@ int main(int argc, const char * argv[])
 		/*		Create a NetCDF file and mutable variables in order to record some of the time steps.	*/
 		/************************************************************************************************/
 		
-		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:filename];
+//		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:filename];
+		NSString *path = [@"/Volumes/Data/InternalWaveSimulations/" stringByAppendingPathComponent:filename];
 		GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: [NSURL URLWithString: path] forEquation: equation overwriteExisting: YES];
 		
 		[netcdfFile setGlobalAttribute: @(width) forKey: @"L_domain"];
@@ -191,6 +192,10 @@ int main(int argc, const char * argv[])
         GLFunction *rhoScaled = [rho_bar scaleVariableBy: 1.0 withUnits: @"kg/m^3" dimensionsBy: 1.0 units: @"m"];
         rhoScaled.name = rho_bar.name;
 		[netcdfFile addVariable: rhoScaled];
+		
+		GLFunction *n2Scaled = [wave.N2 scaleVariableBy: 1.0 withUnits: @"radians/s^2" dimensionsBy: 1.0 units: @"m"];
+		n2Scaled.name = wave.N2.name;
+		[netcdfFile addVariable: n2Scaled];
 		
         integrator.shouldDisplayProgress = YES;
         [integrator integrateAlongDimension: tDim withTimeScale: 1.0 file: netcdfFile output: ^(GLScalar *t, NSArray *y) {
