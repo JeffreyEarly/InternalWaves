@@ -6,7 +6,7 @@ E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
 
 file = '/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_all_floats.nc';
 file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31.nc';
-file = '/Users/jearly/Desktop/InternalWavesLatmix_64_64_25.nc'
+file = '/Users/jearly/Desktop/InternalWavesLatmix_128_128_50_GM_0.013.nc'
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');

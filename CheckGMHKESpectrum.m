@@ -1,16 +1,17 @@
-file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_2.nc';
-file1 = '/Volumes/Data/InternalWaveSimulations/InternalWavesConstantN_256_256_128_lat31.nc';
-file = '/Volumes/Data/InternalWaveSimulations/XYZT.nc';
-file=file1;
+file1 = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_2.nc';
+file2 = '/Volumes/Data/InternalWaveSimulations/InternalWavesConstantN_256_256_128_lat31.nc';
+file3 = '/Volumes/Data/InternalWaveSimulations/XYZT.nc';
+file4 = '/Users/jearly/Desktop/InternalWavesLatmix_128_128_50_GM_0.013.nc';
+file=file4;
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
 z = ncread(file, 'z');
 t = ncread(file, 'time');
 
-rho_bar = double(ncread(file1, 'rho_bar'));
-N2 = double(ncread(file1, 'N2'));
-f0 = ncreadatt(file1, '/', 'f0');
+rho_bar = double(ncread(file, 'rho_bar'));
+N2 = double(ncread(file, 'N2'));
+f0 = ncreadatt(file, '/', 'f0');
 
 latitude = 31;
 
@@ -20,7 +21,7 @@ latitude = 31;
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-depth = -150;
+depth = -18;
 [depth_index] = find(z >= depth, 1, 'first');
 
 u3d = double(squeeze(ncread(file, 'u', [1 1 depth_index 1], [length(y) length(x) 1 length(t)], [1 1 1 1])));
@@ -41,7 +42,7 @@ for i=1:subsample:M
 	end
 end
 
-taper_bandwidth = 3;
+taper_bandwidth = 1;
 psi=[];
 %[psi,lambda]=sleptap(size(cv_mooring,1),taper_bandwidth);
 [omega_p, Spp, Snn, Spn] = mspec(dt,cv_mooring,psi);
@@ -50,7 +51,7 @@ omega = [ -flipud(omega_p(2:end)); omega_p];
 S = [flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 
 [S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
-
+S_gm = BlurSpectrum( omega, S_gm);
 
 figure
 plot( omega, S, 'blue', 'LineWidth', 2), ylog
