@@ -1,9 +1,4 @@
-file1 = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31_2.nc';
-file2 = '/Volumes/Data/InternalWaveSimulations/InternalWavesConstantN_256_256_128_lat31.nc';
-file3 = '/Volumes/Data/InternalWaveSimulations/XYZT.nc';
-file4 = '/Users/jearly/Desktop/InternalWavesLatmix_128_128_50_GM_0.013.nc';
-file4 = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrum.nc';
-file=file4;
+file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64_64_65.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -16,7 +11,7 @@ f0 = ncreadatt(file, '/', 'f0');
 latitude = ncreadatt(file, '/', 'latitude');
 
 %N2 = double(ncread(file, 'N2'));
-%[~, ~, ~, N2] = InternalWaveModesFromDensityProfile_Spectral( rho_bar, z, z, 0.0, latitude, 'total_energy', 'rigid_lid' );
+[~, ~, ~, N2] = InternalWaveModesFromDensityProfile_Spectral( rho_bar, z, z, 0.0, latitude, 'total_energy', 'rigid_lid' );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -24,7 +19,7 @@ latitude = ncreadatt(file, '/', 'latitude');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-depth = -18;
+depth = -50;
 [depth_index] = find(z >= depth, 1, 'first');
 
 stride = 4;
@@ -55,8 +50,9 @@ psi=[];
 omega = [ -flipud(omega_p(2:end)); omega_p];
 S = [flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 
-[S_gm] = 2.5*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
+%[S_gm] = 2.5*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
 %[S_gm] = (2/3.14)*GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho_bar, depth );
+[S_gm] = 1.0*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
 S_gm = BlurSpectrum( omega, S_gm);
 
 figure

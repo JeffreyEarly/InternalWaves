@@ -1,6 +1,9 @@
-file = '/Users/jearly/Desktop/InternalWavesConstantN_UnitTest_128_128_65.nc';
+%file = '/Users/jearly/Desktop/InternalWavesConstantN_UnitTest_128_128_65.nc';
+file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrum.nc';
+%file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow.nc';
 
-outputfile = 'InternalWavesConstantN_UnitTest_high_wavenumber.mat';
+
+outputfile = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64_64_65.mat';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');

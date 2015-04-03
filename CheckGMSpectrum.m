@@ -7,6 +7,8 @@ E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
 file = '/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_all_floats.nc';
 file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31.nc';
 file = '/Users/jearly/Desktop/InternalWavesLatmix_128_128_50_GM_0.013.nc'
+file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow.nc';
+file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64_64_65.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -14,6 +16,7 @@ z = ncread(file, 'z');
 t = ncread(file, 'time');
 rho_bar = double(ncread(file, 'rho_bar'));
 N2 = double(ncread(file, 'N2'));
+%N2 = (2.5e-3)*ones(size(z));
 
 iTime=1;
 zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
@@ -36,6 +39,9 @@ zeta2 = squeeze(vmean(vmean(zeta3d.*zeta3d,1),2));
 u2 = squeeze(vmean(vmean(u3d.*u3d+w3d.*w3d,1),2)+vmean(vmean(v3d.*v3d,1),2));
 
 N0 = 5.2e-3;
+
+GM_zeta2_relative = mean(zeta2)/(53*N0./sqrt(mean(N2)))
+GM_u22_relative = mean(1e4*u2)/(44*sqrt(mean(N2))/N0)
 
 figure,
 plot(zeta2,z), hold on
