@@ -1,5 +1,5 @@
 L_GM = 1.3E3;       % [m]
-invT_GM = 5.2E-3;   % [1/s]
+invT_GM = 5.23E-3;   % [1/s]
 E_GM = 6.3E-5;      % [unitless]
 
 E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
@@ -42,20 +42,20 @@ zeta2 = squeeze(vmean(vmean(zeta3d.*zeta3d,1),2));
 u2 = squeeze(vmean(vmean(u3d.*u3d+w3d.*w3d,1),2)+vmean(vmean(v3d.*v3d,1),2));
 u2 = squeeze(vmean(vmean(u3d.*u3d,1),2)+vmean(vmean(v3d.*v3d,1),2));
 
-N0 = 5.2e-3;
+N0 = invT_GM;
 
 GM_zeta2_relative = mean(zeta2*N0./sqrt(N2))/(53*N0./sqrt(mean(N2)))
 GM_u22_relative = mean(1e4*u2.*sqrt(N2)/N0)/(44*sqrt(mean(N2))/N0)
 
 figure,
-plot(zeta2*N0./sqrt(N2),z), hold on
+plot(zeta2,z), hold on
 plot(53*(N0./sqrt(N2)),z,'g--')
 title('isopycnal variance')
 xlabel('m^2')
 ylabel('depth (m)')
 figure
-plot(1e4*u2.*sqrt(N2)/N0,z), hold on
-plot(0.5*44.*sqrt(N2)/N0,z,'g--')
+plot(1e4*u2,z), hold on
+plot(44.*sqrt(N2)/N0,z,'g--')
 title('velocity variance')
 xlabel('cm^2 s^{-2}')
 ylabel('depth (m)')

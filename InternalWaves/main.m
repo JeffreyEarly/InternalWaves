@@ -60,7 +60,7 @@ int main(int argc, const char * argv[])
         }
 
 		GLFloat horizontalFloatSpacingInMeters = 1000;
-		GLFloat verticalFloatSpacingInMeters = 500;
+		GLFloat verticalFloatSpacingInMeters = 1000;
 		
 		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
 		GLFloat rho0 = 1025;
@@ -112,8 +112,6 @@ int main(int argc, const char * argv[])
 				wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude maxMode: modeUnit+2 equation:equation];
 			} else {
 				wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
-				wave.internalModes.N2 = [wave.internalModes.N2 abs];
-				[wave.internalModes.N2 solve];
 			}
 			
 			if (![NSKeyedArchiver archiveRootObject: wave toFile: initialConditionsFile]) {
@@ -159,7 +157,7 @@ int main(int argc, const char * argv[])
 		GLFunction *u = uv[0];
 		GLFunction *v = uv[1];
 		GLFunction *w = uv[2];
-        GLFunction *rho = uv[3];
+        //GLFunction *rho = uv[3];
 		GLFunction *zeta = uv[4];
         GLFunction *speed = [[[[u times: u] plus: [v times: v]] plus: [w times: w]] sqrt];
 		GLFloat maxSpeed = [speed maxNow];
