@@ -3,6 +3,7 @@ experiment = 'kSingleModeExperimentType';
 
 if ( strcmp(experiment,'kSingleModeExperimentType') )
     file = '/Users/jearly/Desktop/InternalWaveSingleMode.nc';
+    file = '/Volumes/Data/InternalWaveSimulations/InternalWaveSingleModeExponentialStratification.nc';
     FramesFolder ='/Users/jearly/Desktop/InternalWaveSingleMode';
     ExperimentTitle = 'Single mode internal wave';
     floatSize = 10;
@@ -92,8 +93,8 @@ particle_size = floatSize*floatSize*ones(size(xposInitial));
 %
 % specify the density surface that we want to display, and find their color in the colormap
 %
-%colormap(flipud(jet(128)))
-colormap(jet(128))
+colormap(flipud(jet(128)))
+%colormap(jet(128))
 coloraxis = linspace(0,1,length(colormap));
 deltaRho = (max(rho_bar)-min(rho_bar))/3;
 density_surface = [min(rho_bar) min(rho_bar)+deltaRho min(rho_bar)+2*deltaRho];
@@ -102,26 +103,26 @@ density_color = interp1(coloraxis,colormap, (density_surface-min(rho_bar))./(max
 for iTime=1:1
 %for iTime=50:50
 	
-%	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
+	rho3d = double(ncread(file, 'rho', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
 % 	rho3d(end+1,:,:) = rho3d(1,:,:);
 % 	rho3d(:,end+1,:) = rho3d(:,1,:);
 
-	zeta3d = double(ncread(file, 'zeta', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
-	rho3d = zeros(size(zeta3d));
-	for m=1:size(rho3d,1)
-		for n=1:size(rho3d,2)
-			coordinate = squeeze(zeta3d(m,n,:))+zDomain;
-			negIndex = find(diff(coordinate)<=0);
-			if (length(negIndex) ~= 0)
-				for j=(min(negIndex)+1):(max(negIndex)+1)
-					if (coordinate(j)<=coordinate(j-1))
-						coordinate(j)=coordinate(j-1)+0.001;
-					end
-				end
-			end
-			rho3d(m,n,:) = interp1( coordinate, rho_bar, zDomain );
-		end
-	end
+% 	zeta3d = double(ncread(file, 'zeta', [1 1 1 iTime], [length(yDomain) length(xDomain) length(zDomain) 1], [1 1 1 1]));
+% 	rho3d = zeros(size(zeta3d));
+% 	for m=1:size(rho3d,1)
+% 		for n=1:size(rho3d,2)
+% 			coordinate = squeeze(zeta3d(m,n,:))+zDomain;
+% 			negIndex = find(diff(coordinate)<=0);
+% 			if (length(negIndex) ~= 0)
+% 				for j=(min(negIndex)+1):(max(negIndex)+1)
+% 					if (coordinate(j)<=coordinate(j-1))
+% 						coordinate(j)=coordinate(j-1)+0.001;
+% 					end
+% 				end
+% 			end
+% 			rho3d(m,n,:) = interp1( coordinate, rho_bar, zDomain );
+% 		end
+% 	end
 	
 	hsurfaces = slice(X,Y,Z,rho3d,[min(xDomain)],[max(yDomain)],[minZ]);
 	set(hsurfaces,'FaceColor','interp','EdgeColor','none')

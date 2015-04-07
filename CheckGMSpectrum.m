@@ -9,6 +9,9 @@ file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31.nc';
 file = '/Users/jearly/Desktop/InternalWavesLatmix_128_128_50_GM_0.013.nc'
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64_64_65.nc';
+file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
+file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponentialStratification.nc';
+%file = '/Volumes/jearly/Desktop/InternalWavesLatmix_256_256_50_GM_0.042.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -37,21 +40,22 @@ GM_relative = (E_p+E_k)/E_GM_total
 
 zeta2 = squeeze(vmean(vmean(zeta3d.*zeta3d,1),2));
 u2 = squeeze(vmean(vmean(u3d.*u3d+w3d.*w3d,1),2)+vmean(vmean(v3d.*v3d,1),2));
+u2 = squeeze(vmean(vmean(u3d.*u3d,1),2)+vmean(vmean(v3d.*v3d,1),2));
 
 N0 = 5.2e-3;
 
-GM_zeta2_relative = mean(zeta2)/(53*N0./sqrt(mean(N2)))
-GM_u22_relative = mean(1e4*u2)/(44*sqrt(mean(N2))/N0)
+GM_zeta2_relative = mean(zeta2*N0./sqrt(N2))/(53*N0./sqrt(mean(N2)))
+GM_u22_relative = mean(1e4*u2.*sqrt(N2)/N0)/(44*sqrt(mean(N2))/N0)
 
 figure,
-plot(zeta2,z), hold on
-plot(53*N0./sqrt(N2),z,'g--')
+plot(zeta2*N0./sqrt(N2),z), hold on
+plot(53*(N0./sqrt(N2)),z,'g--')
 title('isopycnal variance')
 xlabel('m^2')
 ylabel('depth (m)')
 figure
-plot(1e4*u2,z), hold on
-plot(44*sqrt(N2)/N0,z,'g--')
+plot(1e4*u2.*sqrt(N2)/N0,z), hold on
+plot(0.5*44.*sqrt(N2)/N0,z,'g--')
 title('velocity variance')
 xlabel('cm^2 s^{-2}')
 ylabel('depth (m)')

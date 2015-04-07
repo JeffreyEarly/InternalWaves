@@ -15,38 +15,52 @@ typedef NS_ENUM(NSUInteger, ExperimentType) {
     kGMSpectrumExperimentType = 1
 };
 
+typedef NS_ENUM(NSUInteger, StratificationType) {
+	kConstantStratificationType = 0,
+	kExponentialStratificationType = 1
+};
+
 int main(int argc, const char * argv[])
 {
 	@autoreleasepool {
         ExperimentType experiment = kGMSpectrumExperimentType;
-        
-        GLFloat latitude = 45;
-        GLFloat N2 = 2.5e-3;
+		StratificationType stratification = kExponentialStratificationType;
+		
+        GLFloat latitude = 31;
+        GLFloat N0 = 5.23e-3;
         GLFloat depth, width, height;
         NSUInteger Nx, Ny, Nz;
         GLFloat maxWavePeriods = 1;
         NSString *filename;
+		GLFloat amplitude;
+		NSUInteger modeUnit = 1;
+		NSUInteger kUnit = 1;
+		NSUInteger lUnit = 1;
+		NSInteger omegaSign = 1;
+		NSString *strat = stratification == kConstantStratificationType ? @"Constant" : @"Exponential";
         if (experiment == kSingleModeExperimentType) {
-            depth = 100;
+            depth = 5000;
             width = 15e3;
             height = 7.5e3;
             Nx = 32;
             Ny = 16;
-            Nz = 24;
-            filename = @"InternalWaveSingleMode.nc";
+            Nz = 64;
+			amplitude = 0.25; // Max horizontal wave speed, m/s
+			filename = [NSString stringWithFormat: @"InternalWaveSingleMode%@Stratification.nc",strat];
         } else {
-            depth = 100;
-            width = 15e3;
-            height = 15e3;
+            depth = 5000;
+            width = 10e3;
+            height = 10e3;
             Nx = 128;
             Ny = 128;
             Nz = 64;
             maxWavePeriods = 10;
-            filename = @"InternalWavesGMSpectrum.nc";
+			amplitude = 1.0; // GM reference energy level
+            filename = [NSString stringWithFormat: @"InternalWavesGMSpectrum%@Stratification.nc",strat];
         }
 
 		GLFloat horizontalFloatSpacingInMeters = 1000;
-		GLFloat verticalFloatSpacingInMeters = 25;
+		GLFloat verticalFloatSpacingInMeters = 500;
 		
 		GLFloat f0 = 2*(7.2921e-5)*sin(latitude*M_PI/180);
 		GLFloat rho0 = 1025;
@@ -55,47 +69,62 @@ int main(int argc, const char * argv[])
         GLFloat sampleTimeInMinutes = 10; // This will be overriden for the unit test.
         NSUInteger numStepsPerCycle = 61; // Only relevant for the single mode test, otherwise the sampleTimeInMinutes will be used.
 		GLFloat omega = 0.0; // Don't set this value, it will be set for you based on the modes.
-        
-        /************************************************************************************************/
-		/*		Define the problem dimensions															*/
-		/************************************************************************************************/
-
-
-		GLEquation *equation = [[GLEquation alloc] init];
-		GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: Nz domainMin: -depth length: depth];
-		zDim.name = @"z";
-		GLDimension *xDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Nx domainMin: -width/2 length: width];
-		xDim.name = @"x";
-		GLDimension *yDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Ny domainMin: -height/2 length: height];
-		yDim.name = @"y";
-
-        /************************************************************************************************/
-		/*		Create a density profile and compute the internal wave phases                           */
-		/************************************************************************************************/
-        GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
-        GLFunction *rho_bar = [[z times: @(-N2*rho0/g)] plus: @(rho0)];
-		rho_bar.name = @"rho_bar";
 		
-		// The ordering the dimensions is very deliberate here, for two reasons:
-		// 1. The z-dimension is in the first position, so that the horizontal fft will act on contiguous chunks of memory, and
-		// 2. The last two dimensions are ordered (x,y) to appease pcolor, meshgrid, and all the standard matlab formating.
+		// We load the transformation matrices from file, if possible.
         GLInternalWaveInitialization *wave;
-        
-        if (experiment == kSingleModeExperimentType) {
-            NSUInteger modeUnit = 1;
-            NSUInteger kUnit = 1;
-            NSUInteger lUnit = 1;
-            NSInteger omegaSign = 1;
-            GLFloat U_max = .25;
-			wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude maxMode: modeUnit+2 equation:equation];
-            omega = [wave createUnitWaveWithSpeed: U_max verticalMode: modeUnit k: kUnit l: lUnit omegaSign: omegaSign];
-        } else {
-			wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
-            [wave createGarrettMunkSpectrumWithEnergy: 0.1];
+		GLEquation *equation;
+		
+		NSString *initialConditionsFile = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent: [NSString stringWithFormat: @"InternalWavesLatmix_%lu_%lu_%lu_%luKM_%@Stratification.internalwaves", Nx, Ny, Nz,(NSUInteger) (width/1e3), strat]];
+		NSFileManager *manager = [[NSFileManager alloc] init];
+		if ([manager fileExistsAtPath: initialConditionsFile isDirectory: nil])
+		{
+			if (!(wave = [NSKeyedUnarchiver unarchiveObjectWithFile: initialConditionsFile])) {
+				NSLog(@"Failed to load wave file.");
+				return 0;
+			}
+			equation = wave.equation;
+		}
+		else
+		{
+			equation = [[GLEquation alloc] init];
+			GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLChebyshevEndpointGrid nPoints: Nz domainMin: -depth length: depth];
+			zDim.name = @"z";
+			GLDimension *xDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Nx domainMin: -width/2 length: width];
+			xDim.name = @"x";
+			GLDimension *yDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Ny domainMin: -height/2 length: height];
+			yDim.name = @"y";
 			
-//			NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:@"InternalWavesGMSpectrum.internalwaves"];
-//            [NSKeyedArchiver archiveRootObject: wave toFile: path];
-//            wave = [NSKeyedUnarchiver unarchiveObjectWithFile: path];
+			GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+			GLFunction *rho_bar;
+			if (stratification == kConstantStratificationType) {
+				rho_bar = [[z times: @(-N0*N0*rho0/g)] plus: @(rho0)];
+			} else {
+				// rho0*N0*N0*1300/(2*g)*(1-exp(2*z/1300))+rho0;
+				rho_bar = [[[[[[z times: @(2./1300.)] exponentiate] negate] plus: @(1.)] times: @(rho0*N0*N0*1300./(2*g))] plus: @(rho0)];
+			}
+			rho_bar.name = @"rho_bar";
+			[rho_bar solve];
+			
+			// The ordering the dimensions is very deliberate here, for two reasons:
+			// 1. The z-dimension is in the first position, so that the horizontal fft will act on contiguous chunks of memory, and
+			// 2. The last two dimensions are ordered (x,y) to appease pcolor, meshgrid, and all the standard matlab formating.
+			if (experiment == kSingleModeExperimentType) {
+				wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude maxMode: modeUnit+2 equation:equation];
+			} else {
+				wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
+				wave.internalModes.N2 = [wave.internalModes.N2 abs];
+				[wave.internalModes.N2 solve];
+			}
+			
+			if (![NSKeyedArchiver archiveRootObject: wave toFile: initialConditionsFile]) {
+				NSLog(@"Failed to save restart file.");
+			}
+		}
+		
+        if (experiment == kSingleModeExperimentType) {
+            omega = [wave createUnitWaveWithSpeed: amplitude verticalMode: modeUnit k: kUnit l: lUnit omegaSign: omegaSign];
+        } else {
+            [wave createGarrettMunkSpectrumWithEnergy: amplitude];
 		}
         
         // The time dimension must get set after we know what omega is.
@@ -119,7 +148,7 @@ int main(int argc, const char * argv[])
 			GLFunction *u = [[wave.Sprime transform: [[wave.u_plus multiply: time_phase_plus] plus: [wave.u_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
 			GLFunction *v = [[wave.Sprime transform: [[wave.v_plus multiply: time_phase_plus] plus: [wave.v_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
 			GLFunction *w = [[wave.S transform: [[wave.w_plus multiply: time_phase_plus] plus: [wave.w_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
-            GLFunction *rho = [[[[wave.S transform: [[wave.rho_plus multiply: time_phase_plus] plus: [wave.rho_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]] times: wave.N2] plus: rho_bar];
+            GLFunction *rho = [[[[wave.S transform: [[wave.rho_plus multiply: time_phase_plus] plus: [wave.rho_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]] times: wave.N2] plus: wave.rho];
             GLFunction *zeta = [[wave.S transform: [[wave.zeta_plus multiply: time_phase_plus] plus: [wave.zeta_minus multiply: time_phase_minus]]] transformToBasis: @[@(kGLDeltaBasis), @(kGLDeltaBasis), @(kGLDeltaBasis)]];
 			
 			return @[u,v,w,rho,zeta];
@@ -144,7 +173,7 @@ int main(int argc, const char * argv[])
 		xFloatDim.name = @"x-float";
 		GLDimension *yFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints:ceil(height/horizontalFloatSpacingInMeters) domainMin: -height/2  length:height];
 		yFloatDim.name = @"y-float";
-		GLDimension *zFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints:ceil(depth/verticalFloatSpacingInMeters) domainMin: -depth  length:depth];
+		GLDimension *zFloatDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints:ceil(depth/verticalFloatSpacingInMeters)+1 domainMin: -depth  length:depth];
 		zFloatDim.name = @"z-float";
         
 		// For consistency, we order the float dimensions the same as the dynamical variable dimensions.
@@ -160,7 +189,7 @@ int main(int argc, const char * argv[])
         zPosition = [zPosition plus: isopycnalDeviation];
 		
 		CGFloat cfl = 0.25;
-        GLFloat cflTimeStep = cfl * xDim.sampleInterval / maxSpeed;
+        GLFloat cflTimeStep = cfl * (width/Nx) / maxSpeed;
 		GLFloat outputTimeStep = experiment==kSingleModeExperimentType ? 2*M_PI/(numStepsPerCycle*omega) : sampleTimeInMinutes*60;
 		
 		GLFloat timeStep = cflTimeStep > outputTimeStep ? outputTimeStep : outputTimeStep / ceil(outputTimeStep/cflTimeStep);
@@ -188,9 +217,10 @@ int main(int argc, const char * argv[])
         [netcdfFile setGlobalAttribute: @(latitude) forKey: @"latitude"];
         [netcdfFile setGlobalAttribute: @(f0) forKey: @"f0"];
         [netcdfFile setGlobalAttribute: @(depth) forKey: @"D"];
+		[netcdfFile setGlobalAttribute: @(amplitude) forKey: @"amplitude"];
 		
-        GLFunction *rhoScaled = [rho_bar scaleVariableBy: 1.0 withUnits: @"kg/m^3" dimensionsBy: 1.0 units: @"m"];
-        rhoScaled.name = rho_bar.name;
+        GLFunction *rhoScaled = [wave.rho scaleVariableBy: 1.0 withUnits: @"kg/m^3" dimensionsBy: 1.0 units: @"m"];
+        rhoScaled.name = wave.rho.name;
 		[netcdfFile addVariable: rhoScaled];
 		
 		GLFunction *n2Scaled = [wave.N2 scaleVariableBy: 1.0 withUnits: @"radians/s^2" dimensionsBy: 1.0 units: @"m"];

@@ -49,12 +49,12 @@ int main(int argc, const char * argv[])
         
 		GLFloat latitude = 33;
 		GLFloat N2_0 = 1.69e-4;
-		GLFloat depth = 300;
+		GLFloat depth = 5000;
 		GLFloat width = 10e3;
         GLFloat height = 10e3;
 		NSUInteger Nx = 64;
         NSUInteger Ny = 64;
-		NSUInteger Nz = 512;
+		NSUInteger Nz = 64;
 		
 		GLFloat rho0 = 1025;
 		GLFloat g = 9.81;
@@ -63,7 +63,7 @@ int main(int argc, const char * argv[])
 		/*		Define the problem dimensions															*/
 		/************************************************************************************************/
 		GLEquation *equation = [[GLEquation alloc] init];
-		GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLEndpointGrid nPoints: Nz domainMin: -depth length: depth];
+		GLDimension *zDim = [[GLDimension alloc] initDimensionWithGrid: kGLChebyshevEndpointGrid nPoints: Nz domainMin: -depth length: depth];
 		zDim.name = @"z";
 		GLDimension *xDim = [[GLDimension alloc] initDimensionWithGrid: kGLPeriodicGrid nPoints: Nx domainMin: -width/2 length: width];
 		xDim.name = @"x";
@@ -86,7 +86,7 @@ int main(int argc, const char * argv[])
             GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile_Stretched_64.nc"] forEquation:equation];
             rho_bar = profile.variables[0];
             zDim = rho_bar.dimensions[0];
-        }  else if (1) {
+        }  else if (0) {
             GLNetCDFFile *profile = [[GLNetCDFFile alloc] initWithURL:[NSURL URLWithString: @"/Users/jearly/Documents/Models/InternalWaves/Latmix2011Site1Profile_AllPoints.nc"] forEquation:equation];
             GLFunction *rho_full = profile.variables[0];
             GLFunction *N2_full = profile.variables[1];
@@ -127,7 +127,11 @@ int main(int argc, const char * argv[])
 			
 			[zInterp solve]; // required!!!
             zOutDim = [[GLDimension alloc] initWithNPoints: zInterp.nDataPoints values: zInterp.data];
-        } else {
+		} else if (1) {
+			GLFloat N0 = 5.23e-3;
+			GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
+			rho_bar = [[[[[[z times: @(2./1300.)] exponentiate] negate] plus: @(1.)] times: @(rho0*N0*N0*1300./(2*g))] plus: @(rho0)];
+		} else {
             GLFunction *z = [GLFunction functionOfRealTypeFromDimension:zDim withDimensions:@[zDim] forEquation:equation];
             rho_bar = [[z times: @(-N2_0*rho0/g)] plus: @(rho0)];
         }
@@ -140,6 +144,8 @@ int main(int argc, const char * argv[])
         //[internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: 0.0 forLatitude: latitude];
         [internalModes internalWaveModesFromDensityProfile: rho_bar wavenumber: 0.0 forLatitude: latitude maximumModes: 30 zOutDim: zOutDim];
         //[internalModes internalWaveModesFromDensityProfile: rho_bar withFullDimensions:@[xDim, yDim, zDim] forLatitude: latitude maximumModes: 30 zOutDim: zOutDim];
+		
+		[internalModes.N2 dumpToConsole];
 		
         [internalModes.eigendepths dumpToConsole];
         [internalModes.eigenfrequencies dumpToConsole];

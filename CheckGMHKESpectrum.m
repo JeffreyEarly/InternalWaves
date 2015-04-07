@@ -1,4 +1,7 @@
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64_64_65.nc';
+file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.013.nc';
+file = '/Volumes/jearly/Desktop/InternalWavesLatmix_256_256_50_GM_0.042.nc';
+%file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 
 x = ncread(file, 'x');
 y = ncread(file, 'y');
@@ -51,16 +54,18 @@ omega = [ -flipud(omega_p(2:end)); omega_p];
 S = [flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 
 %[S_gm] = 2.5*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
-%[S_gm] = (2/3.14)*GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho_bar, depth );
-[S_gm] = 1.0*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
+[S_gm2] = (1/8.64)*0.5*GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho_bar, depth );
+[S_gm] = 0.5*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
 S_gm = BlurSpectrum( omega, S_gm);
+S_gm2 = BlurSpectrum( omega, S_gm2);
 
 figure
 plot( omega, S, 'blue', 'LineWidth', 2), ylog
 hold on
 plot( omega, S_gm, 'black', 'LineWidth', 2), ylog
+plot( omega, S_gm2, 'green', 'LineWidth', 2), ylog
 vlines( -f0 )
-legend('Observed', 'GM81')
+legend('Observed', 'GM81 WKB', 'GM81 JJE')
 
 return;
 

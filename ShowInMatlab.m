@@ -1,4 +1,5 @@
 file = '/Users/jearly/Desktop/InternalWaves.nc';
+file = '/Volumes/Data/InternalWaveSimulations/InternalWaveSingleModeConstantStratification.nc';
 
 % read in the dimensional variables
 x = ncread(file, 'x');
@@ -55,7 +56,7 @@ for iTime=1:4
 	
 	subplot(3,4,0*4+iTime)
 	
-	zIndex = 100;
+	zIndex = 50;
 	u2d = squeeze(u3d(:,:,zIndex));
 	v2d = squeeze(v3d(:,:,zIndex));
 	quiver(x,y,u2d,v2d,0.8)
