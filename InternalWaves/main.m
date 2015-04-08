@@ -23,7 +23,7 @@ typedef NS_ENUM(NSUInteger, StratificationType) {
 int main(int argc, const char * argv[])
 {
 	@autoreleasepool {
-        ExperimentType experiment = kGMSpectrumExperimentType;
+        ExperimentType experiment = kSingleModeExperimentType;
 		StratificationType stratification = kExponentialStratificationType;
 		
         GLFloat latitude = 31;
@@ -123,9 +123,8 @@ int main(int argc, const char * argv[])
             omega = [wave createUnitWaveWithSpeed: amplitude verticalMode: modeUnit k: kUnit l: lUnit omegaSign: omegaSign];
         } else {
             [wave createGarrettMunkSpectrumWithEnergy: amplitude];
+			[wave showDiagnostics];
 		}
-        
-        [wave showDiagnostics];
         
         // The time dimension must get set after we know what omega is.
         GLFloat maxTime = experiment==kSingleModeExperimentType ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
