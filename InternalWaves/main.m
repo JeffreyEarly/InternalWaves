@@ -49,10 +49,10 @@ int main(int argc, const char * argv[])
 			filename = [NSString stringWithFormat: @"InternalWaveSingleMode%@Stratification.nc",strat];
         } else {
             depth = 5000;
-            width = 10e3;
-            height = 10e3;
-            Nx = 128;
-            Ny = 128;
+            width = 40e3;
+            height = 5e3;
+            Nx = 512;
+            Ny = 64;
             Nz = 64;
             maxWavePeriods = 10;
 			amplitude = 1.0; // GM reference energy level
@@ -111,7 +111,7 @@ int main(int argc, const char * argv[])
 			if (experiment == kSingleModeExperimentType) {
 				wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude maxMode: modeUnit+2 equation:equation];
 			} else {
-				wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
+                wave = [[GLInternalWaveInitialization alloc] initWithDensityProfile: rho_bar fullDimensions:@[zDim, xDim, yDim] latitude:latitude equation:equation];
 			}
 			
 			if (![NSKeyedArchiver archiveRootObject: wave toFile: initialConditionsFile]) {
@@ -124,6 +124,8 @@ int main(int argc, const char * argv[])
         } else {
             [wave createGarrettMunkSpectrumWithEnergy: amplitude];
 		}
+        
+        [wave showDiagnostics];
         
         // The time dimension must get set after we know what omega is.
         GLFloat maxTime = experiment==kSingleModeExperimentType ? maxWavePeriods*2*M_PI/omega : maxWavePeriods*2*M_PI/f0;
