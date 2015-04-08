@@ -1,5 +1,5 @@
 file = '/Users/jearly/Desktop/InternalWaves.nc';
-file = '/Volumes/Data/InternalWaveSimulations/InternalWaveSingleModeConstantStratification.nc';
+file = '/Volumes/Data/InternalWaveSimulations/InternalWaveSingleModeExponentialStratification.nc';
 
 % read in the dimensional variables
 x = ncread(file, 'x');
