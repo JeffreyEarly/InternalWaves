@@ -3,6 +3,8 @@ file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.013.nc';
 file = '/Volumes/jearly/Desktop/InternalWavesLatmix_256_256_50_GM_0.042.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponentialStratification.nc';
 file = '/Volumes/home/jearly/InternalWavesLatmix_256_256_50_GM_0.062.nc';
+file = '/Volumes/Data/InternalWavesLatmix_256_64_80_GM_0.125.nc';
+file = '/Volumes/home/jearly/InternalWavesLatmixStrained_256_64_80_GM_0.016.nc';
 %file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 
 x = ncread(file, 'x');
