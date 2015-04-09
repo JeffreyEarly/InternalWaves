@@ -2,6 +2,7 @@ file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64
 file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.013.nc';
 file = '/Volumes/jearly/Desktop/InternalWavesLatmix_256_256_50_GM_0.042.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponentialStratification.nc';
+file = '/Volumes/home/jearly/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 %file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 
 x = ncread(file, 'x');
@@ -10,12 +11,12 @@ z = ncread(file, 'z');
 t = ncread(file, 'time');
 
 rho_bar = double(ncread(file, 'rho_bar'));
-
+N2 = double(ncread(file, 'N2'));
 f0 = ncreadatt(file, '/', 'f0');
 latitude = ncreadatt(file, '/', 'latitude');
 
 %N2 = double(ncread(file, 'N2'));
-[~, ~, ~, N2] = InternalWaveModesFromDensityProfile_Spectral( rho_bar, z, z, 0.0, latitude, 'total_energy', 'rigid_lid' );
+%[~, ~, ~, N2] = InternalWaveModesFromDensityProfile_Spectral( rho_bar, z, z, 0.0, latitude, 'total_energy', 'rigid_lid' );
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -23,8 +24,8 @@ latitude = ncreadatt(file, '/', 'latitude');
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-depth = 0;
-[depth_index] = find(z <= depth, 1, 'first');
+depth = -50;
+[depth_index] = find(z <= depth, 1, 'last');
 
 stride = 4;
 t_index = length(t)-1;
@@ -62,13 +63,13 @@ N0=5.23E-3;
 % [S_gm2] = (1/8.64)*0.5*GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho_bar, depth, 0 );
 
 % Factor of two to get variance, instead of energy
-[S_gm] = 2*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)), 0 );
+[S_gm] = 2*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, N0, 0 );
 %S_gm(find(isnan(S_gm))) = 0;
 %S_gm = BlurSpectrum( omega, S_gm);
 % S_gm2 = BlurSpectrum( omega, S_gm2);
 
 figure
-plot( omega, S, 'blue', 'LineWidth', 2), ylog
+plot( omega, N0/sqrt(N2(depth_index))*S, 'blue', 'LineWidth', 2), ylog
 hold on
 plot( omega, S_gm, 'black', 'LineWidth', 2), ylog
 % plot( omega, S_gm2, 'green', 'LineWidth', 2), ylog
