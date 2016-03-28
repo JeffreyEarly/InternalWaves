@@ -130,29 +130,63 @@ classdef InternalWaveModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function InitializeWithGMSpectrum(obj, Amp)
             j_star = 3;
-            H2 = 2*(j_star.^(3/2))./(obj.J+j_star).^(5/2);
-            B2 = (2/pi)*obj.f0*obj.M.*obj.M.*sqrt( (obj.N0*obj.N0-obj.f0*obj.f0)./(obj.K2+obj.M.*obj.M))./(obj.N0*obj.N0*obj.K2+obj.f0*obj.f0*obj.M.*obj.M);
-            B2(1,1,:) = 0;
-            
+           
             L_gm = 1.3e3; % thermocline exponential scale, meters
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
             E_gm = 6.3e-5; % non-dimensional energy parameter
             E = L_gm*invT_gm*invT_gm*E_gm*Amp;
-                        
+                      
+            % Compute the proper normalization with lots of modes
+            j2 = (1:512);
+            H = 2*(j_star.^(3/2))./(j2+j_star).^(5/2);
+            H_norm = sum(H);
+            
+            % Analytical function for the GM spectrum in one horizontal
+            % direction.
+            D = obj.Lz;
+            GM2D_function = @(k,j) E*( (2/H_norm)*(j_star.^(3/2))./(j+j_star).^(5/2) ) .* (2/pi)*obj.f0*(j*pi/D).*(j*pi/D).*sqrt( (obj.N0*obj.N0-obj.f0*obj.f0)./(k.*k+(j*pi/D).*(j*pi/D)))./(obj.N0*obj.N0*k.*k+obj.f0*obj.f0*(j*pi/D).*(j*pi/D));
+            
+            
+            % Now create a wavenumber basis that uses the smallest
+            % increment, and only goes to the smallest max wavenumber
             dk = (obj.k(2)-obj.k(1));
             dl = (obj.l(2)-obj.l(1));
-            trapz(trapz(B2(:,1,:).*H2(:,1,:)/2))*dk
+            if (dk < dl)
+                dm = dk;
+            else
+                dm = dl;
+            end
+            if ( max(obj.k) < max(obj.l) )
+                m_max = max(obj.k);
+            else
+                m_max = max(obj.l);
+            end
+            m = (0:dm:m_max)';
             
-            A2 = E*B2.*H2./(2*pi*obj.Kh);
+            % Isotropically spread out the energy, but ignore the stuff
+            % beyond m_max for now (we could come back and fix this).
+            GM3D = zeros(size(obj.Kh));
+            fprintf('Distributing the GM spectrum isotropically in horizontal wave number. This may take a while...\n');
+            for mode=1:max(obj.j)
+                fullIndices = false(size(GM3D));
+                func = @(k) GM2D_function(k,mode);
+                GM3D(1,1,mode) = integral(func,m(1),m(1)+dm/2)/(dk*dl);
+                for i=2:length(m)
+                    m_lower = m(i)-dm/2;
+                    m_upper = m(i)+dm/2;
+                    indices = obj.Kh(:,:,mode) >= m_lower & obj.Kh(:,:,mode) < m_upper;
+                    n = sum(sum(sum(indices)));
+                    total = integral(func,m_lower,m_upper)/(n*dk*dl);
+                    fullIndices(:,:,mode) = indices;
+                    GM3D(fullIndices) = total;
+                end
+            end
             
-            trapz(trapz(trapz(A2)))*dk*dl/E
+            sum(sum(sum(GM3D)))*dk*dl/E
             
-            A2 = A2/4; % divide by two because we spread across positive and negative k, 2
-
+            dk*dl
             
-            A = sqrt(A2)/2; % Now split this into even and odd.
-            
-            
+            A = sqrt(GM3D)*dk*dl/2; % Now split this into even and odd.
             
             A_plus = A.*MakeHermitian(randn(size(obj.K)));
             A_minus = A.*MakeHermitian(randn(size(obj.K)));

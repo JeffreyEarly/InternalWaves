@@ -35,4 +35,4 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 
 
 [u,v]=wavemodel.VelocityFieldAtTime(0);
-mean(mean(mean(u.*u))) + mean(mean(mean(v.*v)))
+real(mean(mean(mean(u.*u))) + mean(mean(mean(v.*v))))*1e4
