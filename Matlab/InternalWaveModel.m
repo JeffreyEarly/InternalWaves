@@ -132,17 +132,23 @@ classdef InternalWaveModel < handle
             j_star = 3;
             H2 = 2*(j_star.^(3/2))./(obj.J+j_star).^(5/2);
             B2 = (2/pi)*obj.f0*obj.M.*obj.M.*sqrt( (obj.N0*obj.N0-obj.f0*obj.f0)./(obj.K2+obj.M.*obj.M))./(obj.N0*obj.N0*obj.K2+obj.f0*obj.f0*obj.M.*obj.M);
-            B2(1,1,:) = 0; % set the zero component to zero
+            B2(1,1,:) = 0;
             
             L_gm = 1.3e3; % thermocline exponential scale, meters
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
             E_gm = 6.3e-5; % non-dimensional energy parameter
             E = L_gm*invT_gm*invT_gm*E_gm*Amp;
+                        
+            dk = (obj.k(2)-obj.k(1));
+            dl = (obj.l(2)-obj.l(1));
+            trapz(trapz(B2(:,1,:).*H2(:,1,:)/2))*dk
             
             A2 = E*B2.*H2./(2*pi*obj.Kh);
-            A2 = A2/4; % divide by two because we spread across positive and negative k, 2
             
-            sum(sum(sum(A2)))*(obj.k(2)-obj.k(1))*(obj.l(2)-obj.l(1))
+            trapz(trapz(trapz(A2)))*dk*dl/E
+            
+            A2 = A2/4; % divide by two because we spread across positive and negative k, 2
+
             
             A = sqrt(A2)/2; % Now split this into even and odd.
             
@@ -219,6 +225,8 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function u = TransformToSpatialDomain( u_bar, Nx, Ny, Nz )
+% Here we use what I call the 'Fourier series' definition of the ifft, so
+% that the coefficients in frequency space have the same units in time.
     u = Nx*Ny*ifft(ifft(u_bar,Nx,1),Ny,2);
     u = fft(cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-2), u(:,:,Nz-1), zeros(Nx,Ny), u(:,:,Nz-1), 0.5*u(:,:,Nz-2:-1:1)),2*Nz,3);
     u = u(:,:,1:Nz);
