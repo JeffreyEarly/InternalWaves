@@ -45,9 +45,11 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 
 z = wavemodel.z;
 HKE = u.*u + v.*v;
-AvgHKE = mean(mean(mean(HKE)))*1e4;
+AvgHKE = mean(mean(HKE(:,:,end)))*1e4;
 fprintf('The average HKE is %f cm^2/s^2, compared to 44 cm^2/s^2 for WKB scaled GM.\n',AvgHKE);
 
+
+AvgPE = mean(mean(zeta(:,:,end).*zeta(:,:,end)))
 
 HKE_int = trapz(z,HKE,3);
 
