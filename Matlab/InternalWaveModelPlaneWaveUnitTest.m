@@ -1,5 +1,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+% InternalWaveModelPlaneWaveUnitTest
+%
+% This script uses the InternalWaveModel to create, and validate, a single
+% internal wave.
+%
 % Jeffrey J. Early
 % jeffrey@jeffreyearly.com
 %
@@ -38,15 +43,15 @@ wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-k0 = 4; % k=0..Nx/2
+k0 = 6; % k=0..Nx/2
 l0 = 0; % l=0..Ny/2
 j0 = 1; % j=1..nModes, where 1 indicates the 1st baroclinic mode
-U = 2.0; % m/s
-sign = -1;
+U = 0.01; % m/s
+sign = 1;
 
 wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
 
-t = 1000;
+t = 100;
 [u,v] = wavemodel.VelocityFieldAtTime(t);
 [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
 
@@ -75,7 +80,7 @@ zeta_unit = -(U*k(k0+1)/m/omega) * cos(k(k0+1)*X + omega*t) .* sin(m*Z);
 max_speed = max(max(max( sqrt(u.*u + v.*v) )));
 u_error = max(max(max(abs(u-u_unit)/max_speed)));
 v_error = max(max(max(abs(v-v_unit)/max_speed)));
-max_w = max(max(max( w )));
+max_w = max(max(max( abs(w) )));
 w_error = max(max(max(abs(w-w_unit)/max_w)));
 max_zeta = max(max(max( zeta )));
 zeta_error = max(max(max(abs(zeta-zeta_unit)/max_zeta)));

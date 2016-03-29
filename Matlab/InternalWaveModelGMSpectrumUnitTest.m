@@ -1,5 +1,11 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
+% InternalWaveModelGMSpectrumUnitTest
+%
+% This script uses the InternalWaveModel to create, and validate, a
+% Garrett-Munk spectrum in a linear internal wave field with constant
+% stratification.
+%
 % Jeffrey J. Early
 % jeffrey@jeffreyearly.com
 %
@@ -39,6 +45,10 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 
 z = wavemodel.z;
 HKE = u.*u + v.*v;
+AvgHKE = mean(mean(mean(HKE)))*1e4;
+fprintf('The average HKE is %f cm^2/s^2, compared to 44 cm^2/s^2 for WKB scaled GM.\n',AvgHKE);
+
+
 HKE_int = trapz(z,HKE,3);
 
 VKE = w.*w;
@@ -46,13 +56,3 @@ VKE_int = trapz(z,VKE,3);
 
 PE = (N0^2)*zeta.*zeta;
 PE_int = trapz(z,PE,3);
-
-
-mean(mean(HKE_int))*1e4
-mean(mean(VKE_int))*1e4
-mean(mean(PE_int))*1e4
-
-L_gm = 1.3e3; % thermocline exponential scale, meters
-invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
-E_gm = 6.3e-5; % non-dimensional energy parameter
-E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;

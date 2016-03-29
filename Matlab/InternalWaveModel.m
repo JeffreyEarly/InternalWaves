@@ -100,28 +100,39 @@ classdef InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function InitializeWithPlaneWave(obj, k0, l0, j0, UAmp, sign)
+            
+            myH = obj.h(k0+1,l0+1,j0);
+            m = j0*pi/obj.Lz;
+            g = 9.81;
+            F_coefficient = myH * m * sqrt(2*g/obj.Lz)/sqrt(obj.N0^2 - obj.f0^2);
+            
             U = zeros(size(obj.K));
-            U(k0+1,l0+1,j0) = UAmp;
+            U(k0+1,l0+1,j0) = UAmp*sqrt(myH)/F_coefficient/2;
             if sign > 0
                 A_plus = -MakeHermitian(U); % Careful with this, it doubles energy for some k,l
+                A_plus(1,1,:) = 2*A_plus(1,1,:); % Double the zero frequency
                 A_minus = zeros(size(U));
             else
                 A_plus = zeros(size(U)); % Careful with this, it doubles energy for some k,l
                 A_minus = MakeHermitian(U);
+                A_minus(1,1,:) = 0; % Intertial motions go only one direction!
             end
             
             obj.GenerateWavePhases(A_plus,A_minus);
-            
-            [u,~] = obj.VelocityFieldAtTime(0);
-            max_u = max(max(max( u )));
-            obj.u_plus = obj.u_plus*(UAmp/max_u);
-            obj.u_minus = obj.u_minus*(UAmp/max_u);
-            obj.v_plus = obj.v_plus*(UAmp/max_u);
-            obj.v_minus = obj.v_minus*(UAmp/max_u);
-            obj.w_plus = obj.w_plus*(UAmp/max_u);
-            obj.w_minus = obj.w_minus*(UAmp/max_u);
-            obj.zeta_plus = obj.zeta_plus*(UAmp/max_u);
-            obj.zeta_minus = obj.zeta_minus*(UAmp/max_u);
+
+            % This is the empirical method for setting the maximum U speed
+            % to the desired value. For now we use the analytical method.
+%             [u,~] = obj.VelocityFieldAtTime(0);
+%             max_u = max(max(max( u )));
+%    
+%             obj.u_plus = obj.u_plus*(UAmp/max_u);
+%             obj.u_minus = obj.u_minus*(UAmp/max_u);
+%             obj.v_plus = obj.v_plus*(UAmp/max_u);
+%             obj.v_minus = obj.v_minus*(UAmp/max_u);
+%             obj.w_plus = obj.w_plus*(UAmp/max_u);
+%             obj.w_minus = obj.w_minus*(UAmp/max_u);
+%             obj.zeta_plus = obj.zeta_plus*(UAmp/max_u);
+%             obj.zeta_minus = obj.zeta_minus*(UAmp/max_u);
             
             omega = obj.Omega(k0+1,l0+1,j0);
             obj.period = 2*pi/omega;
@@ -192,6 +203,8 @@ classdef InternalWaveModel < handle
             
             A_plus = A.*MakeHermitian(randn(size(obj.K)) + sqrt(-1)*randn(size(obj.K)) )/sqrt(2);
             A_minus = A.*MakeHermitian(randn(size(obj.K)) + sqrt(-1)*randn(size(obj.K)) )/sqrt(2);
+            A_plus(1,1,:) = 2*A_plus(1,1,:); % Double the zero frequency
+            A_minus(1,1,:) = 0; % Intertial motions go only one direction!
             
             GM_sum = sum(sum(sum(GM3D)))/E;
             GM_random_sum = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
@@ -210,12 +223,20 @@ classdef InternalWaveModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function GenerateWavePhases(obj, U_plus, U_minus)
             
-            denominator = obj.Kh.*obj.Omega.*sqrt(obj.h);
-            obj.u_plus = U_plus.*MakeHermitian(obj.F.*(sqrt(-1)*obj.L*obj.f0 - obj.K.*obj.Omega)./denominator);
-            obj.u_minus = U_minus.*MakeHermitian(obj.F.*(sqrt(-1)*obj.L*obj.f0 + obj.K.*obj.Omega)./denominator);
+%             denominator = obj.Kh.*obj.Omega.*sqrt(obj.h);
+%             obj.u_plus = U_plus .* MakeHermitian((sqrt(-1)*obj.L*obj.f0 - obj.K.*obj.Omega)./denominator) .* obj.F;
+%             obj.u_minus = U_minus .* MakeHermitian((sqrt(-1)*obj.L*obj.f0 + obj.K.*obj.Omega)./denominator) .* obj.F;
+%             
+%             obj.v_plus = U_plus .* MakeHermitian((-sqrt(-1)*obj.K*obj.f0 - obj.L.*obj.Omega)./denominator) .* obj.F;
+%             obj.v_minus = U_minus .* MakeHermitian( (-sqrt(-1)*obj.K*obj.f0 + obj.L.*obj.Omega)./denominator) .* obj.F;
             
-            obj.v_plus = U_plus.*MakeHermitian(obj.F.*(-sqrt(-1)*obj.K*obj.f0 - obj.L.*obj.Omega)./denominator);
-            obj.v_minus = U_minus.*MakeHermitian(obj.F.*(-sqrt(-1)*obj.K*obj.f0 + obj.L.*obj.Omega)./denominator);
+            theta = atan2(obj.L,obj.K);
+            denominator = obj.Omega.*sqrt(obj.h);
+            obj.u_plus = U_plus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(theta) - obj.Omega .* cos(theta))./denominator ) .* obj.F;
+            obj.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(theta) + obj.Omega .* cos(theta))./denominator ) .* obj.F;
+            
+            obj.v_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(theta) - obj.Omega .* sin(theta) )./denominator ) .* obj.F;
+            obj.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(theta) + obj.Omega .* sin(theta) )./denominator ) .* obj.F;
             
             obj.w_plus = U_plus .* MakeHermitian(sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
             obj.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
