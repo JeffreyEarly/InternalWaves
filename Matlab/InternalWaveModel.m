@@ -11,7 +11,7 @@ classdef InternalWaveModel < handle
         K,L,J
         
         K2, Kh, F, G, M, h, Omega, f0
-        u_plus, u_minus, v_plus, v_minus
+        u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         period
     end
     
@@ -118,6 +118,10 @@ classdef InternalWaveModel < handle
             obj.u_minus = obj.u_minus*(UAmp/max_u);
             obj.v_plus = obj.v_plus*(UAmp/max_u);
             obj.v_minus = obj.v_minus*(UAmp/max_u);
+            obj.w_plus = obj.w_plus*(UAmp/max_u);
+            obj.w_minus = obj.w_minus*(UAmp/max_u);
+            obj.zeta_plus = obj.zeta_plus*(UAmp/max_u);
+            obj.zeta_minus = obj.zeta_minus*(UAmp/max_u);
             
             omega = obj.Omega(k0+1,l0+1,j0);
             obj.period = 2*pi/omega;
@@ -134,7 +138,7 @@ classdef InternalWaveModel < handle
             L_gm = 1.3e3; % thermocline exponential scale, meters
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
             E_gm = 6.3e-5; % non-dimensional energy parameter
-            E = L_gm*invT_gm*invT_gm*E_gm*Amp;
+            E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*Amp;
                       
             % Compute the proper normalization with lots of modes
             j2 = (1:512);
@@ -166,32 +170,36 @@ classdef InternalWaveModel < handle
             % Isotropically spread out the energy, but ignore the stuff
             % beyond m_max for now (we could come back and fix this).
             GM3D = zeros(size(obj.Kh));
-            fprintf('Distributing the GM spectrum isotropically in horizontal wave number. This may take a while...\n');
+            fprintf('Manually distributing the GM spectrum isotropically in horizontal wavenumber space. This may take a minute or two...\n');
             for mode=1:max(obj.j)
                 fullIndices = false(size(GM3D));
                 func = @(k) GM2D_function(k,mode);
-                GM3D(1,1,mode) = integral(func,m(1),m(1)+dm/2)/(dk*dl);
+                GM3D(1,1,mode) = integral(func,m(1),m(1)+dm/2);
                 for i=2:length(m)
                     m_lower = m(i)-dm/2;
                     m_upper = m(i)+dm/2;
                     indices = obj.Kh(:,:,mode) >= m_lower & obj.Kh(:,:,mode) < m_upper;
                     n = sum(sum(sum(indices)));
-                    total = integral(func,m_lower,m_upper)/(n*dk*dl);
+                    total = integral(func,m_lower,m_upper)/n;
                     fullIndices(:,:,mode) = indices;
                     GM3D(fullIndices) = total;
                 end
             end
             
-            sum(sum(sum(GM3D)))*dk*dl/E
             
-            dk*dl
             
-            A = sqrt(GM3D)*dk*dl/2; % Now split this into even and odd.
+            A = sqrt(GM3D/2); % Now split this into even and odd.
             
-            A_plus = A.*MakeHermitian(randn(size(obj.K)));
-            A_minus = A.*MakeHermitian(randn(size(obj.K)));
+            A_plus = A.*MakeHermitian(randn(size(obj.K)) + sqrt(-1)*randn(size(obj.K)) )/sqrt(2);
+            A_minus = A.*MakeHermitian(randn(size(obj.K)) + sqrt(-1)*randn(size(obj.K)) )/sqrt(2);
+            
+            GM_sum = sum(sum(sum(GM3D)))/E;
+            GM_random_sum = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
+            fprintf('The coefficients sum to %.2f GM given the scales, and the randomized field gives %f\n', GM_sum, GM_random_sum);
             
             obj.GenerateWavePhases(A_plus,A_minus);
+            
+            
             
         end
         
@@ -203,11 +211,17 @@ classdef InternalWaveModel < handle
         function GenerateWavePhases(obj, U_plus, U_minus)
             
             denominator = obj.Kh.*obj.Omega.*sqrt(obj.h);
-            obj.u_plus = MakeHermitian(obj.F.*U_plus.*(sqrt(-1)*obj.L*obj.f0 - obj.K.*obj.Omega)./denominator);
-            obj.u_minus = MakeHermitian(obj.F.*U_minus.*(sqrt(-1)*obj.L*obj.f0 + obj.K.*obj.Omega)./denominator);
+            obj.u_plus = U_plus.*MakeHermitian(obj.F.*(sqrt(-1)*obj.L*obj.f0 - obj.K.*obj.Omega)./denominator);
+            obj.u_minus = U_minus.*MakeHermitian(obj.F.*(sqrt(-1)*obj.L*obj.f0 + obj.K.*obj.Omega)./denominator);
             
-            obj.v_plus = MakeHermitian(obj.F.*U_plus.*(-sqrt(-1)*obj.K*obj.f0 - obj.L.*obj.Omega)./denominator);
-            obj.v_minus = MakeHermitian(obj.F.*U_minus.*(-sqrt(-1)*obj.K*obj.f0 + obj.L.*obj.Omega)./denominator);
+            obj.v_plus = U_plus.*MakeHermitian(obj.F.*(-sqrt(-1)*obj.K*obj.f0 - obj.L.*obj.Omega)./denominator);
+            obj.v_minus = U_minus.*MakeHermitian(obj.F.*(-sqrt(-1)*obj.K*obj.f0 + obj.L.*obj.Omega)./denominator);
+            
+            obj.w_plus = U_plus .* MakeHermitian(sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
+            obj.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
+            
+            obj.zeta_plus = U_plus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
+            obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -222,9 +236,21 @@ classdef InternalWaveModel < handle
             v_bar = obj.v_plus.*phase_plus + obj.v_minus.*phase_minus;
             
             % Re-order to convert to an fast cosine transform
-            u = TransformToSpatialDomain(u_bar, obj.Nx, obj.Ny, obj.Nz);
-            v = TransformToSpatialDomain(v_bar, obj.Nx, obj.Ny, obj.Nz);
+            u = TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
+            v = TransformToSpatialDomainWithF(v_bar, obj.Nx, obj.Ny, obj.Nz);
         end
+        
+        function [w,zeta] = VerticalFieldsAtTime(obj, t)
+            phase_plus = MakeHermitian( exp(sqrt(-1)*obj.Omega*t) );
+            phase_minus = MakeHermitian( exp(-sqrt(-1)*obj.Omega*t) );
+            w_bar = obj.w_plus.*phase_plus + obj.w_minus.*phase_minus;
+            zeta_bar = obj.zeta_plus.*phase_plus + obj.zeta_minus.*phase_minus;
+            
+            % Re-order to convert to an fast cosine transform
+            w = TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz);
+            zeta = TransformToSpatialDomainWithG(zeta_bar, obj.Nx, obj.Ny, obj.Nz);
+        end
+        
     end
 end
 
@@ -258,10 +284,18 @@ end
 % Computes the phase information given the amplitudes (public)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function u = TransformToSpatialDomain( u_bar, Nx, Ny, Nz )
+function u = TransformToSpatialDomainWithF( u_bar, Nx, Ny, Nz )
 % Here we use what I call the 'Fourier series' definition of the ifft, so
 % that the coefficients in frequency space have the same units in time.
-    u = Nx*Ny*ifft(ifft(u_bar,Nx,1),Ny,2);
+    u = Nx*Ny*ifft(ifft(u_bar,Nx,1,'symmetric'),Ny,2,'symmetric');
     u = fft(cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-2), u(:,:,Nz-1), zeros(Nx,Ny), u(:,:,Nz-1), 0.5*u(:,:,Nz-2:-1:1)),2*Nz,3);
     u = u(:,:,1:Nz);
+end
+
+function w = TransformToSpatialDomainWithG( w_bar, Nx, Ny, Nz )
+% Here we use what I call the 'Fourier series' definition of the ifft, so
+% that the coefficients in frequency space have the same units in time.
+    w = Nx*Ny*ifft(ifft(w_bar,Nx,1,'symmetric'),Ny,2,'symmetric');
+    w = fft( sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-2), w(:,:,Nz-1), zeros(Nx,Ny), -w(:,:,Nz-1), -0.5*w(:,:,Nz-2:-1:1)),2*Nz,3);
+    w = w(:,:,1:Nz);
 end
