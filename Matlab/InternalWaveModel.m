@@ -1,3 +1,35 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% InternalWaveModel
+%
+% This implements a simple internal wave model for constant stratification.
+%
+% The usage is simple. First call,
+%   wavemodel = InternalWaveModel(dims, n, latitude, N0);
+% to initialize the model with,
+%   dims        a vector containing the length scales of x,y,z
+%   n           a vector containing the number of grid points of x,y,z
+%   latitude    the latitude of the model (e.g., 45)
+%   N0          the buoyancy frequency of the stratification
+%
+% You must now intialize the model by calling either,
+%   wavemodel.InitializeWithPlaneWave(k0, l0, j0, UAmp, sign);
+% or
+%   wavemodel.InitializeWithGMSpectrum(Amp);
+% where Amp sets the relative GM amplitude.
+%
+% Finally, you can compute u,v,w,zeta at time t by calling,
+%   [u,v] = wavemodel.VelocityFieldAtTime(t);
+%   [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+%
+%
+% Jeffrey J. Early
+% jeffrey@jeffreyearly.com
+%
+% March 25th, 2016      Version 1.0
+% March 30th, 2016      Version 1.1
+%
+
 classdef InternalWaveModel < handle
     properties
         Lx, Ly, Lz % Domain size
@@ -80,7 +112,6 @@ classdef InternalWaveModel < handle
             obj.M = obj.J*pi/obj.Lz;        % Vertical wavenumber
             obj.K2 = obj.K.*obj.K + obj.L.*obj.L;   % Square of the horizontal wavenumber
             obj.Kh = sqrt(obj.K2);
-            obj.Kh(1,1,:) = 1;      % prevent divide by zero
             
             C2 = (obj.N0*obj.N0-obj.f0*obj.f0)./(obj.M.*obj.M+obj.K2);
             C = sqrt( C2 );                         % Mode speed
@@ -100,6 +131,9 @@ classdef InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function InitializeWithPlaneWave(obj, k0, l0, j0, UAmp, sign)
+            if (k0 > obj.Nx/2 || l0 > obj.Ny/2 || j0 >= obj.Nz)
+               error('Invalid choice for (k0,l0,j0). It must be ( <=Nx/2, <=Ny/2, <Nz).'); 
+            end
             
             myH = obj.h(k0+1,l0+1,j0);
             m = j0*pi/obj.Lz;
@@ -111,10 +145,15 @@ classdef InternalWaveModel < handle
             if sign > 0
                 A_plus = -MakeHermitian(U); % Careful with this, it doubles energy for some k,l
                 A_plus(1,1,:) = 2*A_plus(1,1,:); % Double the zero frequency
+                A_plus(obj.Nx/2+1,1,:) = -2*A_plus(obj.Nx/2+1,1,:); % Double the Nyquist frequency
+                A_plus(1,obj.Ny/2+1,:) = -2*A_plus(1,obj.Ny/2+1,:); % Double the Nyquist frequency
                 A_minus = zeros(size(U));
             else
                 A_plus = zeros(size(U)); % Careful with this, it doubles energy for some k,l
                 A_minus = MakeHermitian(U);
+                A_minus(1,1,:) = 2*A_minus(1,1,:); % Double the zero frequency
+                A_minus(obj.Nx/2+1,1,:) = -2*A_minus(obj.Nx/2+1,1,:); % Double the Nyquist frequency
+                A_minus(1,obj.Ny/2+1,:) = -2*A_minus(1,obj.Ny/2+1,:); % Double the Nyquist frequency
                 A_minus(1,1,:) = 0; % Intertial motions go only one direction!
             end
             
@@ -201,21 +240,17 @@ classdef InternalWaveModel < handle
             
             A = sqrt(GM3D/2); % Now split this into even and odd.
             
-            A_plus = A.*MakeHermitian(randn(size(obj.K)) + sqrt(-1)*randn(size(obj.K)) )/sqrt(2);
-            A_minus = A.*MakeHermitian(randn(size(obj.K)) + sqrt(-1)*randn(size(obj.K)) )/sqrt(2);
-            A_plus(1,1,:) = 2*A_plus(1,1,:); % Double the zero frequency
+            A_plus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
+            A_minus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
             A_minus(1,1,:) = 0; % Intertial motions go only one direction!
             
             GM_sum = sum(sum(sum(GM3D)))/E;
             GM_random_sum = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
-            fprintf('The coefficients sum to %.2f GM given the scales, and the randomized field gives %f\n', GM_sum, GM_random_sum);
+            fprintf('The coefficients sum to %.2f GM given the scales, and the randomized field sums to %f GM\n', GM_sum, GM_random_sum);
             
             obj.GenerateWavePhases(A_plus,A_minus);
-            
-            
-            
         end
-        
+               
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Computes the phase information given the amplitudes (internal)
@@ -290,15 +325,29 @@ for k=1:K
        for j=N:-1:1
            ii = mod(M-i+1, M) + 1;
            jj = mod(N-j+1, N) + 1;
-%            if k==1 && i == ii && j == jj
-%               fprintf('i,j = (%d,%d)\n',i,j); 
-%            end
-           A(i,j,k) = conj(A(ii,jj,k));
+           if i == ii && j == jj
+               A(i,j,k) = real(A(i,j,k)); % self-conjugate term
+           else
+               A(i,j,k) = conj(A(ii,jj,k));
+           end
        end
    end
 end
 
 end
+
+function A = GenerateHermitianRandomMatrix( size )
+
+nX = size(1); nY = size(2); nZ = size(3);
+A = MakeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
+A(1,1,:) = 2*real(A(1,1,:)); % Double the zero frequency
+A(nX/2+1,1,:) = -2*real(A(nX/2+1,1,:)); % Double the Nyquist frequency
+A(1,nY/2+1,:) = -2*real(A(1,nY/2+1,:)); % Double the Nyquist frequency
+A(nX/2+1,nY/2+1,:) = -2*real(A(nX/2+1,nY/2+1,:)); % Double the Nyquist frequency
+A(:,:,nZ) = zeros(nX,nY); % Because we can't resolve the last mode.
+
+end
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -309,7 +358,7 @@ function u = TransformToSpatialDomainWithF( u_bar, Nx, Ny, Nz )
 % Here we use what I call the 'Fourier series' definition of the ifft, so
 % that the coefficients in frequency space have the same units in time.
     u = Nx*Ny*ifft(ifft(u_bar,Nx,1,'symmetric'),Ny,2,'symmetric');
-    u = fft(cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-2), u(:,:,Nz-1), zeros(Nx,Ny), u(:,:,Nz-1), 0.5*u(:,:,Nz-2:-1:1)),2*Nz,3);
+    u = fft(cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-1), u(:,:,Nz), 0.5*u(:,:,Nz-1:-1:1)),2*Nz,3);
     u = u(:,:,1:Nz);
 end
 
@@ -317,6 +366,6 @@ function w = TransformToSpatialDomainWithG( w_bar, Nx, Ny, Nz )
 % Here we use what I call the 'Fourier series' definition of the ifft, so
 % that the coefficients in frequency space have the same units in time.
     w = Nx*Ny*ifft(ifft(w_bar,Nx,1,'symmetric'),Ny,2,'symmetric');
-    w = fft( sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-2), w(:,:,Nz-1), zeros(Nx,Ny), -w(:,:,Nz-1), -0.5*w(:,:,Nz-2:-1:1)),2*Nz,3);
+    w = fft( sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-1), w(:,:,Nz), -0.5*w(:,:,Nz-1:-1:1)),2*Nz,3);
     w = w(:,:,1:Nz);
 end

@@ -9,6 +9,7 @@
 % jeffrey@jeffreyearly.com
 %
 % March 25th, 2016      Version 1.0
+% March 30th, 2016      Version 1.1
 %
 
 
@@ -43,9 +44,9 @@ wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-k0 = 6; % k=0..Nx/2
+k0 = 14; % k=0..Nx/2
 l0 = 0; % l=0..Ny/2
-j0 = 1; % j=1..nModes, where 1 indicates the 1st baroclinic mode
+j0 = 63; % j=1..nModes, where 1 indicates the 1st baroclinic mode
 U = 0.01; % m/s
 sign = 1;
 

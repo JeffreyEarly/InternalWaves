@@ -1,11 +1,11 @@
-N = 128;
+N = 256;
 f_bar = zeros(N,1);
-j = 3;
+j = 127;
 f_bar(j+1) = 1;
 
 
-f_tilde = cat(1, f_bar(1), 0.5*f_bar(2:N-1), f_bar(N), 0, f_bar(N), 0.5*f_bar(N-1:-1:2));
-f_tilde = cat(1, f_bar(1), 0.5*f_bar(2:N-1), f_bar(N), 0, f_bar(N), 0.5*f_bar(N-1:-1:2));
+f_tilde = cat(1, f_bar(1), 0.5*f_bar(2:N), 0, 0.5*f_bar(N:-1:2));
+f_tilde = cat(1, f_bar(1), 0.5*f_bar(2:N), 0, 0.5*f_bar(N:-1:2));
 
 
 % f = ifct(f_bar);
@@ -20,15 +20,16 @@ x = dz*(0:N-1)';
 f_test = cos(j*pi*x/N);
 
 
-% figure, plot(x,f,'LineWidth', 2)
-% hold on, plot(x,f_test)
+%   figure, plot(x,f,'LineWidth', 2)
+%   hold on, plot(x,f_test)
+
 
 % Now let's test W!
-j = 4;
+j = 127;
 f_bar = zeros(N,1);
 f_bar(j+1) = 1;
 
-f_tilde = sqrt(-1)*cat(1, f_bar(1), 0.5*f_bar(2:N-1), f_bar(N), 0, -f_bar(N), -0.5*f_bar(N-1:-1:2));
+f_tilde = sqrt(-1)*cat(1, f_bar(1), 0.5*f_bar(2:N), 0, -0.5*f_bar(N:-1:2));
 
 f = real(fft(f_tilde));
 f = f(1:N);
