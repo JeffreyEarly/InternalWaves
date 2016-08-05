@@ -11,7 +11,6 @@
 		811A01A218A5962000BD8682 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 811A01A118A5962000BD8682 /* main.m */; };
 		811A01A618A5962000BD8682 /* InternalModeTest.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 811A01A518A5962000BD8682 /* InternalModeTest.1 */; };
 		811A01AA18A5964800BD8682 /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */; };
-		811C38F21A38F0E000C7DC69 /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */; };
 		811C38F31A38F0EE00C7DC69 /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */; };
 		811C38F41A38F0F200C7DC69 /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */; };
 		81271F3618B1E02D001057FE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
@@ -26,6 +25,7 @@
 		81C4274B1856844C00EAF7A1 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81C4274A1856844C00EAF7A1 /* main.m */; };
 		81C4274F1856844C00EAF7A1 /* InternalWaves.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 81C4274E1856844C00EAF7A1 /* InternalWaves.1 */; };
 		81C42756185684AA00EAF7A1 /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */; };
+		81CD82051D554B6C005F0B5A /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81CD82041D554B6C005F0B5A /* GLOceanKit.dylib */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -97,6 +97,7 @@
 		81C4274D1856844C00EAF7A1 /* InternalWaves-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "InternalWaves-Prefix.pch"; sourceTree = "<group>"; };
 		81C4274E1856844C00EAF7A1 /* InternalWaves.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = InternalWaves.1; sourceTree = "<group>"; };
 		81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; path = GLNumericalModelingKit.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		81CD82041D554B6C005F0B5A /* GLOceanKit.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = GLOceanKit.dylib; path = "../../../Library/Developer/Xcode/DerivedData/InternalWavesWorkspace-armimikpymreezgmibqczvfdhfjb/Build/Products/Debug/GLOceanKit.dylib"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -133,7 +134,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				811C38F21A38F0E000C7DC69 /* GLOceanKit.dylib in Frameworks */,
+				81CD82051D554B6C005F0B5A /* GLOceanKit.dylib in Frameworks */,
 				81C42756185684AA00EAF7A1 /* GLNumericalModelingKit.dylib in Frameworks */,
 				81C427481856844C00EAF7A1 /* Foundation.framework in Frameworks */,
 			);
@@ -222,6 +223,7 @@
 		81C427461856844C00EAF7A1 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				81CD82041D554B6C005F0B5A /* GLOceanKit.dylib */,
 				811C38F11A38F0E000C7DC69 /* GLOceanKit.dylib */,
 				81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */,
 				81C427471856844C00EAF7A1 /* Foundation.framework */,
@@ -330,7 +332,7 @@
 		81C4273C1856844C00EAF7A1 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0500;
+				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = "Jeffrey J. Early";
 			};
 			buildConfigurationList = 81C4273F1856844C00EAF7A1 /* Build configuration list for PBXProject "InternalWaves" */;
@@ -519,6 +521,7 @@
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_ENABLE_OBJC_EXCEPTIONS = YES;
@@ -581,11 +584,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/InternalWavesWorkspace-eodpwbkpexluutdscuniuuyskzcg/Build/Products/Debug",
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Debug;
@@ -600,11 +599,7 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
 				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/InternalWavesWorkspace-eodpwbkpexluutdscuniuuyskzcg/Build/Products/Debug",
-					"$(USER_LIBRARY_DIR)/Developer/Xcode/DerivedData/MasterWorkspace-geajijycseerbtfvjkaodseclatk/Build/Products/Debug",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;

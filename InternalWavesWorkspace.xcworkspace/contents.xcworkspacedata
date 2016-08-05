@@ -5,6 +5,9 @@
       location = "container:InternalWaves.xcodeproj">
    </FileRef>
    <FileRef
+      location = "group:../GLOceanKit/GLOceanKit.xcodeproj">
+   </FileRef>
+   <FileRef
       location = "container:../GLNumericalModelingKit/GLNumericalModelingKit.xcodeproj">
    </FileRef>
 </Workspace>
