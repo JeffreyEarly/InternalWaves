@@ -198,8 +198,9 @@ classdef InternalWaveModel < handle
             % Analytical function for the GM spectrum in one horizontal
             % direction.
             D = obj.Lz;
-            GM2D_function = @(k,j) E*( (2/H_norm)*(j_star.^(3/2))./(j+j_star).^(5/2) ) .* (2/pi)*obj.f0*(j*pi/D).*(j*pi/D).*sqrt( (obj.N0*obj.N0-obj.f0*obj.f0)./(k.*k+(j*pi/D).*(j*pi/D)))./(obj.N0*obj.N0*k.*k+obj.f0*obj.f0*(j*pi/D).*(j*pi/D));
-            
+%             GM2D_function = @(k,j) E*( (2/H_norm)*(j_star.^(3/2))./(j+j_star).^(5/2) ) .* (2/pi)*obj.f0*(j*pi/D).*(j*pi/D).*sqrt( (obj.N0*obj.N0-obj.f0*obj.f0)./(k.*k+(j*pi/D).*(j*pi/D)))./(obj.N0*obj.N0*k.*k+obj.f0*obj.f0*(j*pi/D).*(j*pi/D));
+            alpha2 = obj.N0*obj.N0/(obj.f0*obj.f0);
+            GM2D_analytic_int = @(k0,k1,j) E*( (2/H_norm)*(j_star.^(3/2))./(j+j_star).^(5/2) ) .* (2/pi)*(atan(k1/(j*pi/D)*sqrt( (alpha2-1)/(k0*k0/((j*pi/D)*(j*pi/D)) + 1))) - atan(k0/(j*pi/D)*sqrt( (alpha2-1)/(k0*k0/((j*pi/D)*(j*pi/D)) + 1)))) ;
             
             % Now create a wavenumber basis that uses the smallest
             % increment, and only goes to the smallest max wavenumber
@@ -223,14 +224,16 @@ classdef InternalWaveModel < handle
             fprintf('Manually distributing the GM spectrum isotropically in horizontal wavenumber space. This may take a minute or two...\n');
             for mode=1:max(obj.j)
                 fullIndices = false(size(GM3D));
-                func = @(k) GM2D_function(k,mode);
-                GM3D(1,1,mode) = integral(func,m(1),m(1)+dm/2);
+%                 func = @(k) GM2D_function(k,mode);
+%                 GM3D(1,1,mode) = integral(func,m(1),m(1)+dm/2);
+                GM3D(1,1,mode) = GM2D_analytic_int(m(1),m(1)+dm/2,mode);
                 for i=2:length(m)
                     m_lower = m(i)-dm/2;
                     m_upper = m(i)+dm/2;
                     indices = obj.Kh(:,:,mode) >= m_lower & obj.Kh(:,:,mode) < m_upper;
                     n = sum(sum(sum(indices)));
-                    total = integral(func,m_lower,m_upper)/n;
+%                     total = integral(func,m_lower,m_upper)/n;
+                    total = GM2D_analytic_int(m_lower,m_upper,mode)/n;
                     fullIndices(:,:,mode) = indices;
                     GM3D(fullIndices) = total;
                 end
