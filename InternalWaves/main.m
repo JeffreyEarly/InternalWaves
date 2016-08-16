@@ -23,8 +23,8 @@ typedef NS_ENUM(NSUInteger, StratificationType) {
 int main(int argc, const char * argv[])
 {
 	@autoreleasepool {
-        ExperimentType experiment = kSingleModeExperimentType;
-		StratificationType stratification = kExponentialStratificationType;
+        ExperimentType experiment = kGMSpectrumExperimentType;
+		StratificationType stratification = kConstantStratificationType;
 		
         GLFloat latitude = 31;
         GLFloat N0 = 5.23e-3;
@@ -49,9 +49,9 @@ int main(int argc, const char * argv[])
 			filename = [NSString stringWithFormat: @"InternalWaveSingleMode%@Stratification.nc",strat];
         } else {
             depth = 5000;
-            width = 40e3;
+            width = 5e3;
             height = 5e3;
-            Nx = 512;
+            Nx = 64;
             Ny = 64;
             Nz = 64;
             maxWavePeriods = 10;
