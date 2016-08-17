@@ -49,8 +49,8 @@ int main(int argc, const char * argv[])
 			filename = [NSString stringWithFormat: @"InternalWaveSingleMode%@Stratification.nc",strat];
         } else {
             depth = 5000;
-            width = 5e3;
-            height = 5e3;
+            width = 800e3;
+            height = 800e3;
             Nx = 64;
             Ny = 64;
             Nz = 64;
