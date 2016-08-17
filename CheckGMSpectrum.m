@@ -6,11 +6,12 @@ E_GM_total = L_GM*L_GM*L_GM*invT_GM*invT_GM*E_GM;
 
 file = '/Users/jearly/Desktop/InternalWavesLatmix2011_128_128_64_lat31_all_floats.nc';
 file = '/Users/jearly/Desktop/InternalWavesConstantN_256_256_128_lat31.nc';
-file = '/Users/jearly/Desktop/InternalWavesLatmix_128_128_50_GM_0.013.nc'
+file = '/Users/jearly/Desktop/InternalWavesLatmix_128_128_50_GM_0.013.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64_64_65.nc';
 file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponentialStratification.nc';
+file = '/Users/jearly/Desktop/InternalWavesGMSpectrumExponentialStratification.nc';
 %file = '/Volumes/jearly/Desktop/InternalWavesLatmix_256_256_50_GM_0.042.nc';
 
 x = ncread(file, 'x');
@@ -35,8 +36,10 @@ pe = N2.*squeeze(vmean(vmean(zeta3d.*zeta3d,1),2));
 E_k = 0.5*trapz(z,squeeze(vmean(vmean(u3d.*u3d+v3d.*v3d+w3d.*w3d,1),2)));
 ke = squeeze(vmean(vmean(u3d.*u3d+v3d.*v3d+w3d.*w3d,1),2));
 
-potential_kinetic_ratio = E_p/E_k
-GM_relative = (E_p+E_k)/E_GM_total
+kinetic_potential_ratio = E_k/E_p;
+fprintf('E_k/E_p = %f, it should be 3.0\n',kinetic_potential_ratio);
+GM_relative = (E_p+E_k)/E_GM_total;
+fprintf('The energy appears to be %f * GM\n',GM_relative);
 
 zeta2 = squeeze(vmean(vmean(zeta3d.*zeta3d,1),2));
 u2 = squeeze(vmean(vmean(u3d.*u3d+w3d.*w3d,1),2)+vmean(vmean(v3d.*v3d,1),2));

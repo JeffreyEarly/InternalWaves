@@ -24,7 +24,7 @@ int main(int argc, const char * argv[])
 {
 	@autoreleasepool {
         ExperimentType experiment = kGMSpectrumExperimentType;
-		StratificationType stratification = kConstantStratificationType;
+		StratificationType stratification = kExponentialStratificationType;
 		
         GLFloat latitude = 31;
         GLFloat N0 = 5.23e-3;
@@ -49,12 +49,12 @@ int main(int argc, const char * argv[])
 			filename = [NSString stringWithFormat: @"InternalWaveSingleMode%@Stratification.nc",strat];
         } else {
             depth = 5000;
-            width = 800e3;
-            height = 800e3;
+            width = 80e3;
+            height = 80e3;
             Nx = 64;
             Ny = 64;
             Nz = 64;
-            maxWavePeriods = 10;
+            maxWavePeriods = 1;
 			amplitude = 1.0; // GM reference energy level
             filename = [NSString stringWithFormat: @"InternalWavesGMSpectrum%@Stratification.nc",strat];
         }
@@ -208,8 +208,8 @@ int main(int argc, const char * argv[])
 		/*		Create a NetCDF file and mutable variables in order to record some of the time steps.	*/
 		/************************************************************************************************/
 		
-//		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:filename];
-		NSString *path = [@"/Volumes/Data/InternalWaveSimulations/" stringByAppendingPathComponent:filename];
+		NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:filename];
+//		NSString *path = [@"/Volumes/Data/InternalWaveSimulations/" stringByAppendingPathComponent:filename];
 		GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: [NSURL URLWithString: path] forEquation: equation overwriteExisting: YES];
 		
 		[netcdfFile setGlobalAttribute: @(width) forKey: @"L_domain"];
