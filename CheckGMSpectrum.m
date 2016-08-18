@@ -22,12 +22,12 @@ rho_bar = double(ncread(file, 'rho_bar'));
 N2 = double(ncread(file, 'N2'));
 %N2 = (2.5e-3)*ones(size(z));
 
-iTime=1;
+iTime=10;
 zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 v3d = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
-w3d = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
+w3d = double(squeeze(ncread(file, 'w', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 
 
 E_p = 0.5*trapz(z,N2.*squeeze(vmean(vmean(zeta3d.*zeta3d,1),2)));
@@ -44,22 +44,31 @@ fprintf('The energy appears to be %f * GM\n',GM_relative);
 zeta2 = squeeze(vmean(vmean(zeta3d.*zeta3d,1),2));
 u2 = squeeze(vmean(vmean(u3d.*u3d+w3d.*w3d,1),2)+vmean(vmean(v3d.*v3d,1),2));
 u2 = squeeze(vmean(vmean(u3d.*u3d,1),2)+vmean(vmean(v3d.*v3d,1),2));
+w2 = squeeze(vmean(vmean(w3d.*w3d,1),2));
 
 N0 = invT_GM;
 
 GM_zeta2_relative = mean(zeta2*N0./sqrt(N2))/(53*N0./sqrt(mean(N2)))
 GM_u22_relative = mean(1e4*u2.*sqrt(N2)/N0)/(44*sqrt(mean(N2))/N0)
 
-figure,
+figure
+subplot(1,3,1)
 plot(zeta2,z), hold on
 plot(53*(N0./sqrt(N2)),z,'g--')
 title('isopycnal variance')
 xlabel('m^2')
 ylabel('depth (m)')
-figure
+
+subplot(1,3,2)
 plot(1e4*u2,z), hold on
 plot(44.*sqrt(N2)/N0,z,'g--')
-title('velocity variance')
+title('horizontal velocity variance')
+xlabel('cm^2 s^{-2}')
+ylabel('depth (m)')
+
+subplot(1,3,3)
+plot(1e4*w2,z)
+title('vertical velocity variance')
 xlabel('cm^2 s^{-2}')
 ylabel('depth (m)')
 

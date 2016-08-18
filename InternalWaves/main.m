@@ -49,11 +49,11 @@ int main(int argc, const char * argv[])
 			filename = [NSString stringWithFormat: @"InternalWaveSingleMode%@Stratification.nc",strat];
         } else {
             depth = 5000;
-            width = 80e3;
-            height = 80e3;
-            Nx = 64;
-            Ny = 64;
-            Nz = 64;
+            width = 800e3;
+            height = 800e3;
+            Nx = 128;
+            Ny = 128;
+            Nz = 128;
             maxWavePeriods = 1;
 			amplitude = 1.0; // GM reference energy level
             filename = [NSString stringWithFormat: @"InternalWavesGMSpectrum%@Stratification.nc",strat];
