@@ -5,6 +5,7 @@ file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponential
 file = '/Volumes/home/jearly/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 file = '/Volumes/Data/InternalWavesLatmix_256_64_80_GM_0.125.nc';
 file = '/Volumes/home/jearly/InternalWavesLatmixStrained_256_64_80_GM_0.016.nc';
+file = '/Users/jearly/Desktop/InternalWavesGMSpectrumExponentialStratification.nc';
 %file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 
 x = ncread(file, 'x');
@@ -62,7 +63,7 @@ S = (1/(2*pi))*[flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 
 N0=5.23E-3;
 %[S_gm] = 2.5*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
-% [S_gm2] = (1/8.64)*0.5*GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho_bar, depth, 0 );
+[S_gm2] = (1/8.64)*0.5*GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho_bar, 3, depth, 0 );
 
 % Factor of two to get variance, instead of energy
 [S_gm] = 2*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, N0, 0 );
@@ -74,7 +75,7 @@ figure
 plot( omega, N0/sqrt(N2(depth_index))*S, 'blue', 'LineWidth', 2), ylog
 hold on
 plot( omega, S_gm, 'black', 'LineWidth', 2), ylog
-% plot( omega, S_gm2, 'green', 'LineWidth', 2), ylog
+plot( omega, S_gm2, 'green', 'LineWidth', 2), ylog
 vlines( -f0 )
 legend('Observed', 'GM81 WKB', 'GM81 JJE')
 

@@ -17,6 +17,9 @@
 		81271F3918B1E02D001057FE /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 81271F3818B1E02D001057FE /* main.m */; };
 		81271F3D18B1E02D001057FE /* RandomWalk.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 81271F3C18B1E02D001057FE /* RandomWalk.1 */; };
 		81271F4118B1E4D9001057FE /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */; };
+		813A24251D6B9D5B005AD78C /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 813A24241D6B9D5B005AD78C /* main.m */; };
+		813A24291D6B9D8D005AD78C /* GLNumericalModelingKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C42755185684AA00EAF7A1 /* GLNumericalModelingKit.dylib */; };
+		813A242A1D6B9D90005AD78C /* GLOceanKit.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = 81CD82041D554B6C005F0B5A /* GLOceanKit.dylib */; };
 		8140A09318AB37D0007727CC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 81C427471856844C00EAF7A1 /* Foundation.framework */; };
 		8140A09618AB37D0007727CC /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 8140A09518AB37D0007727CC /* main.m */; };
 		8140A09A18AB37D0007727CC /* InternalWavesWithGMSpectrum.1 in CopyFiles */ = {isa = PBXBuildFile; fileRef = 8140A09918AB37D0007727CC /* InternalWavesWithGMSpectrum.1 */; };
@@ -46,6 +49,15 @@
 			dstSubfolderSpec = 0;
 			files = (
 				81271F3D18B1E02D001057FE /* RandomWalk.1 in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+		813A24201D6B9D5B005AD78C /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
 			);
 			runOnlyForDeploymentPostprocessing = 1;
 		};
@@ -82,6 +94,8 @@
 		81271F3818B1E02D001057FE /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		81271F3B18B1E02D001057FE /* RandomWalk-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "RandomWalk-Prefix.pch"; sourceTree = "<group>"; };
 		81271F3C18B1E02D001057FE /* RandomWalk.1 */ = {isa = PBXFileReference; lastKnownFileType = text.man; path = RandomWalk.1; sourceTree = "<group>"; };
+		813A24221D6B9D5B005AD78C /* InternalWavesNoFloats */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = InternalWavesNoFloats; sourceTree = BUILT_PRODUCTS_DIR; };
+		813A24241D6B9D5B005AD78C /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		8140A09218AB37D0007727CC /* InternalWavesWithGMSpectrum */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = InternalWavesWithGMSpectrum; sourceTree = BUILT_PRODUCTS_DIR; };
 		8140A09518AB37D0007727CC /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		8140A09818AB37D0007727CC /* InternalWavesWithGMSpectrum-Prefix.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "InternalWavesWithGMSpectrum-Prefix.pch"; sourceTree = "<group>"; };
@@ -117,6 +131,15 @@
 			files = (
 				81271F4118B1E4D9001057FE /* GLNumericalModelingKit.dylib in Frameworks */,
 				81271F3618B1E02D001057FE /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		813A241F1D6B9D5B005AD78C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				813A242A1D6B9D90005AD78C /* GLOceanKit.dylib in Frameworks */,
+				813A24291D6B9D8D005AD78C /* GLNumericalModelingKit.dylib in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -179,6 +202,14 @@
 			name = "Supporting Files";
 			sourceTree = "<group>";
 		};
+		813A24231D6B9D5B005AD78C /* InternalWavesNoFloats */ = {
+			isa = PBXGroup;
+			children = (
+				813A24241D6B9D5B005AD78C /* main.m */,
+			);
+			path = InternalWavesNoFloats;
+			sourceTree = "<group>";
+		};
 		8140A09418AB37D0007727CC /* InternalWavesWithGMSpectrum */ = {
 			isa = PBXGroup;
 			children = (
@@ -204,6 +235,7 @@
 				811A01A018A5962000BD8682 /* InternalModeTest */,
 				8140A09418AB37D0007727CC /* InternalWavesWithGMSpectrum */,
 				81271F3718B1E02D001057FE /* RandomWalk */,
+				813A24231D6B9D5B005AD78C /* InternalWavesNoFloats */,
 				81C427461856844C00EAF7A1 /* Frameworks */,
 				81C427451856844C00EAF7A1 /* Products */,
 			);
@@ -216,6 +248,7 @@
 				811A019E18A5962000BD8682 /* InternalModeTest */,
 				8140A09218AB37D0007727CC /* InternalWavesWithGMSpectrum */,
 				81271F3518B1E02D001057FE /* RandomWalk */,
+				813A24221D6B9D5B005AD78C /* InternalWavesNoFloats */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -292,6 +325,23 @@
 			productReference = 81271F3518B1E02D001057FE /* RandomWalk */;
 			productType = "com.apple.product-type.tool";
 		};
+		813A24211D6B9D5B005AD78C /* InternalWavesNoFloats */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 813A24281D6B9D5C005AD78C /* Build configuration list for PBXNativeTarget "InternalWavesNoFloats" */;
+			buildPhases = (
+				813A241E1D6B9D5B005AD78C /* Sources */,
+				813A241F1D6B9D5B005AD78C /* Frameworks */,
+				813A24201D6B9D5B005AD78C /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = InternalWavesNoFloats;
+			productName = InternalWavesNoFloats;
+			productReference = 813A24221D6B9D5B005AD78C /* InternalWavesNoFloats */;
+			productType = "com.apple.product-type.tool";
+		};
 		8140A09118AB37D0007727CC /* InternalWavesWithGMSpectrum */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8140A09D18AB37D0007727CC /* Build configuration list for PBXNativeTarget "InternalWavesWithGMSpectrum" */;
@@ -334,6 +384,11 @@
 			attributes = {
 				LastUpgradeCheck = 0730;
 				ORGANIZATIONNAME = "Jeffrey J. Early";
+				TargetAttributes = {
+					813A24211D6B9D5B005AD78C = {
+						CreatedOnToolsVersion = 7.3.1;
+					};
+				};
 			};
 			buildConfigurationList = 81C4273F1856844C00EAF7A1 /* Build configuration list for PBXProject "InternalWaves" */;
 			compatibilityVersion = "Xcode 3.2";
@@ -351,6 +406,7 @@
 				811A019D18A5962000BD8682 /* InternalModeTest */,
 				8140A09118AB37D0007727CC /* InternalWavesWithGMSpectrum */,
 				81271F3418B1E02D001057FE /* RandomWalk */,
+				813A24211D6B9D5B005AD78C /* InternalWavesNoFloats */,
 			);
 		};
 /* End PBXProject section */
@@ -369,6 +425,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				81271F3918B1E02D001057FE /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		813A241E1D6B9D5B005AD78C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				813A24251D6B9D5B005AD78C /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -461,6 +525,40 @@
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
 					"$(BUILT_PRODUCTS_DIR)/usr/local/include",
 				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+		813A24261D6B9D5B005AD78C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		813A24271D6B9D5B005AD78C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				MACOSX_DEPLOYMENT_TARGET = 10.11;
+				MTL_ENABLE_DEBUG_INFO = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 			};
 			name = Release;
@@ -624,6 +722,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		813A24281D6B9D5C005AD78C /* Build configuration list for PBXNativeTarget "InternalWavesNoFloats" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				813A24261D6B9D5B005AD78C /* Debug */,
+				813A24271D6B9D5B005AD78C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		8140A09D18AB37D0007727CC /* Build configuration list for PBXNativeTarget "InternalWavesWithGMSpectrum" */ = {
 			isa = XCConfigurationList;

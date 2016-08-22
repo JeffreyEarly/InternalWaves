@@ -51,10 +51,10 @@ int main(int argc, const char * argv[])
             depth = 5000;
             width = 80e3;
             height = 80e3;
-            Nx = 64;
-            Ny = 64;
+            Nx = 128;
+            Ny = 128;
             Nz = 64;
-            maxWavePeriods = 1;
+            maxWavePeriods = 10;
 			amplitude = 1.0; // GM reference energy level
             filename = [NSString stringWithFormat: @"InternalWavesGMSpectrum%@Stratification.nc",strat];
         }

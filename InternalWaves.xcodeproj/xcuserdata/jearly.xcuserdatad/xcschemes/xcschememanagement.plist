@@ -14,6 +14,11 @@
 			<key>orderHint</key>
 			<integer>3</integer>
 		</dict>
+		<key>InternalWavesNoFloats.xcscheme</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>9</integer>
+		</dict>
 		<key>InternalWavesWithGMSpectrum.xcscheme</key>
 		<dict>
 			<key>orderHint</key>
@@ -33,6 +38,11 @@
 			<true/>
 		</dict>
 		<key>81271F3418B1E02D001057FE</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
+		<key>813A24211D6B9D5B005AD78C</key>
 		<dict>
 			<key>primary</key>
 			<true/>

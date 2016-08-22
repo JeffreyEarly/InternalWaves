@@ -22,7 +22,7 @@ rho_bar = double(ncread(file, 'rho_bar'));
 N2 = double(ncread(file, 'N2'));
 %N2 = (2.5e-3)*ones(size(z));
 
-iTime=10;
+iTime=1;
 zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
