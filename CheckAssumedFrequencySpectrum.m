@@ -35,6 +35,7 @@ A = [0.000000,3.17271;
 omega = A(:,1);
 E_model = A(:,2);
 domega = omega(2);
+latitude = 31;
 
 L_GM = 1.3E3;       % [m]
 invT_GM = 5.2E-3;   % [1/s]
