@@ -12,6 +12,7 @@ file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64
 file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponentialStratification.nc';
 file = '/Users/jearly/Desktop/InternalWavesGMSpectrumExponentialStratification.nc';
+file = '/Volumes/RadiativeTr/InternalWavesGMSpectrumExponentialStratification.nc';
 %file = '/Volumes/jearly/Desktop/InternalWavesLatmix_256_256_50_GM_0.042.nc';
 
 x = ncread(file, 'x');
@@ -22,7 +23,7 @@ rho_bar = double(ncread(file, 'rho_bar'));
 N2 = double(ncread(file, 'N2'));
 %N2 = (2.5e-3)*ones(size(z));
 
-iTime=1;
+iTime=105;
 zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
@@ -52,23 +53,30 @@ GM_zeta2_relative = mean(zeta2*N0./sqrt(N2))/(53*N0./sqrt(mean(N2)))
 GM_u22_relative = mean(1e4*u2.*sqrt(N2)/N0)/(44*sqrt(mean(N2))/N0)
 
 figure
-subplot(1,3,1)
+subplot(1,4,1)
 plot(zeta2,z), hold on
 plot(53*(N0./sqrt(N2)),z,'g--')
 title('isopycnal variance')
 xlabel('m^2')
 ylabel('depth (m)')
 
-subplot(1,3,2)
+subplot(1,4,2)
 plot(1e4*u2,z), hold on
 plot(44.*sqrt(N2)/N0,z,'g--')
 title('horizontal velocity variance')
 xlabel('cm^2 s^{-2}')
 ylabel('depth (m)')
 
-subplot(1,3,3)
+subplot(1,4,3)
 plot(1e4*w2,z)
 title('vertical velocity variance')
+xlabel('cm^2 s^{-2}')
+ylabel('depth (m)')
+
+subplot(1,4,4)
+plot(1e4*(u2 + w2 + N2.*zeta2),z), hold on
+plot(30.*sqrt(N2)/N0,z,'g--')
+title('total energy')
 xlabel('cm^2 s^{-2}')
 ylabel('depth (m)')
 

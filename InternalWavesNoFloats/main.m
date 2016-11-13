@@ -51,10 +51,10 @@ int main(int argc, const char * argv[])
             depth = 5000;
             width = 8e3;
             height = 8e3;
-            Nx = 128;
-            Ny = 128;
+            Nx = 256;
+            Ny = 256;
             Nz = 64;
-            maxWavePeriods = 10;
+            maxWavePeriods = 1;
             amplitude = 1.0; // GM reference energy level
             filename = [NSString stringWithFormat: @"InternalWavesGMSpectrum%@Stratification.nc",strat];
         }
@@ -166,7 +166,8 @@ int main(int argc, const char * argv[])
         /*		Create a NetCDF file and mutable variables in order to record some of the time steps.	*/
         /************************************************************************************************/
         
-        NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:filename];
+//        NSString *path = [[NSSearchPathForDirectoriesInDomains(NSDesktopDirectory, NSUserDomainMask, YES) objectAtIndex:0] stringByAppendingPathComponent:filename];
+        NSString *path = [NSString stringWithFormat: @"/Volumes/RadiativeTr/%@", filename];
         GLNetCDFFile *netcdfFile = [[GLNetCDFFile alloc] initWithURL: [NSURL URLWithString: path] forEquation: equation overwriteExisting: YES];
         
         [netcdfFile setGlobalAttribute: @(width) forKey: @"L_domain"];
