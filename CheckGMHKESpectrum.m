@@ -28,7 +28,7 @@ latitude = ncreadatt(file, '/', 'latitude');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 depth = -50;
-[depth_index] = find(z <= depth, 1, 'last');
+[depth_index] = find(z <= depth, 1, 'first');
 
 stride = 4;
 t_index = length(t)-1;
@@ -52,7 +52,7 @@ end
 
 taper_bandwidth = 2;
 psi=[];
- [psi,lambda]=sleptap(size(cv_mooring,1),taper_bandwidth);
+%  [psi,lambda]=sleptap(size(cv_mooring,1),taper_bandwidth);
 [omega_p, Spp, Snn, Spn] = mspec(dt,cv_mooring,psi);
 
 omega = [ -flipud(omega_p(2:end)); omega_p];
@@ -63,10 +63,10 @@ S = (1/(2*pi))*[flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 
 N0=5.23E-3;
 %[S_gm] = 2.5*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, sqrt(N2(depth_index)) );
-[S_gm2] = (1/8.64)*0.5*GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho_bar, 3, depth, 0 );
+[S_gm2] = 0.5*GarrettMunkHorizontalKineticEnergyRotarySpectrum( omega, latitude, z, rho_bar, 3, depth, 0 );
 
 % Factor of two to get variance, instead of energy
-[S_gm] = 2*GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, N0, 0 );
+[S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, N0, 0 );
 %S_gm(find(isnan(S_gm))) = 0;
 %S_gm = BlurSpectrum( omega, S_gm);
 % S_gm2 = BlurSpectrum( omega, S_gm2);

@@ -12,7 +12,7 @@ file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64
 file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponentialStratification.nc';
 file = '/Users/jearly/Desktop/InternalWavesGMSpectrumExponentialStratification.nc';
-file = '/Volumes/RadiativeTr/InternalWavesGMSpectrumExponentialStratification.nc';
+% file = '/Volumes/RadiativeTr/InternalWavesGMSpectrumExponentialStratification.nc';
 %file = '/Volumes/jearly/Desktop/InternalWavesLatmix_256_256_50_GM_0.042.nc';
 
 x = ncread(file, 'x');
@@ -23,7 +23,7 @@ rho_bar = double(ncread(file, 'rho_bar'));
 N2 = double(ncread(file, 'N2'));
 %N2 = (2.5e-3)*ones(size(z));
 
-iTime=105;
+iTime=1;
 zeta3d = double(squeeze(ncread(file, 'zeta', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 rho3d = double(squeeze(ncread(file, 'rho', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
 u3d = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(y) length(x) length(z) 1], [1 1 1 1])));
