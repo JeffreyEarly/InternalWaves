@@ -11,7 +11,7 @@ file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow.nc
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumWeakFlow_64_64_65.nc';
 file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponentialStratification.nc';
-file = '/Users/jearly/Desktop/InternalWavesGMSpectrumExponentialStratification.nc';
+file = '/Volumes/Scratch/InternalWavesGMSpectrumExponentialStratification.nc';
 % file = '/Volumes/RadiativeTr/InternalWavesGMSpectrumExponentialStratification.nc';
 %file = '/Volumes/jearly/Desktop/InternalWavesLatmix_256_256_50_GM_0.042.nc';
 
