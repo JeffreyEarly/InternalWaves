@@ -131,8 +131,22 @@ classdef InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function InitializeWithPlaneWave(obj, k0, l0, j0, UAmp, sign)
-            if (k0 > obj.Nx/2 || l0 > obj.Ny/2 || j0 >= obj.Nz)
-               error('Invalid choice for (k0,l0,j0). It must be ( <=Nx/2, <=Ny/2, <Nz).'); 
+            imagAmp = 1;
+            if (k0 < -obj.Nx/2 || k0 > obj.Nx/2)
+                error('Invalid choice for k0. Must be an integer %d <= k0 <= %d',-obj.Nx/2,obj.Nx/2);
+            elseif (k0 < 0)
+                k0 = abs(k0); % Because 'MakeHermitian' only grabs from the lower half, otherwise k0 = Nx + k0;
+                imagAmp = -sqrt(-1);
+            end
+       
+            if (l0 < -obj.Ny/2 || l0 > obj.Ny/2)
+                error('Invalid choice for l0. Must be an integer %d <= l0 <= %d',-obj.Ny/2,obj.Ny/2);
+            elseif (l0 < 0)
+                l0 = obj.Ny + l0;
+            end
+            
+            if (j0 < 1 || j0 >= obj.Nz)
+                error('Invalid choice for j0. Must be an integer 0 < j < %d', obj.Nz);
             end
             
             myH = obj.h(k0+1,l0+1,j0);
@@ -141,7 +155,7 @@ classdef InternalWaveModel < handle
             F_coefficient = myH * m * sqrt(2*g/obj.Lz)/sqrt(obj.N0^2 - obj.f0^2);
             
             U = zeros(size(obj.K));
-            U(k0+1,l0+1,j0) = UAmp*sqrt(myH)/F_coefficient/2;
+            U(k0+1,l0+1,j0) = imagAmp*UAmp*sqrt(myH)/F_coefficient/2;
             if sign > 0
                 A_plus = -MakeHermitian(U); % Careful with this, it doubles energy for some k,l
                 A_plus(1,1,:) = 2*A_plus(1,1,:); % Double the zero frequency
@@ -273,11 +287,11 @@ classdef InternalWaveModel < handle
             obj.u_plus = U_plus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(theta) - obj.Omega .* cos(theta))./denominator ) .* obj.F;
             obj.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(theta) + obj.Omega .* cos(theta))./denominator ) .* obj.F;
             
-            obj.v_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(theta) - obj.Omega .* sin(theta) )./denominator ) .* obj.F;
-            obj.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(theta) + obj.Omega .* sin(theta) )./denominator ) .* obj.F;
+            obj.v_plus = U_plus .* MakeHermitianNoInertial( ( -sqrt(-1)*obj.f0 .* cos(theta) - obj.Omega .* sin(theta) )./denominator ) .* obj.F;
+            obj.v_minus = U_minus .* MakeHermitianNoInertial( ( -sqrt(-1)*obj.f0 .* cos(theta) + obj.Omega .* sin(theta) )./denominator ) .* obj.F;
             
-            obj.w_plus = U_plus .* MakeHermitian(sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
-            obj.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
+            obj.w_plus = U_plus .* MakeHermitianNoInertial(sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
+            obj.w_minus = U_minus .* MakeHermitianNoInertial( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
             
             obj.zeta_plus = U_plus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
             obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
@@ -289,10 +303,10 @@ classdef InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [u,v] = VelocityFieldAtTime(obj, t)
-            phase_plus = MakeHermitian( exp(sqrt(-1)*obj.Omega*t) );
-            phase_minus = MakeHermitian( exp(-sqrt(-1)*obj.Omega*t) );
-            u_bar = obj.u_plus.*phase_plus + obj.u_minus.*phase_minus;
-            v_bar = obj.v_plus.*phase_plus + obj.v_minus.*phase_minus;
+            phase_plus = exp(sqrt(-1)*obj.Omega*t);
+            phase_minus = exp(-sqrt(-1)*obj.Omega*t);
+            u_bar = MakeHermitianOnlyInertial( obj.u_plus.*phase_plus + obj.u_minus.*phase_minus );
+            v_bar = MakeHermitianOnlyInertial( obj.v_plus.*phase_plus + obj.v_minus.*phase_minus );
             
             % Re-order to convert to an fast cosine transform
             u = TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -315,7 +329,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Computes the phase information given the amplitudes (public)
+% Forces a 3D matrix to be Hermitian, ready for an FFT (public)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function A = MakeHermitian(A)
@@ -338,6 +352,45 @@ for k=1:K
 end
 
 end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Forces the *non-inertial* terms of a 3D matrix to be Hermitian
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function A = MakeHermitianNoInertial(A)
+M = size(A,1);
+N = size(A,2);
+K = size(A,3);
+
+for k=1:K
+   for i=M:-1:1
+       for j=N:-1:1
+           ii = mod(M-i+1, M) + 1;
+           jj = mod(N-j+1, N) + 1;
+           if i == 1 && j == 1
+               continue;
+           elseif i == ii && j == jj
+               A(i,j,k) = real(A(i,j,k)); % self-conjugate term
+           else
+               A(i,j,k) = conj(A(ii,jj,k));
+           end
+       end
+   end
+end
+
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Forces the *inertial* terms of a 3D matrix to be Hermitian
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+function A = MakeHermitianOnlyInertial(A)
+A(1,1,:) = real(A(1,1,:));
+end
+
+
 
 function A = GenerateHermitianRandomMatrix( size )
 

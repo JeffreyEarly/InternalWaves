@@ -5,7 +5,7 @@ file = '/Volumes/Data/InternalWaveSimulations/InternalWavesGMSpectrumExponential
 file = '/Volumes/home/jearly/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 file = '/Volumes/Data/InternalWavesLatmix_256_64_80_GM_0.125.nc';
 file = '/Volumes/home/jearly/InternalWavesLatmixStrained_256_64_80_GM_0.016.nc';
-file = '/Volumes/Scratch/InternalWavesGMSpectrumExponentialStratification.nc';
+file = '/Users/jearly/Desktop/InternalWavesGMSpectrumExponentialStratification.nc';
 %file = '/Volumes/Data/InternalWavesLatmix_256_256_50_GM_0.062.nc';
 
 x = ncread(file, 'x');
