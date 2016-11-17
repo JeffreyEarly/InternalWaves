@@ -28,7 +28,7 @@
 %
 % March 25th, 2016      Version 1.0
 % March 30th, 2016      Version 1.1
-%
+% November 17th, 2016   Version 1.2
 
 classdef InternalWaveModel < handle
     properties
@@ -42,7 +42,7 @@ classdef InternalWaveModel < handle
         X,Y,Z
         K,L,J
         
-        K2, Kh, F, G, M, h, Omega, f0
+        K2, Kh, F, G, M, h, Omega, Omega_plus, Omega_minus, f0
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         period
     end
@@ -131,44 +131,50 @@ classdef InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function InitializeWithPlaneWave(obj, k0, l0, j0, UAmp, sign)
-            imagAmp = 1;
-            if (k0 < -obj.Nx/2 || k0 > obj.Nx/2)
-                error('Invalid choice for k0. Must be an integer %d <= k0 <= %d',-obj.Nx/2,obj.Nx/2);
-            elseif (k0 < 0)
-                k0 = abs(k0); % Because 'MakeHermitian' only grabs from the lower half, otherwise k0 = Nx + k0;
-                imagAmp = -sqrt(-1);
+            % User input sanity checks. We don't deal with the Nyquist.
+            if (k0 <= -obj.Nx/2 || k0 >= obj.Nx/2)
+                error('Invalid choice for k0. Must be an integer %d < k0 < %d',-obj.Nx/2+1,obj.Nx/2-1);
             end
-       
-            if (l0 < -obj.Ny/2 || l0 > obj.Ny/2)
-                error('Invalid choice for l0. Must be an integer %d <= l0 <= %d',-obj.Ny/2,obj.Ny/2);
-            elseif (l0 < 0)
-                l0 = obj.Ny + l0;
+            if (l0 <= -obj.Ny/2 || l0 >= obj.Ny/2)
+                error('Invalid choice for l0. Must be an integer %d < l0 < %d',-obj.Ny/2+1,obj.Ny/2+1);
             end
-            
             if (j0 < 1 || j0 >= obj.Nz)
                 error('Invalid choice for j0. Must be an integer 0 < j < %d', obj.Nz);
             end
             
+            % Rewrap (k0,l0) to follow standard FFT wrapping.
+            if (k0 < 0)
+                k0 = obj.Nx + k0;
+            end
+            if (l0 < 0)
+                l0 = obj.Ny + l0;
+            end
+            
+            % Deal with the negative wavenumber cases (and inertial)
+            if l0 == 0 && k0 == 0 % inertial
+                sign=1;
+            elseif l0 == 0 && k0 >= obj.Nx/2
+                k0 = obj.Nx-k0;
+                sign = -1*sign;
+            elseif l0 >= obj.Ny/2
+                l0 = obj.Ny-l0;
+                sign = -1*sign;
+            end
+                
             myH = obj.h(k0+1,l0+1,j0);
             m = j0*pi/obj.Lz;
             g = 9.81;
             F_coefficient = myH * m * sqrt(2*g/obj.Lz)/sqrt(obj.N0^2 - obj.f0^2);
             
             U = zeros(size(obj.K));
-            U(k0+1,l0+1,j0) = imagAmp*UAmp*sqrt(myH)/F_coefficient/2;
+            U(k0+1,l0+1,j0) = UAmp*sqrt(myH)/F_coefficient/2;
             if sign > 0
-                A_plus = -MakeHermitian(U); % Careful with this, it doubles energy for some k,l
-                A_plus(1,1,:) = 2*A_plus(1,1,:); % Double the zero frequency
-                A_plus(obj.Nx/2+1,1,:) = -2*A_plus(obj.Nx/2+1,1,:); % Double the Nyquist frequency
-                A_plus(1,obj.Ny/2+1,:) = -2*A_plus(1,obj.Ny/2+1,:); % Double the Nyquist frequency
+                A_plus = -MakeHermitian(U);
                 A_minus = zeros(size(U));
+                A_minus(1,1,:) = -A_plus(1,1,:); % Inertial oscillations are created using this trick.                
             else
-                A_plus = zeros(size(U)); % Careful with this, it doubles energy for some k,l
+                A_plus = zeros(size(U));
                 A_minus = MakeHermitian(U);
-                A_minus(1,1,:) = 2*A_minus(1,1,:); % Double the zero frequency
-                A_minus(obj.Nx/2+1,1,:) = -2*A_minus(obj.Nx/2+1,1,:); % Double the Nyquist frequency
-                A_minus(1,obj.Ny/2+1,:) = -2*A_minus(1,obj.Ny/2+1,:); % Double the Nyquist frequency
-                A_minus(1,1,:) = 0; % Intertial motions go only one direction!
             end
             
             obj.GenerateWavePhases(A_plus,A_minus);
@@ -259,7 +265,7 @@ classdef InternalWaveModel < handle
             
             A_plus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
             A_minus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
-            A_minus(1,1,:) = 0; % Intertial motions go only one direction!
+            A_minus(1,1,:) = -A_plus(1,1,:); % Intertial motions go only one direction!
             
             GM_sum = sum(sum(sum(GM3D)))/E;
             GM_random_sum = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
@@ -274,27 +280,24 @@ classdef InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function GenerateWavePhases(obj, U_plus, U_minus)
-            
-%             denominator = obj.Kh.*obj.Omega.*sqrt(obj.h);
-%             obj.u_plus = U_plus .* MakeHermitian((sqrt(-1)*obj.L*obj.f0 - obj.K.*obj.Omega)./denominator) .* obj.F;
-%             obj.u_minus = U_minus .* MakeHermitian((sqrt(-1)*obj.L*obj.f0 + obj.K.*obj.Omega)./denominator) .* obj.F;
-%             
-%             obj.v_plus = U_plus .* MakeHermitian((-sqrt(-1)*obj.K*obj.f0 - obj.L.*obj.Omega)./denominator) .* obj.F;
-%             obj.v_minus = U_minus .* MakeHermitian( (-sqrt(-1)*obj.K*obj.f0 + obj.L.*obj.Omega)./denominator) .* obj.F;
-            
             theta = atan2(obj.L,obj.K);
             denominator = obj.Omega.*sqrt(obj.h);
+            % Without calling MakeHermitian, this doesn't deal with l=0.
             obj.u_plus = U_plus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(theta) - obj.Omega .* cos(theta))./denominator ) .* obj.F;
             obj.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(theta) + obj.Omega .* cos(theta))./denominator ) .* obj.F;
             
-            obj.v_plus = U_plus .* MakeHermitianNoInertial( ( -sqrt(-1)*obj.f0 .* cos(theta) - obj.Omega .* sin(theta) )./denominator ) .* obj.F;
-            obj.v_minus = U_minus .* MakeHermitianNoInertial( ( -sqrt(-1)*obj.f0 .* cos(theta) + obj.Omega .* sin(theta) )./denominator ) .* obj.F;
+            obj.v_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(theta) - obj.Omega .* sin(theta) )./denominator ) .* obj.F;
+            obj.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(theta) + obj.Omega .* sin(theta) )./denominator ) .* obj.F;
             
-            obj.w_plus = U_plus .* MakeHermitianNoInertial(sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
-            obj.w_minus = U_minus .* MakeHermitianNoInertial( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
+            obj.w_plus = U_plus .* MakeHermitian(sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
+            obj.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
             
             obj.zeta_plus = U_plus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
             obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
+            
+            % Create the hermitian conjugates of the phase vectors;
+            obj.Omega(:,(obj.Ny/2+1):end,:) = -obj.Omega(:,(obj.Ny/2+1):end,:);
+            obj.Omega((obj.Nx/2+1):end,1,:) = -obj.Omega((obj.Nx/2+1):end,1,:);            
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -305,8 +308,10 @@ classdef InternalWaveModel < handle
         function [u,v] = VelocityFieldAtTime(obj, t)
             phase_plus = exp(sqrt(-1)*obj.Omega*t);
             phase_minus = exp(-sqrt(-1)*obj.Omega*t);
-            u_bar = MakeHermitianOnlyInertial( obj.u_plus.*phase_plus + obj.u_minus.*phase_minus );
-            v_bar = MakeHermitianOnlyInertial( obj.v_plus.*phase_plus + obj.v_minus.*phase_minus );
+            u_bar = obj.u_plus.*phase_plus + obj.u_minus.*phase_minus;
+            v_bar = obj.v_plus.*phase_plus + obj.v_minus.*phase_minus;
+            
+            CheckHermitian(u_bar);CheckHermitian(v_bar);
             
             % Re-order to convert to an fast cosine transform
             u = TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -314,10 +319,12 @@ classdef InternalWaveModel < handle
         end
         
         function [w,zeta] = VerticalFieldsAtTime(obj, t)
-            phase_plus = MakeHermitian( exp(sqrt(-1)*obj.Omega*t) );
-            phase_minus = MakeHermitian( exp(-sqrt(-1)*obj.Omega*t) );
+            phase_plus = exp(sqrt(-1)*obj.Omega*t);
+            phase_minus = exp(-sqrt(-1)*obj.Omega*t);
             w_bar = obj.w_plus.*phase_plus + obj.w_minus.*phase_minus;
             zeta_bar = obj.zeta_plus.*phase_plus + obj.zeta_minus.*phase_minus;
+            
+            CheckHermitian(w_bar);CheckHermitian(zeta_bar);
             
             % Re-order to convert to an fast cosine transform
             w = TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -331,6 +338,11 @@ end
 %
 % Forces a 3D matrix to be Hermitian, ready for an FFT (public)
 %
+% The approach taken here is that the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
+% numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
+% conjugates. Also, the negative k wavenumbers for l=0. The Nyquist wave
+% numbers are set to zero to avoid complications.
+%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function A = MakeHermitian(A)
 M = size(A,1);
@@ -338,27 +350,33 @@ N = size(A,2);
 K = size(A,3);
 
 for k=1:K
-   for i=M:-1:1
-       for j=N:-1:1
-           ii = mod(M-i+1, M) + 1;
-           jj = mod(N-j+1, N) + 1;
-           if i == ii && j == jj
-               A(i,j,k) = real(A(i,j,k)); % self-conjugate term
-           else
-               A(i,j,k) = conj(A(ii,jj,k));
-           end
-       end
-   end
+    for i=1:M
+        for j=1:(N/2+1)
+            ii = mod(M-i+1, M) + 1;
+            jj = mod(N-j+1, N) + 1;
+            if i == ii && j == jj
+                % A(i,j,k) = real(A(i,j,k)); % self-conjugate term
+                % This is normally what you'd do, but we're being tricky
+                if i == 1 && j == 1
+                    continue;
+                else
+                    A(i,j,k) = 0;
+                end
+            else
+                A(ii,jj,k) = conj(A(i,j,k));
+            end
+        end
+    end
 end
 
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Forces the *non-inertial* terms of a 3D matrix to be Hermitian
+% Checks that the matrix is Hermitian.
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function A = MakeHermitianNoInertial(A)
+function A = CheckHermitian(A)
 M = size(A,1);
 N = size(A,2);
 K = size(A,3);
@@ -368,29 +386,14 @@ for k=1:K
        for j=N:-1:1
            ii = mod(M-i+1, M) + 1;
            jj = mod(N-j+1, N) + 1;
-           if i == 1 && j == 1
-               continue;
-           elseif i == ii && j == jj
-               A(i,j,k) = real(A(i,j,k)); % self-conjugate term
-           else
-               A(i,j,k) = conj(A(ii,jj,k));
+           if A(i,j,k) ~= conj(A(ii,jj,k))
+               error('Not hermitian conjugate')
            end
        end
    end
 end
 
 end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Forces the *inertial* terms of a 3D matrix to be Hermitian
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function A = MakeHermitianOnlyInertial(A)
-A(1,1,:) = real(A(1,1,:));
-end
-
-
 
 function A = GenerateHermitianRandomMatrix( size )
 
