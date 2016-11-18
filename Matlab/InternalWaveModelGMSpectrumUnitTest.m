@@ -20,13 +20,13 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 240e3;
-Ly = 30e3;
+Lx = 30e3;
+Ly = 15e3;
 Lz = 5000;
 
-Nx = 512;
-Ny = 64;
-Nz = 128;
+Nx = 256;
+Ny = 128;
+Nz = 64;
 
 latitude = 31;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
@@ -43,6 +43,38 @@ wavemodel.InitializeWithGMSpectrum(1.0);
 t = 0;
 [u,v]=wavemodel.VelocityFieldAtTime(t);
 [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+
+depth = 1000;
+depthIndex = find(wavemodel.z-Lz > -depth,1,'first');
+stride = 4;
+t = 0:15*60:4*86400;
+xIndices = 1:stride:Nx;
+yIndices = 1:stride:Ny;
+cv_mooring = zeros([length(t) length(xIndices)*length(yIndices)]);
+for iTime=1:length(t)
+    fprintf('time @ %d of %d\n', iTime, length(t));
+    [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
+    cv_mooring(iTime,:) = reshape(u(xIndices,yIndices,depthIndex),1,[]) + sqrt(-1)*reshape(v(xIndices,yIndices,depthIndex),1,[]);
+end
+
+taper_bandwidth = 2;
+psi=[];
+%  [psi,lambda]=sleptap(size(cv_mooring,1),taper_bandwidth);
+[omega_p, Spp, Snn, Spn] = mspec(t(2)-t(1),cv_mooring,psi);
+
+omega = [ -flipud(omega_p(2:end)); omega_p];
+[S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, N0, 0 );
+% We want the integral of this to give us the variance back, so we need to
+% divide by 2*pi
+S = (1/(2*pi))*[flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
+figure, plot(omega,S), ylog
+hold on, plot(omega,S_gm/5)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Compute a few benchmarks
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 z = wavemodel.z;
 uvVariance = squeeze(mean(mean(u.*u + v.*v,1),2));

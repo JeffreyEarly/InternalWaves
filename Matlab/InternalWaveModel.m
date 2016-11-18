@@ -322,7 +322,7 @@ classdef InternalWaveModel < handle
             u_bar = obj.u_plus.*phase_plus + obj.u_minus.*phase_minus;
             v_bar = obj.v_plus.*phase_plus + obj.v_minus.*phase_minus;
             
-%             CheckHermitian(u_bar);CheckHermitian(v_bar);
+            CheckHermitian(u_bar);CheckHermitian(v_bar);
 
             % Re-order to convert to an fast cosine transform
             u = TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -335,7 +335,7 @@ classdef InternalWaveModel < handle
             w_bar = obj.w_plus.*phase_plus + obj.w_minus.*phase_minus;
             zeta_bar = obj.zeta_plus.*phase_plus + obj.zeta_minus.*phase_minus;
             
-%             CheckHermitian(w_bar);CheckHermitian(zeta_bar);
+            CheckHermitian(w_bar);CheckHermitian(zeta_bar);
             
             % Re-order to convert to an fast cosine transform
             w = TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -373,6 +373,8 @@ for k=1:K
                 else
                     A(i,j,k) = 0;
                 end
+            elseif j == N/2+1 % Kill the Nyquist, rather than fix it.
+                A(i,j,k) = 0;
             else
                 A(ii,jj,k) = conj(A(i,j,k));
             end

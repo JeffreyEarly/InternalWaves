@@ -19,16 +19,16 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 40e3;
-Ly = 40e3;
+Lx = 15e3;
+Ly = 15e3;
 Lz = 5000;
 
-Nx = 16;
-Ny = 16;
-Nz = 16;
+Nx = 32;
+Ny = 32;
+Nz = 32;
 
-latitude = 35;
-N0 = 5.2e-3;
+latitude = 31;
+N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -44,15 +44,15 @@ wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-k0 = 0; % k=0..Nx/2
-l0 = 1; % l=0..Ny/2
+k0 = 1; % k=0..Nx/2
+l0 = 16; % l=0..Ny/2
 j0 = 1; % j=1..nModes, where 1 indicates the 1st baroclinic mode
 U = 0.01; % m/s
 sign = 1;
 
 wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
 
-t = 86400/4;
+t = 4*86400;
 [u,v] = wavemodel.VelocityFieldAtTime(t);
 [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
 
