@@ -169,7 +169,7 @@ classdef InternalWaveModel < handle
             U = zeros(size(obj.K));
             U(k0+1,l0+1,j0) = UAmp*sqrt(myH)/F_coefficient/2;
             if sign > 0
-                A_plus = -MakeHermitian(U);
+                A_plus = MakeHermitian(U);
                 A_minus = zeros(size(U));
                 A_minus(1,1,:) = -A_plus(1,1,:); % Inertial oscillations are created using this trick.                
             else
@@ -210,66 +210,77 @@ classdef InternalWaveModel < handle
             E_gm = 6.3e-5; % non-dimensional energy parameter
             E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*Amp;
                       
-            % Compute the proper normalization with lots of modes
-            j2 = (1:512);
-            H = 2*(j_star.^(3/2))./(j2+j_star).^(5/2);
+            % Compute the proper vertical function normalization
+            H = (j_star+(1:1024)).^(-5/2);
             H_norm = sum(H);
             
-            % Analytical function for the GM spectrum in one horizontal
-            % direction.
-            D = obj.Lz;
-%             GM2D_function = @(k,j) E*( (2/H_norm)*(j_star.^(3/2))./(j+j_star).^(5/2) ) .* (2/pi)*obj.f0*(j*pi/D).*(j*pi/D).*sqrt( (obj.N0*obj.N0-obj.f0*obj.f0)./(k.*k+(j*pi/D).*(j*pi/D)))./(obj.N0*obj.N0*k.*k+obj.f0*obj.f0*(j*pi/D).*(j*pi/D));
-            alpha2 = obj.N0*obj.N0/(obj.f0*obj.f0);
-            GM2D_analytic_int = @(k0,k1,j) E*( (2/H_norm)*(j_star.^(3/2))./(j+j_star).^(5/2) ) .* (2/pi)*(atan(k1/(j*pi/D)*sqrt( (alpha2-1)/(k0*k0/((j*pi/D)*(j*pi/D)) + 1))) - atan(k0/(j*pi/D)*sqrt( (alpha2-1)/(k0*k0/((j*pi/D)*(j*pi/D)) + 1)))) ;
+            % Do the same for the frequency function.
+            B_norm = 1/atan(sqrt(obj.N0*obj.N0/(obj.f0*obj.f0)-1));
             
-            % Now create a wavenumber basis that uses the smallest
-            % increment, and only goes to the smallest max wavenumber
-            dk = (obj.k(2)-obj.k(1));
-            dl = (obj.l(2)-obj.l(1));
-            if (dk < dl)
-                dm = dk;
-            else
-                dm = dl;
-            end
-            if ( max(obj.k) < max(obj.l) )
-                m_max = max(obj.k);
-            else
-                m_max = max(obj.l);
-            end
-            m = (0:dm:m_max)';
+            % This function tells you how much energy you need between two
+            % frequencies for a given vertical mode.
+            GM2D_int = @(omega0,omega1,j) (E/H_norm)*((j+j_star).^(-5/2))*(atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) - atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)))*B_norm;
             
-            % Isotropically spread out the energy, but ignore the stuff
-            % beyond m_max for now (we could come back and fix this).
-            GM3D = zeros(size(obj.Kh));
-            fprintf('Manually distributing the GM spectrum isotropically in horizontal wavenumber space. This may take a minute or two...\n');
+            totalEnergy = 0;
             for mode=1:max(obj.j)
-                fullIndices = false(size(GM3D));
-%                 func = @(k) GM2D_function(k,mode);
-%                 GM3D(1,1,mode) = integral(func,m(1),m(1)+dm/2);
-                GM3D(1,1,mode) = GM2D_analytic_int(m(1),m(1)+dm/2,mode);
-                for i=2:length(m)
-                    m_lower = m(i)-dm/2;
-                    m_upper = m(i)+dm/2;
-                    indices = obj.Kh(:,:,mode) >= m_lower & obj.Kh(:,:,mode) < m_upper;
-                    n = sum(sum(sum(indices)));
-%                     total = integral(func,m_lower,m_upper)/n;
-                    total = GM2D_analytic_int(m_lower,m_upper,mode)/n;
-                    fullIndices(:,:,mode) = indices;
-                    GM3D(fullIndices) = total;
-                end
+                totalEnergy = totalEnergy + GM2D_int(obj.f0,obj.N0,mode);
             end
+            fprintf('You will capture %.2f%% of the energy due to limited vertical modes.\n',100*totalEnergy/E);
             
+            nx = obj.Nx; ny = obj.Ny; nz = obj.Nz;
+            GM3D = zeros(size(obj.Kh));
+            for iMode = 1:max(obj.j)
+                % Stride to the linear index for the full 3D matrix
+                modeStride = (iMode-1)*size(obj.Omega,1)*size(obj.Omega,2);
+                
+                % Sort the linearized frequencies for this mode.
+                [sortedOmegas, indices] = sort(reshape(obj.Omega(:,:,iMode),1,[]));
+                
+                % Then find where the omegas differ.
+                omegaDiffIndices = find(diff(sortedOmegas) > 0);
             
+                lastIdx = 1;
+                omega0 = sortedOmegas(lastIdx);
+                leftDeltaOmega = 0;
+                for idx=omegaDiffIndices
+                    currentIdx = idx+1;
+                    nOmegas = currentIdx-lastIdx;
+                    omega1 = sortedOmegas(idx + 1);
+                    rightDeltaOmega = (omega1-omega0)/2;
+                    energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
+                    
+                    GM3D(indices(lastIdx:(currentIdx-1))+modeStride) = energyPerFrequency;
+                    
+                    omega0 = omega1;
+                    lastIdx = currentIdx;
+                    leftDeltaOmega = rightDeltaOmega;
+                end
+                % Still have to deal with the last point.
+            end
+            fprintf('After distributing energy across frequency and mode, you still have %.2f%% of reference GM energy.\n',100*sum(sum(sum(GM3D)))/E);
+            fprintf('Due to restricted domain size, the j=1,k=l=0 mode contains %.2f%% the total energy.\n',100*GM3D(1,1,1)/sum(sum(sum(GM3D))));
             
             A = sqrt(GM3D/2); % Now split this into even and odd.
             
-            A_plus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
-            A_minus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
+            % Randomize phases, but keep unit length
+            A_plus = GenerateHermitianRandomMatrix( size(obj.K) );
+            A_minus = GenerateHermitianRandomMatrix( size(obj.K) );
+            
+            goodIndices = abs(A_plus) > 0;
+            A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
+            A_plus = A.*A_plus;
+            goodIndices = abs(A_minus) > 0;
+            A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
+            A_minus = A.*A_minus;
+            
+            
+%             A_plus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
+%             A_minus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
             A_minus(1,1,:) = -A_plus(1,1,:); % Intertial motions go only one direction!
             
             GM_sum = sum(sum(sum(GM3D)))/E;
             GM_random_sum = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
-            fprintf('The coefficients sum to %.2f GM given the scales, and the randomized field sums to %f GM\n', GM_sum, GM_random_sum);
+            fprintf('The coefficients sum to %.2f%% GM given the scales, and the randomized field sums to %.2f%% GM\n', 100*GM_sum, 100*GM_random_sum);
             
             obj.GenerateWavePhases(A_plus,A_minus);
         end
@@ -280,19 +291,19 @@ classdef InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function GenerateWavePhases(obj, U_plus, U_minus)
-            theta = atan2(obj.L,obj.K);
+            alpha = atan2(obj.L,obj.K);
             denominator = obj.Omega.*sqrt(obj.h);
             % Without calling MakeHermitian, this doesn't deal with l=0.
-            obj.u_plus = U_plus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(theta) - obj.Omega .* cos(theta))./denominator ) .* obj.F;
-            obj.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(theta) + obj.Omega .* cos(theta))./denominator ) .* obj.F;
+            obj.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* sin(alpha) + obj.Omega .* cos(alpha) )./denominator ) .* obj.F;
+            obj.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(alpha) + obj.Omega .* cos(alpha) )./denominator ) .* obj.F;
             
-            obj.v_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(theta) - obj.Omega .* sin(theta) )./denominator ) .* obj.F;
-            obj.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(theta) + obj.Omega .* sin(theta) )./denominator ) .* obj.F;
+            obj.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*obj.f0 .* cos(alpha) + obj.Omega .* sin(alpha) )./denominator ) .* obj.F;
+            obj.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(alpha) + obj.Omega .* sin(alpha) )./denominator ) .* obj.F;
             
-            obj.w_plus = U_plus .* MakeHermitian(sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
+            obj.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
             obj.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
             
-            obj.zeta_plus = U_plus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
+            obj.zeta_plus = U_plus .* MakeHermitian( -obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
             obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
             
             % Create the hermitian conjugates of the phase vectors;
@@ -311,7 +322,12 @@ classdef InternalWaveModel < handle
             u_bar = obj.u_plus.*phase_plus + obj.u_minus.*phase_minus;
             v_bar = obj.v_plus.*phase_plus + obj.v_minus.*phase_minus;
             
-            CheckHermitian(u_bar);CheckHermitian(v_bar);
+%             CheckHermitian(u_bar);CheckHermitian(v_bar);
+            
+            %                   sum(u_bar.*conj(u_bar))       mean(u.*u)
+            % For k=l=0         2                               1
+            % For k!=0, l!=0    1                               1
+            % For k!=0, l=0     2                               1
             
             % Re-order to convert to an fast cosine transform
             u = TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -324,7 +340,7 @@ classdef InternalWaveModel < handle
             w_bar = obj.w_plus.*phase_plus + obj.w_minus.*phase_minus;
             zeta_bar = obj.zeta_plus.*phase_plus + obj.zeta_minus.*phase_minus;
             
-            CheckHermitian(w_bar);CheckHermitian(zeta_bar);
+%             CheckHermitian(w_bar);CheckHermitian(zeta_bar);
             
             % Re-order to convert to an fast cosine transform
             w = TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -362,8 +378,10 @@ for k=1:K
                 else
                     A(i,j,k) = 0;
                 end
-            else
+            elseif j==1
                 A(ii,jj,k) = conj(A(i,j,k));
+            else
+                A(i,jj,k) = conj(A(i,j,k));
             end
         end
     end
@@ -416,15 +434,20 @@ end
 function u = TransformToSpatialDomainWithF( u_bar, Nx, Ny, Nz )
 % Here we use what I call the 'Fourier series' definition of the ifft, so
 % that the coefficients in frequency space have the same units in time.
-    u = Nx*Ny*ifft(ifft(u_bar,Nx,1,'symmetric'),Ny,2,'symmetric');
-    u = fft(cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-1), u(:,:,Nz), 0.5*u(:,:,Nz-1:-1:1)),2*Nz,3);
+    u = Nx*Ny*ifft(ifft(u_bar,Nx,1),Ny,2);
+    % should not have to call real, but for some reason, with enough
+    % points, it starts generating some small imaginary component.
+    A = cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-1), u(:,:,Nz), 0.5*u(:,:,Nz-1:-1:1));
+    u = fft(A,2*Nz,3);
     u = u(:,:,1:Nz);
 end
 
 function w = TransformToSpatialDomainWithG( w_bar, Nx, Ny, Nz )
 % Here we use what I call the 'Fourier series' definition of the ifft, so
 % that the coefficients in frequency space have the same units in time.
-    w = Nx*Ny*ifft(ifft(w_bar,Nx,1,'symmetric'),Ny,2,'symmetric');
+    w = Nx*Ny*ifft(ifft(w_bar,Nx,1),Ny,2);
+    % should not have to call real, but for some reason, with enough
+    % points, it starts generating some small imaginary component.
     w = fft( sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-1), w(:,:,Nz), -0.5*w(:,:,Nz-1:-1:1)),2*Nz,3);
     w = w(:,:,1:Nz);
 end

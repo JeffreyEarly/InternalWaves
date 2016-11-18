@@ -20,16 +20,16 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 5e3;
-Ly = 5e3;
+Lx = 150e3;
+Ly = 150e3;
 Lz = 5000;
 
-Nx = 64;
-Ny = 64;
-Nz = 64;
+Nx = 256;
+Ny = 256;
+Nz = 128;
 
 latitude = 31;
-N0 = 5.2e-3; % Choose your stratification
+N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -48,24 +48,33 @@ z = wavemodel.z;
 uvVariance = squeeze(mean(mean(u.*u + v.*v,1),2));
 zetaVariance = squeeze(mean(mean(zeta.*zeta,1),2));
 
+zeta2 = squeeze(mean(mean(zeta.*zeta,1),2));
+u2 = squeeze(mean(mean(u.*u,1),2)+mean(vmean(v.*v,1),2));
+w2 = squeeze(mean(mean(w.*w,1),2));
+
 figure
-subplot(1,2,1)
+subplot(1,3,1)
 plot([44 44], [z(1) z(end)], 'k' ,'LineWidth', 2), hold on
 plot(1e4*uvVariance,z,'LineWidth', 2)
 xlabel('cm^2/s^2'), ylabel('depth (m)')
 
-subplot(1,2,2)
+subplot(1,3,2)
 plot([53 53], [z(1) z(end)], 'k' ,'LineWidth', 2), hold on
 plot(zetaVariance,z,'LineWidth', 2)
 xlabel('m^2'), ylabel('depth (m)')
 
-HKE = u.*u + v.*v;
+subplot(1,3,3)
+plot([30 30], [z(1) z(end)], 'k' ,'LineWidth', 2), hold on
+plot(0.5*1e4*(u2 + w2 + N0*N0.*zeta2) ,z,'LineWidth', 2)
+title('total energy'), xlabel('cm^2 s^{-2}'), ylabel('depth (m)')
+
+HKE = 0.5*(u.*u + v.*v);
 HKE_int = trapz(z,HKE,3);
 
-VKE = w.*w;
+VKE = 0.5*(w.*w);
 VKE_int = trapz(z,VKE,3);
 
-PE = (N0^2)*zeta.*zeta;
+PE = 0.5*(N0^2)*zeta.*zeta;
 PE_int = trapz(z,PE,3);
 
 totalGM = mean(mean(HKE_int + VKE_int + PE_int))*1032; % scaled by the density of water

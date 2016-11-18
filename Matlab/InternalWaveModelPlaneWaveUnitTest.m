@@ -23,9 +23,9 @@ Lx = 40e3;
 Ly = 40e3;
 Lz = 5000;
 
-Nx = 32;
-Ny = 32;
-Nz = 64;
+Nx = 16;
+Ny = 16;
+Nz = 16;
 
 latitude = 35;
 N0 = 5.2e-3;
@@ -44,15 +44,15 @@ wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-k0 = -4; % k=0..Nx/2
-l0 = 0; % l=0..Ny/2
+k0 = 1; % k=0..Nx/2
+l0 = 1; % l=0..Ny/2
 j0 = 1; % j=1..nModes, where 1 indicates the 1st baroclinic mode
 U = 0.01; % m/s
 sign = 1;
 
 wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
 
-t = 86400/4;
+t = 0*86400/4;
 [u,v] = wavemodel.VelocityFieldAtTime(t);
 [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
 
@@ -64,21 +64,33 @@ t = 86400/4;
 
 f0 = wavemodel.f0;
 k = wavemodel.k;
+l = wavemodel.l;
 h = wavemodel.h;
 x = wavemodel.x;
+y = wavemodel.y;
 X = wavemodel.X;
+Y = wavemodel.Y;
 Z = wavemodel.Z;
 
-% Note that this solution is only valid for l=0.
 if (k0 < 0)
     k0 = Nx + k0;
 end
+if (l0 < 0)
+    l0 = Ny + l0;
+end
 omega = sign*2*pi/wavemodel.period;
 m = j0*pi/Lz;
-u_unit = U*cos( k(k0+1)*X + omega*t ).*cos(m*Z);
-v_unit = -(f0/omega)*U*sin( k(k0+1)*X + omega*t ) .* cos(m*Z);
-w_unit = (U*k(k0+1)/m) * sin(k(k0+1)*X + omega*t) .* sin(m*Z);
-zeta_unit = -(U*k(k0+1)/m/omega) * cos(k(k0+1)*X + omega*t) .* sin(m*Z);
+% u_unit = U*cos( k(k0+1)*X + omega*t ).*cos(m*Z);
+% v_unit = -(f0/omega)*U*sin( k(k0+1)*X + omega*t ) .* cos(m*Z);
+% w_unit = (U*k(k0+1)/m) * sin(k(k0+1)*X + omega*t) .* sin(m*Z);
+% zeta_unit = -(U*k(k0+1)/m/omega) * cos(k(k0+1)*X + omega*t) .* sin(m*Z);
+
+alpha=atan2(l(l0+1),k(k0+1));
+K = sqrt( k(k0+1)^2 + l(l0+1)^2);
+u_unit = U*(cos(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) + (f0/omega)*sin(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
+v_unit = U*(sin(alpha)*cos( k(k0+1)*X + l(l0+1)*Y + omega*t ) - (f0/omega)*cos(alpha)*sin( k(k0+1)*X + l(l0+1)*Y + omega*t )).*cos(m*Z);
+w_unit = (U*K/m) * sin(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
+zeta_unit = -(U*K/m/omega) * cos(k(k0+1)*X + l(l0+1)*Y + omega*t) .* sin(m*Z);
 
 % Compute the relative error
 max_speed = max(max(max( sqrt(u.*u + v.*v) )));

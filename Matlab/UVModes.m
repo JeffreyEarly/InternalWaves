@@ -1,6 +1,6 @@
-N = 256;
+N = 16;
 f_bar = zeros(N,1);
-j = 127;
+j = 3;
 f_bar(j+1) = 1;
 
 
@@ -20,12 +20,12 @@ x = dz*(0:N-1)';
 f_test = cos(j*pi*x/N);
 
 
-%   figure, plot(x,f,'LineWidth', 2)
-%   hold on, plot(x,f_test)
+  figure, plot(x,f,'LineWidth', 2)
+  hold on, plot(x,f_test)
 
 
 % Now let's test W!
-j = 127;
+j = 3;
 f_bar = zeros(N,1);
 f_bar(j+1) = 1;
 
