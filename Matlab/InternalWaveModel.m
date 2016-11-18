@@ -171,7 +171,7 @@ classdef InternalWaveModel < handle
             if sign > 0
                 A_plus = MakeHermitian(U);
                 A_minus = zeros(size(U));
-                A_minus(1,1,:) = -A_plus(1,1,:); % Inertial oscillations are created using this trick.                
+                A_minus(1,1,:) = A_plus(1,1,:); % Inertial oscillations are created using this trick.                
             else
                 A_plus = zeros(size(U));
                 A_minus = MakeHermitian(U);
@@ -276,7 +276,7 @@ classdef InternalWaveModel < handle
             
 %             A_plus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
 %             A_minus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
-            A_minus(1,1,:) = -A_plus(1,1,:); % Intertial motions go only one direction!
+            A_minus(1,1,:) = A_plus(1,1,:); % Intertial motions go only one direction!
             
             GM_sum = sum(sum(sum(GM3D)))/E;
             GM_random_sum = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
@@ -323,12 +323,7 @@ classdef InternalWaveModel < handle
             v_bar = obj.v_plus.*phase_plus + obj.v_minus.*phase_minus;
             
 %             CheckHermitian(u_bar);CheckHermitian(v_bar);
-            
-            %                   sum(u_bar.*conj(u_bar))       mean(u.*u)
-            % For k=l=0         2                               1
-            % For k!=0, l!=0    1                               1
-            % For k!=0, l=0     2                               1
-            
+
             % Re-order to convert to an fast cosine transform
             u = TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
             v = TransformToSpatialDomainWithF(v_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -366,8 +361,8 @@ N = size(A,2);
 K = size(A,3);
 
 for k=1:K
-    for i=1:M
-        for j=1:(N/2+1)
+    for j=1:(N/2+1)
+        for i=1:M
             ii = mod(M-i+1, M) + 1;
             jj = mod(N-j+1, N) + 1;
             if i == ii && j == jj
@@ -378,10 +373,8 @@ for k=1:K
                 else
                     A(i,j,k) = 0;
                 end
-            elseif j==1
-                A(ii,jj,k) = conj(A(i,j,k));
             else
-                A(i,jj,k) = conj(A(i,j,k));
+                A(ii,jj,k) = conj(A(i,j,k));
             end
         end
     end
@@ -437,9 +430,12 @@ function u = TransformToSpatialDomainWithF( u_bar, Nx, Ny, Nz )
     u = Nx*Ny*ifft(ifft(u_bar,Nx,1),Ny,2);
     % should not have to call real, but for some reason, with enough
     % points, it starts generating some small imaginary component.
-    A = cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-1), u(:,:,Nz), 0.5*u(:,:,Nz-1:-1:1));
-    u = fft(A,2*Nz,3);
-    u = u(:,:,1:Nz);
+    u = fft(cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-1), u(:,:,Nz), 0.5*u(:,:,Nz-1:-1:1)),2*Nz,3);
+    ratio = max(max(max(abs(imag(u)))))/max(max(max(abs(real(u)))));
+    if ratio > 1e-8
+        fprintf('WARNING: The inverse cosine transform reports an unreasonably large imaginary part, %.2g.\n',ratio);
+    end
+    u = real(u(:,:,1:Nz));
 end
 
 function w = TransformToSpatialDomainWithG( w_bar, Nx, Ny, Nz )
@@ -449,5 +445,9 @@ function w = TransformToSpatialDomainWithG( w_bar, Nx, Ny, Nz )
     % should not have to call real, but for some reason, with enough
     % points, it starts generating some small imaginary component.
     w = fft( sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-1), w(:,:,Nz), -0.5*w(:,:,Nz-1:-1:1)),2*Nz,3);
-    w = w(:,:,1:Nz);
+    ratio = max(max(max(abs(imag(w)))))/max(max(max(abs(real(w)))));
+    if ratio > 1e-8
+        fprintf('WARNING: The inverse cosine transform reports an unreasonably large imaginary part, %.2f.\n',ratio);
+    end
+    w = real(w(:,:,1:Nz));
 end
