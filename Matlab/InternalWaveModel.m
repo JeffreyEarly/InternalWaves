@@ -45,6 +45,7 @@ classdef InternalWaveModel < handle
         K2, Kh, F, G, M, h, Omega, Omega_plus, Omega_minus, f0
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         period
+        version = 1.2
     end
     
     methods
