@@ -124,6 +124,10 @@ classdef InternalWaveModel < handle
             
             % G contains the coefficients for the W-modes
             obj.G = sqrt(2*g/(obj.Lz*(obj.N0*obj.N0-obj.f0*obj.f0)));
+            
+%             % Create the hermitian conjugates of the phase vectors;
+%             obj.Omega(:,(obj.Ny/2+1):end,:) = -obj.Omega(:,(obj.Ny/2+1):end,:);
+%             obj.Omega((obj.Nx/2+1):end,1,:) = -obj.Omega((obj.Nx/2+1):end,1,:);      
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -134,13 +138,13 @@ classdef InternalWaveModel < handle
         function InitializeWithPlaneWave(obj, k0, l0, j0, UAmp, sign)
             % User input sanity checks. We don't deal with the Nyquist.
             if (k0 <= -obj.Nx/2 || k0 >= obj.Nx/2)
-                error('Invalid choice for k0. Must be an integer %d < k0 < %d',-obj.Nx/2+1,obj.Nx/2-1);
+                error('Invalid choice for k0 (%d). Must be an integer %d < k0 < %d',k0,-obj.Nx/2+1,obj.Nx/2-1);
             end
             if (l0 <= -obj.Ny/2 || l0 >= obj.Ny/2)
-                error('Invalid choice for l0. Must be an integer %d < l0 < %d',-obj.Ny/2+1,obj.Ny/2+1);
+                error('Invalid choice for l0 (%d). Must be an integer %d < l0 < %d',l0,-obj.Ny/2+1,obj.Ny/2+1);
             end
             if (j0 < 1 || j0 >= obj.Nz)
-                error('Invalid choice for j0. Must be an integer 0 < j < %d', obj.Nz);
+                error('Invalid choice for j0 (%d). Must be an integer 0 < j < %d',j0, obj.Nz);
             end
             
             % Rewrap (k0,l0) to follow standard FFT wrapping.
@@ -200,7 +204,7 @@ classdef InternalWaveModel < handle
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Create a single wave (public)
+        % Create a full Garrett-Munk spectrum (public)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function InitializeWithGMSpectrum(obj, Amp)
@@ -235,7 +239,7 @@ classdef InternalWaveModel < handle
                 modeStride = (iMode-1)*size(obj.Omega,1)*size(obj.Omega,2);
                 
                 % Sort the linearized frequencies for this mode.
-                [sortedOmegas, indices] = sort(reshape(obj.Omega(:,:,iMode),1,[]));
+                [sortedOmegas, indices] = sort(reshape(abs(obj.Omega(:,:,iMode)),1,[]));
                 
                 % Then find where the omegas differ.
                 omegaDiffIndices = find(diff(sortedOmegas) > 0);
@@ -307,14 +311,15 @@ classdef InternalWaveModel < handle
             obj.zeta_plus = U_plus .* MakeHermitian( -obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
             obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
             
-            % Create the hermitian conjugates of the phase vectors;
+            % Warning, need to move this to init to prevent sign swapping!
+                  % Create the hermitian conjugates of the phase vectors;
             obj.Omega(:,(obj.Ny/2+1):end,:) = -obj.Omega(:,(obj.Ny/2+1):end,:);
-            obj.Omega((obj.Nx/2+1):end,1,:) = -obj.Omega((obj.Nx/2+1):end,1,:);            
+            obj.Omega((obj.Nx/2+1):end,1,:) = -obj.Omega((obj.Nx/2+1):end,1,:);   
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
-        % Computes the phase information given the amplitudes (public)
+        % Compute the dynamical fields at a given time (public)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function [u,v] = VelocityFieldAtTime(obj, t)
@@ -348,7 +353,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Forces a 3D matrix to be Hermitian, ready for an FFT (public)
+% Forces a 3D matrix to be Hermitian, ready for an FFT (internal)
 %
 % The approach taken here is that the (k=-Nx/2..Nx/2,l=0..Ny/2+1) wave
 % numbers are primary, and the (k=-Nx/2..Nx/2,l=-Ny/2..1) are inferred as
@@ -424,7 +429,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Computes the phase information given the amplitudes (public)
+% Computes the phase information given the amplitudes (internal)
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function u = TransformToSpatialDomainWithF( u_bar, Nx, Ny, Nz )
