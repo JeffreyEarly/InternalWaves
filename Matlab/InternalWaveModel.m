@@ -125,9 +125,9 @@ classdef InternalWaveModel < handle
             % G contains the coefficients for the W-modes
             obj.G = sqrt(2*g/(obj.Lz*(obj.N0*obj.N0-obj.f0*obj.f0)));
             
-%             % Create the hermitian conjugates of the phase vectors;
-%             obj.Omega(:,(obj.Ny/2+1):end,:) = -obj.Omega(:,(obj.Ny/2+1):end,:);
-%             obj.Omega((obj.Nx/2+1):end,1,:) = -obj.Omega((obj.Nx/2+1):end,1,:);      
+            % Create the hermitian conjugates of the phase vectors;
+            obj.Omega(:,(obj.Ny/2+1):end,:) = -obj.Omega(:,(obj.Ny/2+1):end,:);
+            obj.Omega((obj.Nx/2+1):end,1,:) = -obj.Omega((obj.Nx/2+1):end,1,:);      
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -183,20 +183,6 @@ classdef InternalWaveModel < handle
             end
             
             obj.GenerateWavePhases(A_plus,A_minus);
-
-            % This is the empirical method for setting the maximum U speed
-            % to the desired value. For now we use the analytical method.
-%             [u,~] = obj.VelocityFieldAtTime(0);
-%             max_u = max(max(max( u )));
-%    
-%             obj.u_plus = obj.u_plus*(UAmp/max_u);
-%             obj.u_minus = obj.u_minus*(UAmp/max_u);
-%             obj.v_plus = obj.v_plus*(UAmp/max_u);
-%             obj.v_minus = obj.v_minus*(UAmp/max_u);
-%             obj.w_plus = obj.w_plus*(UAmp/max_u);
-%             obj.w_minus = obj.w_minus*(UAmp/max_u);
-%             obj.zeta_plus = obj.zeta_plus*(UAmp/max_u);
-%             obj.zeta_minus = obj.zeta_minus*(UAmp/max_u);
             
             omega = obj.Omega(k0+1,l0+1,j0);
             obj.period = 2*pi/omega;
@@ -297,24 +283,21 @@ classdef InternalWaveModel < handle
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function GenerateWavePhases(obj, U_plus, U_minus)
             alpha = atan2(obj.L,obj.K);
-            denominator = obj.Omega.*sqrt(obj.h);
-            % Without calling MakeHermitian, this doesn't deal with l=0.
-            obj.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* sin(alpha) + obj.Omega .* cos(alpha) )./denominator ) .* obj.F;
-            obj.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(alpha) + obj.Omega .* cos(alpha) )./denominator ) .* obj.F;
+            omega = abs(obj.Omega); % The following definitions assume omega > 0.
+            denominator = omega.*sqrt(obj.h);
             
-            obj.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*obj.f0 .* cos(alpha) + obj.Omega .* sin(alpha) )./denominator ) .* obj.F;
-            obj.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(alpha) + obj.Omega .* sin(alpha) )./denominator ) .* obj.F;
+            % Without calling MakeHermitian, this doesn't deal with l=0.
+            obj.u_plus = U_plus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator ) .* obj.F;
+            obj.u_minus = U_minus .* MakeHermitian( (sqrt(-1)*obj.f0 .* sin(alpha) + omega .* cos(alpha) )./denominator ) .* obj.F;
+            
+            obj.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*obj.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator ) .* obj.F;
+            obj.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator ) .* obj.F;
             
             obj.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
             obj.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
             
-            obj.zeta_plus = U_plus .* MakeHermitian( -obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
-            obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ obj.Omega ) * obj.G;
-            
-            % Warning, need to move this to init to prevent sign swapping!
-                  % Create the hermitian conjugates of the phase vectors;
-            obj.Omega(:,(obj.Ny/2+1):end,:) = -obj.Omega(:,(obj.Ny/2+1):end,:);
-            obj.Omega((obj.Nx/2+1):end,1,:) = -obj.Omega((obj.Nx/2+1):end,1,:);   
+            obj.zeta_plus = U_plus .* MakeHermitian( -obj.Kh .* sqrt(obj.h) ./ omega ) * obj.G;
+            obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ omega ) * obj.G;  
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -366,6 +349,7 @@ M = size(A,1);
 N = size(A,2);
 K = size(A,3);
 
+% The order of the for-loop is chosen carefully here.
 for k=1:K
     for j=1:(N/2+1)
         for i=1:M
@@ -381,7 +365,7 @@ for k=1:K
                 end
             elseif j == N/2+1 % Kill the Nyquist, rather than fix it.
                 A(i,j,k) = 0;
-            else
+            else % we are letting l=0, k=Nx/2+1 terms set themselves again, but that's okay 
                 A(ii,jj,k) = conj(A(i,j,k));
             end
         end
