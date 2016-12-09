@@ -29,6 +29,7 @@
 % March 25th, 2016      Version 1.0
 % March 30th, 2016      Version 1.1
 % November 17th, 2016   Version 1.2
+% December 9th, 2016    Version 1.3
 
 classdef InternalWaveModel < handle
     properties
@@ -45,7 +46,7 @@ classdef InternalWaveModel < handle
         K2, Kh, F, G, M, h, Omega, Omega_plus, Omega_minus, f0
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         period
-        version = 1.2
+        version = 1.3
     end
     
     methods
@@ -147,23 +148,24 @@ classdef InternalWaveModel < handle
                 error('Invalid choice for j0 (%d). Must be an integer 0 < j < %d',j0, obj.Nz);
             end
             
-            % Rewrap (k0,l0) to follow standard FFT wrapping.
-            if (k0 < 0)
-                k0 = obj.Nx + k0;
-            end
-            if (l0 < 0)
-                l0 = obj.Ny + l0;
-            end
-            
             % Deal with the negative wavenumber cases (and inertial)
             if l0 == 0 && k0 == 0 % inertial
                 sign=1;
-            elseif l0 == 0 && k0 >= obj.Nx/2
-                k0 = obj.Nx-k0;
+            elseif l0 == 0 && k0 < 0
+                k0 = -k0;
                 sign = -1*sign;
-            elseif l0 >= obj.Ny/2
-                l0 = obj.Ny-l0;
+                UAmp = -1*UAmp;
+            elseif l0 < 0
+                l0 = -l0;
+                k0 = -k0;
                 sign = -1*sign;
+                UAmp = -1*UAmp;
+            end
+            
+            % Rewrap (k0,l0) to follow standard FFT wrapping. l0 should
+            % already be correct.
+            if (k0 < 0)
+                k0 = obj.Nx + k0;
             end
                 
             myH = obj.h(k0+1,l0+1,j0);

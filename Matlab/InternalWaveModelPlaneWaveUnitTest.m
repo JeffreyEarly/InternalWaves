@@ -44,15 +44,15 @@ wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-k0 = -1; % k=0..Nx/2
-l0 = 0; % l=0..Ny/2
+k0 = 0; % k=0..Nx/2
+l0 = 1; % l=0..Ny/2
 j0 = 1; % j=1..nModes, where 1 indicates the 1st baroclinic mode
 U = 0.01; % m/s
 sign = 1;
 
 wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
 
-t = 0*4*86400;
+t = 4*86400;
 [u,v] = wavemodel.VelocityFieldAtTime(t);
 [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
 
@@ -108,7 +108,3 @@ max_error = max([round((log10(u_error)))  round((log10(v_error))) round((log10(w
 fprintf('Testing IW mode (k0,l0,j0)=(%d,%d,%d):\n',k0,l0,j0);
 fprintf('The model solution for (u,v) matches the analytical solution to 1 part in (10^%d, 10^%d) at time t=%d\n', round((log10(u_error))), round((log10(v_error))),t);
 fprintf('The model solution for (w,zeta) matches the analytical solution to 1 part in (10^%d, 10^%d) at time t=%d\n', round((log10(w_error))), round((log10(zeta_error))),t);
-
-
-% figure, plot( squeeze(w(8,8,:)), z)
-% hold on, plot( squeeze(w_unit(8,8,:)), z)

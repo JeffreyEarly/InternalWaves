@@ -3,14 +3,12 @@
 % InternalWaveModelPlaneWaveUnitTest
 %
 % This script uses the InternalWaveModel to create, and validate, a single
-% internal wave.
+% internal wave for all possible wavenumbers.
 %
 % Jeffrey J. Early
 % jeffrey@jeffreyearly.com
 %
-% March 25th, 2016      Version 1.0
-% March 30th, 2016      Version 1.1
-% November 17th, 2016   Version 1.2
+% November 17th, 2016   Version 1.0
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -23,9 +21,9 @@ Lx = 15e3;
 Ly = 15e3;
 Lz = 5000;
 
-Nx = 32;
-Ny = 32;
-Nz = 32;
+Nx = 8;
+Ny = 8;
+Nz = 8;
 
 latitude = 31;
 N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
@@ -46,10 +44,10 @@ wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 U = 0.01; % m/s
 
-for k_loop=-1:-1:-15
-    for l_loop=0:15
+for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
+    for l_loop=(-Ny/2 + 1):1:(Ny/2-1)
         fprintf('(k0,l0)=(%d,%d) ',k_loop,l_loop);
-        for j0=1:2
+        for j0=1:(Nz-1)
             for sign=-1:2:1
                 wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
                 wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,sign);
@@ -123,7 +121,5 @@ for k_loop=-1:-1:-15
             end
         end
     end
-    fprintf('\n',k0,l0);
+    fprintf('\n');
 end
-% figure, plot( squeeze(w(8,8,:)), z)
-% hold on, plot( squeeze(w_unit(8,8,:)), z)
