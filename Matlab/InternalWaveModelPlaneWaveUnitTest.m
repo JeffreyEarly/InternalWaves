@@ -44,9 +44,9 @@ wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-k0 = 0; % k=0..Nx/2
-l0 = 1; % l=0..Ny/2
-j0 = 1; % j=1..nModes, where 1 indicates the 1st baroclinic mode
+k0 = 4; % k=0..Nx/2
+l0 = 0; % l=0..Ny/2
+j0 = 21; % j=1..nModes, where 1 indicates the 1st baroclinic mode
 U = 0.01; % m/s
 sign = 1;
 

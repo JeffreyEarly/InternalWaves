@@ -196,8 +196,8 @@ classdef InternalWaveModel < handle
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         function InitializeWithGMSpectrum(obj, Amp)
+            % GM Parameters
             j_star = 3;
-           
             L_gm = 1.3e3; % thermocline exponential scale, meters
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
             E_gm = 6.3e-5; % non-dimensional energy parameter
@@ -214,15 +214,31 @@ classdef InternalWaveModel < handle
             % frequencies for a given vertical mode.
             GM2D_int = @(omega0,omega1,j) (E/H_norm)*((j+j_star).^(-5/2))*(atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) - atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)))*B_norm;
             
+            GM2D_uv_int = @(omega0,omega1,j) B_norm*(E/H_norm)*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0)/(2*omega1*omega1) - (3/2)*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0)/(2*omega0*omega0) + (3/2)*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
+            GM2D_w_int = @(omega0,omega1,j) B_norm*(E/H_norm)*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0) - obj.f0*obj.f0*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0) + obj.f0*obj.f0*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
+            GM2D_zeta_int = @(omega0,omega1,j) B_norm*(E/H_norm)*((j+j_star).^(-5/2))*( ((omega1*omega1-obj.f0*obj.f0)^(3/2))/(2*obj.f0*omega1*omega1) - (1/2)*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - sqrt(omega1*omega1-obj.f0*obj.f0)/(2*obj.f0) - ((omega0*omega0-obj.f0*obj.f0)^(3/2))/(2*obj.f0*omega0*omega0) + (1/2)*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) + sqrt(omega0*omega0-obj.f0*obj.f0)/(2*obj.f0) );
+            
+            % Do a quick check to see how much energy is lost due to
+            % limited vertical resolution.
             totalEnergy = 0;
-            for mode=1:max(obj.j)
+            for mode=1:(max(obj.j)/2)
                 totalEnergy = totalEnergy + GM2D_int(obj.f0,obj.N0,mode);
             end
-            fprintf('You will capture %.2f%% of the energy due to limited vertical modes.\n',100*totalEnergy/E);
+            fprintf('You are missing %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
             
-            nx = obj.Nx; ny = obj.Ny; nz = obj.Nz;
+            % Find the *second* lowest frequency
+            [sortedOmegas, indices] = sort(reshape(abs(obj.Omega(:,:,max(obj.j)/2)),1,[]));
+            omegaStar = sortedOmegas(2);
+            
+            wVariancePerMode = [];
+            for mode=1:(max(obj.j)/2)
+                wVariancePerMode(mode) = GM2D_w_int(obj.f0+(omegaStar-obj.f0)/2,max(max(obj.Omega(:,:,mode))),1);
+            end
+            
+            
+            % Sort the frequencies (for each mode) and distribute energy.
             GM3D = zeros(size(obj.Kh));
-            for iMode = 1:max(obj.j)
+            for iMode = 1:(max(obj.j)/2)
                 % Stride to the linear index for the full 3D matrix
                 modeStride = (iMode-1)*size(obj.Omega,1)*size(obj.Omega,2);
                 
@@ -238,15 +254,37 @@ classdef InternalWaveModel < handle
                 for idx=omegaDiffIndices
                     currentIdx = idx+1;
                     nOmegas = currentIdx-lastIdx;
-                    omega1 = sortedOmegas(idx + 1);
+                    if 0 && omega0 == obj.f0
+                        omega1 = omegaStar;
+                    else
+                        omega1 = sortedOmegas(idx + 1);
+                    end
                     rightDeltaOmega = (omega1-omega0)/2;
-                    energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
+%                      energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
+%                     energyPerFrequency = (GM2D_uv_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 + obj.f0*obj.f0));
+                    
+%                     if omega0 == obj.f0
+%                         energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
+%                     else 
+%                         energyPerFrequency = (GM2D_zeta_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 - obj.f0*obj.f0));
+%                         energyPerFrequency = (GM2D_w_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(1/(omega0*omega0 - obj.f0*obj.f0));
+%                     end
+                    
+                    energyPerFrequency = (GM2D_uv_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 + obj.f0*obj.f0));
                     
                     GM3D(indices(lastIdx:(currentIdx-1))+modeStride) = energyPerFrequency;
                     
-                    omega0 = omega1;
-                    lastIdx = currentIdx;
-                    leftDeltaOmega = rightDeltaOmega;
+                    if 0 && omega0 == obj.f0
+                        leftDeltaOmega = sortedOmegas(idx + 1) - (omega0+rightDeltaOmega);
+                        omega0 = sortedOmegas(idx + 1);
+                    else
+                        omega0 = omega1;
+                        leftDeltaOmega = rightDeltaOmega;
+                    end
+                    
+%                     omega0 = sortedOmegas(idx + 1); % same as omega0 = omega1, except when omega0 == f0
+                     lastIdx = currentIdx;
+%                     leftDeltaOmega = rightDeltaOmega;
                 end
                 % Still have to deal with the last point.
             end
@@ -269,7 +307,7 @@ classdef InternalWaveModel < handle
             
 %             A_plus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
 %             A_minus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
-            A_minus(1,1,:) = A_plus(1,1,:); % Intertial motions go only one direction!
+            A_minus(1,1,:) = conj(A_plus(1,1,:)); % Intertial motions go only one direction!
             
             GM_sum = sum(sum(sum(GM3D)))/E;
             GM_random_sum = sum(sum(sum(A_plus.*conj(A_plus) + A_minus.*conj(A_minus)  )))/E;
@@ -313,7 +351,7 @@ classdef InternalWaveModel < handle
             u_bar = obj.u_plus.*phase_plus + obj.u_minus.*phase_minus;
             v_bar = obj.v_plus.*phase_plus + obj.v_minus.*phase_minus;
             
-            CheckHermitian(u_bar);CheckHermitian(v_bar);
+%             CheckHermitian(u_bar);CheckHermitian(v_bar);
 
             % Re-order to convert to an fast cosine transform
             u = TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -326,7 +364,7 @@ classdef InternalWaveModel < handle
             w_bar = obj.w_plus.*phase_plus + obj.w_minus.*phase_minus;
             zeta_bar = obj.zeta_plus.*phase_plus + obj.zeta_minus.*phase_minus;
             
-            CheckHermitian(w_bar);CheckHermitian(zeta_bar);
+%             CheckHermitian(w_bar);CheckHermitian(zeta_bar);
             
             % Re-order to convert to an fast cosine transform
             w = TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz);
@@ -404,7 +442,8 @@ function A = GenerateHermitianRandomMatrix( size )
 
 nX = size(1); nY = size(2); nZ = size(3);
 A = MakeHermitian(randn(size) + sqrt(-1)*randn(size) )/sqrt(2);
-A(1,1,:) = 2*real(A(1,1,:)); % Double the zero frequency
+% A(1,1,:) = 2*real(A(1,1,:)); % Double the zero frequency
+A(1,1,:) = 2*A(1,1,:); % Double the zero frequency
 A(nX/2+1,1,:) = -2*real(A(nX/2+1,1,:)); % Double the Nyquist frequency
 A(1,nY/2+1,:) = -2*real(A(1,nY/2+1,:)); % Double the Nyquist frequency
 A(nX/2+1,nY/2+1,:) = -2*real(A(nX/2+1,nY/2+1,:)); % Double the Nyquist frequency
@@ -441,7 +480,7 @@ function w = TransformToSpatialDomainWithG( w_bar, Nx, Ny, Nz )
     w = fft( sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-1), w(:,:,Nz), -0.5*w(:,:,Nz-1:-1:1)),2*Nz,3);
     ratio = max(max(max(abs(imag(w)))))/max(max(max(abs(real(w)))));
     if ratio > 1e-8
-        fprintf('WARNING: The inverse cosine transform reports an unreasonably large imaginary part, %.2f.\n',ratio);
+        fprintf('WARNING: The inverse sine transform reports an unreasonably large imaginary part, %.2f.\n',ratio);
     end
     w = real(w(:,:,1:Nz));
 end

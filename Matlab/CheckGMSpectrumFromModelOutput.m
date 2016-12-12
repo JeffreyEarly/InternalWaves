@@ -12,7 +12,7 @@
 % December 6th, 2016      Version 1.0
 
 
-file = '/Volumes/OceanTransfer/InternalWave.nc';
+file = '/Volumes/OceanTransfer/InternalWave5.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -27,7 +27,7 @@ t = ncread(file, 't');
 
 latitude = ncreadatt(file, '/', 'latitude');
 N0 = ncreadatt(file, '/', 'N0');
-
+f0 = 2*(7.2921e-5)*sin(latitude*pi/180);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -81,7 +81,7 @@ hold on, plot(omega,S_gm/5)
 uvVariance = zeros(length(z),1);
 zetaVariance = zeros(length(z),1);
 wVariance = zeros(length(z),1);
-timeEnsemble = 1:1; % apparently this is irrelevant. why?
+timeEnsemble = 1:20; % apparently this is irrelevant. why?
 for iTime = timeEnsemble
     u = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
     v = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
@@ -102,6 +102,7 @@ L_gm = 1.3e3; % thermocline exponential scale, meters
 invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
 E_gm = 6.3e-5; % non-dimensional energy parameter
 E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
+N2 = N0*N0;
 B0 = 1/(pi/2 - atan( f0/sqrt(N2-f0*f0)));
 H0 = 1/sum((j_star+(1:1024)).^(-5/2));
 

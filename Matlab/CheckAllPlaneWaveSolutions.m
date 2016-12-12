@@ -47,7 +47,7 @@ U = 0.01; % m/s
 for k_loop=(-Nx/2 + 1):1:(Nx/2-1)
     for l_loop=(-Ny/2 + 1):1:(Ny/2-1)
         fprintf('(k0,l0)=(%d,%d) ',k_loop,l_loop);
-        for j0=1:(Nz-1)
+        for j0=1:Nz/2
             for sign=-1:2:1
                 wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
                 wavemodel.InitializeWithPlaneWave(k_loop,l_loop,j0,U,sign);

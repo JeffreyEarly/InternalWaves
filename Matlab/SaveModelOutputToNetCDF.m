@@ -22,9 +22,17 @@ Lx = 30e3;
 Ly = 15e3;
 Lz = 5000;
 
-Nx = 256;
-Ny = 128;
+Nx = 512;
+Ny = 256;
 Nz = 64;
+
+% Lx = 15e3;
+% Ly = 15e3;
+% Lz = 5000;
+% 
+% Nx = 32;
+% Ny = 32;
+% Nz = 16;
 
 latitude = 31;
 N0 = 5.2e-3;
@@ -52,7 +60,7 @@ t = (0:timeStep:maxTime)';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-filepath = sprintf('%s/InternalWave.nc', outputfolder);
+filepath = sprintf('%s/InternalWave5.nc', outputfolder);
 
 % Apple uses 1e9 bytes as 1 GB (not the usual multiples of 2 definition)
 totalFields = 4;
