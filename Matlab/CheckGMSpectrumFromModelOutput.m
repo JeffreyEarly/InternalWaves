@@ -13,6 +13,7 @@
 
 
 file = '/Volumes/OceanTransfer/InternalWave6.nc';
+file = '/Users/jearly/Desktop/InternalWave7.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -81,7 +82,7 @@ hold on, plot(omega,S_gm/5)
 uvVariance = zeros(length(z),1);
 zetaVariance = zeros(length(z),1);
 wVariance = zeros(length(z),1);
-timeEnsemble = 1:12:96; % apparently this is irrelevant. why?
+timeEnsemble = 1:12:24; % apparently this is irrelevant. why?
 for iTime = timeEnsemble
     u = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
     v = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));

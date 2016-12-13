@@ -221,7 +221,7 @@ classdef InternalWaveModel < handle
             % Do a quick check to see how much energy is lost due to
             % limited vertical resolution.
             totalEnergy = 0;
-            for mode=1:(max(obj.j)/2)
+            for mode=1:(max(obj.j)/1)
                 totalEnergy = totalEnergy + GM2D_int(obj.f0,obj.N0,mode);
             end
             fprintf('You are missing %.2f%% of the energy due to limited vertical modes.\n',100-100*totalEnergy/E);
@@ -236,11 +236,11 @@ classdef InternalWaveModel < handle
                 wVariancePerModeStar(mode) = GM2D_w_int(obj.f0+(omegaStar-obj.f0)/2,max(max(obj.Omega(:,:,mode))),1);
             end
             
-            shouldUseOmegaStar = 1;
+            shouldUseOmegaStar = 0;
             
             % Sort the frequencies (for each mode) and distribute energy.
             GM3D = zeros(size(obj.Kh));
-            for iMode = 1:(max(obj.j)/2)
+            for iMode = 1:(max(obj.j)/1)
                 % Stride to the linear index for the full 3D matrix
                 modeStride = (iMode-1)*size(obj.Omega,1)*size(obj.Omega,2);
                 
@@ -257,9 +257,9 @@ classdef InternalWaveModel < handle
                     currentIdx = idx+1;
                     nOmegas = currentIdx-lastIdx;
                     
-                    if omega0 ~= obj.f0
-                        continue;
-                    end
+%                     if omega0 ~= obj.f0
+%                         continue;
+%                     end
                     
                     if shouldUseOmegaStar && omega0 == obj.f0
                         omega1 = omegaStar;
@@ -301,18 +301,18 @@ classdef InternalWaveModel < handle
             A = sqrt(GM3D/2); % Now split this into even and odd.
             
             % Randomize phases, but keep unit length
-%             A_plus = GenerateHermitianRandomMatrix( size(obj.K) );
-%             A_minus = GenerateHermitianRandomMatrix( size(obj.K) );
-%             
-%             goodIndices = abs(A_plus) > 0;
-%             A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
-%             A_plus = A.*A_plus;
-%             goodIndices = abs(A_minus) > 0;
-%             A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
-%             A_minus = A.*A_minus;
+            A_plus = GenerateHermitianRandomMatrix( size(obj.K) );
+            A_minus = GenerateHermitianRandomMatrix( size(obj.K) );
             
-             A_plus = A;
-             A_minus = A;        
+            goodIndices = abs(A_plus) > 0;
+            A_plus(goodIndices) = A_plus(goodIndices)./abs(A_plus(goodIndices));
+            A_plus = A.*A_plus;
+            goodIndices = abs(A_minus) > 0;
+            A_minus(goodIndices) = A_minus(goodIndices)./abs(A_minus(goodIndices));
+            A_minus = A.*A_minus;
+            
+%              A_plus = A;
+%              A_minus = A;        
             
 %             A_plus = A.*GenerateHermitianRandomMatrix( size(obj.K) );
 %             A_minus = A.*GenerateHermitianRandomMatrix( size(obj.K) );

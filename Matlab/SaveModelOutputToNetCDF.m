@@ -18,12 +18,12 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 30e3;
-Ly = 15e3;
+Lx = 500e3;
+Ly = 500e3/8;
 Lz = 5000;
 
-Nx = 128;
-Ny = 64;
+Nx = 1024;
+Ny = 128;
 Nz = 64;
 
 % Lx = 15e3;
@@ -39,9 +39,10 @@ N0 = 5.2e-3;
 GMReferenceLevel = 1.0;
 
 timeStep = 15*60; % in seconds
-maxTime = 4*86400;
+maxTime = 0.5*86400;
 
 outputfolder = '/Volumes/OceanTransfer';
+outputfolder = '/Users/jearly/Desktop';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -60,7 +61,7 @@ t = (0:timeStep:maxTime)';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-filepath = sprintf('%s/InternalWave6.nc', outputfolder);
+filepath = sprintf('%s/InternalWave7.nc', outputfolder);
 
 % Apple uses 1e9 bytes as 1 GB (not the usual multiples of 2 definition)
 totalFields = 4;
@@ -117,9 +118,13 @@ netcdf.putVar(ncid, zVarID, wavemodel.z);
 % Run the model, and write the output to NetCDF
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+startTime = datetime('now');
+fprintf('Starting numerical simulation on %s\n', datestr(startTime));
 for iTime=1:length(t)
     if mod(iTime,10) == 0
-        fprintf('writing values time step %d of %d to file.\n', iTime, length(t));
+        timePerStep = (datetime('now')-startTime)/(iTime-1);
+        timeRemaining = (length(t)-iTime+1)*timePerStep;   
+        fprintf('writing values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
     [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
     [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));
@@ -129,5 +134,6 @@ for iTime=1:length(t)
     netcdf.putVar(ncid, zetaVarID, [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], zeta);
     netcdf.putVar(ncid, tVarID, iTime-1, 1, t(iTime));
 end
+fprintf('Ending numerical simulation on %s\n', datestr(startTime));
 
 netcdf.close(ncid);	
