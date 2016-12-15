@@ -16,18 +16,18 @@ B_norm = 1/atan(sqrt(N0*N0/(f0*f0)-1));
 GM2D_uv_int = @(omega0,omega1,j) B_norm*H_norm*E*((j+j_star).^(-5/2))*( f0*sqrt(omega1*omega1-f0*f0)/(2*omega1*omega1) - (3/2)*atan(f0/sqrt(omega1*omega1-f0*f0)) - f0*sqrt(omega0*omega0-f0*f0)/(2*omega0*omega0) + (3/2)*atan(f0/sqrt(omega0*omega0-f0*f0)));
 
 
-L = 100;
+L = 5000;
 z = linspace(0,L,65)';
 
 H = H_norm*(j_star+(1:1024)).^(-5/2);
 
-j_max = 3;
+j_max = 300;
 
 F2 = 0*z;
 G2 = 0*z;
 for j = 1:j_max
-    F2 = F2 + (cos(z*j*pi/L)*H_norm*(j_star+j).^(-5/2)).^2;
-    G2 = G2 + (sin(z*j*pi/L)*H_norm*(j_star+j).^(-5/2)).^2;
+    F2 = F2 + (cos(z*j*pi/L)).^2*H_norm*(j_star+j).^(-5/2);
+    G2 = G2 + (sin(z*j*pi/L)).^2*H_norm*(j_star+j).^(-5/2);
 end
 
 figure
@@ -38,6 +38,11 @@ subplot(1,2,2)
 plot(G2,z)
 xlim([0 1.1*max(G2)])
 
+
+
+
+
+return
 
 F2 = 0*z;
 G2 = 0*z;

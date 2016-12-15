@@ -43,10 +43,12 @@ classdef InternalWaveModel < handle
         X,Y,Z
         K,L,J
         
-        K2, Kh, F, G, M, h, Omega, Omega_plus, Omega_minus, f0
+        K2, Kh, F, G, M, h, Omega, Omega_plus, Omega_minus, f0, C
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         period
         version = 1.3
+        dctScratch, dstScratch;
+        performSanityChecks = 0
     end
     
     methods
@@ -99,6 +101,10 @@ classdef InternalWaveModel < handle
             obj.L = L; obj.K = K; obj.J = J;
             obj.X = X; obj.Y = Y; obj.Z = Z;
             
+            % Preallocate this array for a faster dct
+            obj.dctScratch = zeros(obj.Nx,obj.Ny,2*obj.Nz);
+            obj.dstScratch = complex(zeros(obj.Nx,obj.Ny,2*obj.Nz));
+            
             obj.InitializeWaveProperties();
         end
         
@@ -116,9 +122,9 @@ classdef InternalWaveModel < handle
             obj.Kh = sqrt(obj.K2);
             
             C2 = (obj.N0*obj.N0-obj.f0*obj.f0)./(obj.M.*obj.M+obj.K2);
-            C = sqrt( C2 );                         % Mode speed
+            obj.C = sqrt( C2 );                         % Mode speed
             obj.h = C2/g;                               % Mode depth
-            obj.Omega = sqrt(C.*C.*obj.K2 + obj.f0*obj.f0);         % Mode frequency
+            obj.Omega = sqrt(obj.C.*obj.C.*obj.K2 + obj.f0*obj.f0);         % Mode frequency
             
             % F contains the coefficients for the U-V modes
             obj.F = (obj.h.*obj.M)*sqrt(2*g/(obj.Lz*(obj.N0*obj.N0-obj.f0*obj.f0)));
@@ -131,6 +137,16 @@ classdef InternalWaveModel < handle
             obj.Omega((obj.Nx/2+1):end,1,:) = -obj.Omega((obj.Nx/2+1):end,1,:);      
         end
         
+        function ShowDiagnostics(obj)
+            omega = abs(obj.Omega);
+            fprintf('Model resolution is %.2f x %.2f x %.2f meters.\n', obj.x(2)-obj.x(1), obj.y(2)-obj.y(1), obj.z(2)-obj.z(1));
+            fprintf('The ratio N0/f0 is %.1f.\n', obj.N0/obj.f0);
+            fprintf('Discretization effects will become apparent after %.1f hours in the frequency domain as the fastest modes traverse the domain.\n', max([obj.Lx obj.Ly])/max(max(max(obj.C)))/3600);
+            sortedOmega = sort(unique(reshape(omega(:,:,1),1,[])));
+            fprintf('j=1 mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', sortedOmega(1)/obj.f0, sortedOmega(2)/obj.f0, sortedOmega(end-1)/obj.N0, sortedOmega(end)/obj.N0);
+            sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
+            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', obj.Nz, sortedOmega(1)/obj.f0, sortedOmega(2)/obj.f0, sortedOmega(end-1)/obj.N0, sortedOmega(end)/obj.N0);
+        end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Create a single wave (public)
@@ -360,11 +376,12 @@ classdef InternalWaveModel < handle
             u_bar = obj.u_plus.*phase_plus + obj.u_minus.*phase_minus;
             v_bar = obj.v_plus.*phase_plus + obj.v_minus.*phase_minus;
             
-%             CheckHermitian(u_bar);CheckHermitian(v_bar);
-
-            % Re-order to convert to an fast cosine transform
-            u = TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
-            v = TransformToSpatialDomainWithF(v_bar, obj.Nx, obj.Ny, obj.Nz);
+            if obj.performSanityChecks == 1
+                CheckHermitian(u_bar);CheckHermitian(v_bar);
+            end
+            
+            u = obj.TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
+            v = obj.TransformToSpatialDomainWithF(v_bar, obj.Nx, obj.Ny, obj.Nz);
         end
         
         function [w,zeta] = VerticalFieldsAtTime(obj, t)
@@ -373,13 +390,58 @@ classdef InternalWaveModel < handle
             w_bar = obj.w_plus.*phase_plus + obj.w_minus.*phase_minus;
             zeta_bar = obj.zeta_plus.*phase_plus + obj.zeta_minus.*phase_minus;
             
-%             CheckHermitian(w_bar);CheckHermitian(zeta_bar);
+            if obj.performSanityChecks == 1
+                CheckHermitian(w_bar);CheckHermitian(zeta_bar);
+            end
             
-            % Re-order to convert to an fast cosine transform
-            w = TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz);
-            zeta = TransformToSpatialDomainWithG(zeta_bar, obj.Nx, obj.Ny, obj.Nz);
+            w = obj.TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz);
+            zeta = obj.TransformToSpatialDomainWithG(zeta_bar, obj.Nx, obj.Ny, obj.Nz);
         end
         
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %
+        % Computes the phase information given the amplitudes (internal)
+        %
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        function u = TransformToSpatialDomainWithF(obj, u_bar, Nx, Ny, Nz )
+            % Here we use what I call the 'Fourier series' definition of the ifft, so
+            % that the coefficients in frequency space have the same units in time.
+            u = Nx*Ny*ifft(ifft(u_bar,Nx,1),Ny,2,'symmetric');
+            
+            % Re-order to convert to an fast cosine transform
+            obj.dctScratch = cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-1), u(:,:,Nz), 0.5*u(:,:,Nz-1:-1:1));
+  
+            u = fft(obj.dctScratch,2*Nz,3);
+            if obj.performSanityChecks == 1
+                ratio = max(max(max(abs(imag(u)))))/max(max(max(abs(real(u)))));
+                if ratio > 1e-6
+                    fprintf('WARNING: The inverse cosine transform reports an unreasonably large imaginary part, %.2g.\n',ratio);
+                end
+            end
+            % should not have to call real, but for some reason, with enough
+            % points, it starts generating some small imaginary component.
+            u = u(:,:,1:Nz);
+        end
+        
+        function w = TransformToSpatialDomainWithG(obj, w_bar, Nx, Ny, Nz )
+            % Here we use what I call the 'Fourier series' definition of the ifft, so
+            % that the coefficients in frequency space have the same units in time.
+            w = Nx*Ny*ifft(ifft(w_bar,Nx,1),Ny,2,'symmetric');
+            
+            % Re-order to convert to an fast cosine transform
+            obj.dstScratch = sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-1), w(:,:,Nz), -0.5*w(:,:,Nz-1:-1:1));
+            
+            w = fft( obj.dstScratch,2*Nz,3);
+            if obj.performSanityChecks == 1
+                ratio = max(max(max(abs(imag(w)))))/max(max(max(abs(real(w)))));
+                if ratio > 1e-6
+                    fprintf('WARNING: The inverse sine transform reports an unreasonably large imaginary part, %.2g.\n',ratio);
+                end
+            end
+            % should not have to call real, but for some reason, with enough
+            % points, it starts generating some small imaginary component.
+            w = w(:,:,1:Nz);
+        end
     end
 end
 
@@ -461,35 +523,3 @@ A(:,:,nZ) = zeros(nX,nY); % Because we can't resolve the last mode.
 end
 
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%
-% Computes the phase information given the amplitudes (internal)
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-function u = TransformToSpatialDomainWithF( u_bar, Nx, Ny, Nz )
-% Here we use what I call the 'Fourier series' definition of the ifft, so
-% that the coefficients in frequency space have the same units in time.
-    u = Nx*Ny*ifft(ifft(u_bar,Nx,1),Ny,2);
-    % should not have to call real, but for some reason, with enough
-    % points, it starts generating some small imaginary component.
-    u = fft(cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-1), u(:,:,Nz), 0.5*u(:,:,Nz-1:-1:1)),2*Nz,3);
-    ratio = max(max(max(abs(imag(u)))))/max(max(max(abs(real(u)))));
-    if ratio > 1e-8
-        fprintf('WARNING: The inverse cosine transform reports an unreasonably large imaginary part, %.2g.\n',ratio);
-    end
-    u = real(u(:,:,1:Nz));
-end
-
-function w = TransformToSpatialDomainWithG( w_bar, Nx, Ny, Nz )
-% Here we use what I call the 'Fourier series' definition of the ifft, so
-% that the coefficients in frequency space have the same units in time.
-    w = Nx*Ny*ifft(ifft(w_bar,Nx,1),Ny,2);
-    % should not have to call real, but for some reason, with enough
-    % points, it starts generating some small imaginary component.
-    w = fft( sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-1), w(:,:,Nz), -0.5*w(:,:,Nz-1:-1:1)),2*Nz,3);
-    ratio = max(max(max(abs(imag(w)))))/max(max(max(abs(real(w)))));
-    if ratio > 1e-8
-        fprintf('WARNING: The inverse sine transform reports an unreasonably large imaginary part, %.2f.\n',ratio);
-    end
-    w = real(w(:,:,1:Nz));
-end
