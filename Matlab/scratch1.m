@@ -8,7 +8,7 @@ E_gm = 6.3e-5; % non-dimensional energy parameter
 E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm;
 N0 = invT_gm;
 
-H = (j_star+(1:1024)).^(-5/2);
+H = (j_star+(1:3000)).^(-5/2);
 H_norm = 1/sum(H);
 B_norm = 1/atan(sqrt(N0*N0/(f0*f0)-1));
 
@@ -21,13 +21,13 @@ z = linspace(0,L,65)';
 
 H = H_norm*(j_star+(1:1024)).^(-5/2);
 
-j_max = 300;
+j_max = 3000;
 
 F2 = 0*z;
 G2 = 0*z;
 for j = 1:j_max
-    F2 = F2 + (cos(z*j*pi/L)).^2*H_norm*(j_star+j).^(-5/2);
-    G2 = G2 + (sin(z*j*pi/L)).^2*H_norm*(j_star+j).^(-5/2);
+    F2 = F2 + 2*(cos(z*j*pi/L)).^2*H_norm*(j_star+j).^(-5/2);
+    G2 = G2 + 2*(sin(z*j*pi/L)).^2*H_norm*(j_star+j).^(-5/2);
 end
 
 figure

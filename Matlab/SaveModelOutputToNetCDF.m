@@ -18,13 +18,13 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 800e3;
-Ly = 100e3;
+Lx = 800e3/32;
+Ly = 100e3/32;
 Lz = 5000;
 
-Nx = 2048/1;
-Ny = 256/1;
-Nz = 64;
+Nx = 2048/2;
+Ny = 256/2;
+Nz = 128;
 
 % Lx = 15e3;
 % Ly = 15e3;
@@ -36,13 +36,13 @@ Nz = 64;
 
 latitude = 31;
 N0 = 5.2e-3;
-GMReferenceLevel = 1.0;
+GMReferenceLevel = 0.5;
 
 timeStep = 15*60; % in seconds
-maxTime = 2.5*86400;
+maxTime = 0.125*86400;
 
 outputfolder = '/Volumes/OceanTransfer';
-% outputfolder = '/Users/jearly/Desktop';
+outputfolder = '/Users/jearly/Desktop';
 
 precision = 'single';
 
@@ -74,7 +74,7 @@ t = (0:timeStep:maxTime)';
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-filepath = sprintf('%s/InternalWaveBigLong.nc', outputfolder);
+filepath = sprintf('%s/InternalWaveModel_%dx%dx%d@%s.nc', outputfolder,Nx,Ny,Nz,datestr(datetime('now'),'yyyy-mm-dd_HH:MM:SS'));
 
 % Apple uses 1e9 bytes as 1 GB (not the usual multiples of 2 definition)
 totalFields = 4;
@@ -136,7 +136,7 @@ for iTime=1:length(t)
     if mod(iTime,10) == 0
         timePerStep = (datetime('now')-startTime)/(iTime-1);
         timeRemaining = (length(t)-iTime+1)*timePerStep;   
-        fprintf('writing values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
+        fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
     [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
     [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));

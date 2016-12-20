@@ -13,7 +13,11 @@
 
 
 file = '/Volumes/OceanTransfer/InternalWaveBigLong.nc';
-% file = '/Users/jearly/Desktop/InternalWave7.nc';
+file = '/Users/jearly/Desktop/InternalWaveBigLong.nc';
+file = '/Users/jearly/Desktop/InternalWaveModel_512x64x64@2016-12-19_11:58:34.nc';
+file = '/Users/jearly/Desktop/InternalWaveModel_512x64x64@2016-12-19_12:00:20.nc';
+file = '/Users/jearly/Desktop/InternalWaveModel_1024x128x128@2016-12-19_14:46:12.nc';
+% file = '/Users/jearly/Desktop/InternalWaveTest.nc';
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -43,7 +47,7 @@ depth = 1250;
 % This is what is wonderful about NetCDF. We can pull out a slice in time
 % at a given depth, for a range of (strided!) x,y values.
 stride = 4;
-t_index = 215; %length(t)-1;
+t_index = length(t)-1;
 u3d = double(squeeze(ncread(file, 'u', [1 1 depth_index 1], [length(x)/stride length(y)/stride 1 t_index], [stride stride 1 1])));
 v3d = double(squeeze(ncread(file, 'v', [1 1 depth_index 1], [length(x)/stride length(y)/stride 1 t_index], [stride stride 1 1])));
 
@@ -82,7 +86,7 @@ hold on, plot(omega,S_gm*0.226)
 uvVariance = zeros(length(z),1);
 zetaVariance = zeros(length(z),1);
 wVariance = zeros(length(z),1);
-timeEnsemble = 1:12:96; % apparently this is irrelevant. why?
+timeEnsemble = 1:12:min(96,length(t)-1); % apparently this is irrelevant. why?
 for iTime = timeEnsemble
     u = double(squeeze(ncread(file, 'u', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));
     v = double(squeeze(ncread(file, 'v', [1 1 1 iTime], [length(x) length(y) length(z) 1], [1 1 1 1])));

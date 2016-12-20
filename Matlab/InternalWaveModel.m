@@ -91,12 +91,8 @@ classdef InternalWaveModel < handle
             nModes = obj.Nz;
             obj.j = (1:nModes)';
             
-            % Using meshgrid means that,
-            % K varies across dim 1
-            % L varies across dim 2
-            % J varies across dim 3
-            [L,K,J] = meshgrid(obj.l,obj.k,obj.j);
-            [Y,X,Z] = meshgrid(obj.y,obj.x,obj.z);
+            [K,L,J] = ndgrid(obj.k,obj.l,obj.j);
+            [X,Y,Z] = ndgrid(obj.x,obj.y,obj.z);
             
             obj.L = L; obj.K = K; obj.J = J;
             obj.X = X; obj.Y = Y; obj.Z = Z;
@@ -144,6 +140,9 @@ classdef InternalWaveModel < handle
             fprintf('Discretization effects will become apparent after %.1f hours in the frequency domain as the fastest modes traverse the domain.\n', max([obj.Lx obj.Ly])/max(max(max(obj.C)))/3600);
             sortedOmega = sort(unique(reshape(omega(:,:,1),1,[])));
             fprintf('j=1 mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', sortedOmega(1)/obj.f0, sortedOmega(2)/obj.f0, sortedOmega(end-1)/obj.N0, sortedOmega(end)/obj.N0);
+            dOmega = (sortedOmega(2)-sortedOmega(1))/2;
+            T = 2*pi/dOmega;
+            fprintf('The gap between these two lowest frequencies will be fully resolved after %.1f hours\n', T/3600);
             sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
             fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', obj.Nz, sortedOmega(1)/obj.f0, sortedOmega(2)/obj.f0, sortedOmega(end-1)/obj.N0, sortedOmega(end)/obj.N0);
         end
@@ -206,6 +205,8 @@ classdef InternalWaveModel < handle
             obj.period = 2*pi/omega;
         end
         
+        
+        
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
         % Create a full Garrett-Munk spectrum (public)
@@ -221,18 +222,18 @@ classdef InternalWaveModel < handle
                       
             % Compute the proper vertical function normalization
             H = (j_star+(1:1024)).^(-5/2);
-            H_norm = sum(H);
+            H_norm = 1/sum(H);
             
             % Do the same for the frequency function.
             B_norm = 1/atan(sqrt(obj.N0*obj.N0/(obj.f0*obj.f0)-1));
             
             % This function tells you how much energy you need between two
             % frequencies for a given vertical mode.
-            GM2D_int = @(omega0,omega1,j) (E/H_norm)*((j+j_star).^(-5/2))*(atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) - atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)))*B_norm;
+            GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) - atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)));
             
-            GM2D_uv_int = @(omega0,omega1,j) B_norm*(E/H_norm)*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0)/(2*omega1*omega1) - (3/2)*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0)/(2*omega0*omega0) + (3/2)*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
-            GM2D_w_int = @(omega0,omega1,j) B_norm*(E/H_norm)*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0) - obj.f0*obj.f0*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0) + obj.f0*obj.f0*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
-            GM2D_zeta_int = @(omega0,omega1,j) B_norm*(E/H_norm)*((j+j_star).^(-5/2))*( ((omega1*omega1-obj.f0*obj.f0)^(3/2))/(2*obj.f0*omega1*omega1) - (1/2)*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - sqrt(omega1*omega1-obj.f0*obj.f0)/(2*obj.f0) - ((omega0*omega0-obj.f0*obj.f0)^(3/2))/(2*obj.f0*omega0*omega0) + (1/2)*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) + sqrt(omega0*omega0-obj.f0*obj.f0)/(2*obj.f0) );
+            GM2D_uv_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0)/(2*omega1*omega1) - (3/2)*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0)/(2*omega0*omega0) + (3/2)*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
+            GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0) - obj.f0*obj.f0*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0) + obj.f0*obj.f0*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
+            GM2D_zeta_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( ((omega1*omega1-obj.f0*obj.f0)^(3/2))/(2*obj.f0*omega1*omega1) - (1/2)*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - sqrt(omega1*omega1-obj.f0*obj.f0)/(2*obj.f0) - ((omega0*omega0-obj.f0*obj.f0)^(3/2))/(2*obj.f0*omega0*omega0) + (1/2)*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) + sqrt(omega0*omega0-obj.f0*obj.f0)/(2*obj.f0) );
             
             % Do a quick check to see how much energy is lost due to
             % limited vertical resolution.
@@ -244,7 +245,8 @@ classdef InternalWaveModel < handle
             
             % Find the *second* lowest frequency
             [sortedOmegas, indices] = sort(reshape(abs(obj.Omega(:,:,max(obj.j)/2)),1,[]));
-            omegaStar = sortedOmegas(2);
+%             omegaStar = sortedOmegas(2);
+            omegaStar = 1.6*obj.f0;
             
             wVariancePerMode = [];
             for mode=1:(max(obj.j)/2)
@@ -252,7 +254,8 @@ classdef InternalWaveModel < handle
                 wVariancePerModeStar(mode) = GM2D_w_int(obj.f0+(omegaStar-obj.f0)/2,max(max(obj.Omega(:,:,mode))),1);
             end
             
-            shouldUseOmegaStar = 0;
+            shouldUseOmegaStar = 1;
+            shouldUseMaxOmega = 0;
             
             % Sort the frequencies (for each mode) and distribute energy.
             GM3D = zeros(size(obj.Kh));
@@ -278,12 +281,14 @@ classdef InternalWaveModel < handle
 %                     end
                     
                     if shouldUseOmegaStar && omega0 == obj.f0
-                        omega1 = omegaStar;
+                        omega1 = min(omegaStar,sortedOmegas(idx + 1));
+                    elseif shouldUseMaxOmega == 1
+                        omega1 = min(2.0*omega0,sortedOmegas(idx + 1));
                     else
                         omega1 = sortedOmegas(idx + 1);
                     end
                     rightDeltaOmega = (omega1-omega0)/2;
-%                      energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
+                      energyPerFrequency = GM2D_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas;
 %                     energyPerFrequency = (GM2D_uv_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 + obj.f0*obj.f0));
                     
 %                     if omega0 == obj.f0
@@ -293,13 +298,16 @@ classdef InternalWaveModel < handle
 %                         energyPerFrequency = (GM2D_w_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(1/(omega0*omega0 - obj.f0*obj.f0));
 %                     end
                     
-                    energyPerFrequency = (GM2D_uv_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 + obj.f0*obj.f0));
+%                     energyPerFrequency = (GM2D_uv_int(omega0-leftDeltaOmega,omega0+rightDeltaOmega,iMode)/nOmegas)*(omega0*omega0/(omega0*omega0 + obj.f0*obj.f0));
                     
                     GM3D(indices(lastIdx:(currentIdx-1))+modeStride) = energyPerFrequency;
                     
                     if shouldUseOmegaStar && omega0 == obj.f0
                         leftDeltaOmega = sortedOmegas(idx + 1) - (omega0+rightDeltaOmega);
                         omega0 = sortedOmegas(idx + 1);
+                    elseif shouldUseMaxOmega == 1
+                        omega0 = sortedOmegas(idx + 1);
+                        leftDeltaOmega = rightDeltaOmega;
                     else
                         omega0 = omega1;
                         leftDeltaOmega = rightDeltaOmega;
