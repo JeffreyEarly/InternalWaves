@@ -12,7 +12,7 @@ H = (j_star+(1:3000)).^(-5/2);
 H_norm = 1/sum(H);
 B_norm = 1/atan(sqrt(N0*N0/(f0*f0)-1));
 
-
+GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(f0/sqrt(omega0*omega0-f0*f0)) - atan(f0/sqrt(omega1*omega1-f0*f0)));
 GM2D_uv_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( f0*sqrt(omega1*omega1-f0*f0)/(2*omega1*omega1) - (3/2)*atan(f0/sqrt(omega1*omega1-f0*f0)) - f0*sqrt(omega0*omega0-f0*f0)/(2*omega0*omega0) + (3/2)*atan(f0/sqrt(omega0*omega0-f0*f0)));
 GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( f0*sqrt(omega1*omega1-f0*f0) - f0*f0*atan(f0/sqrt(omega1*omega1-f0*f0)) - f0*sqrt(omega0*omega0-f0*f0) + f0*f0*atan(f0/sqrt(omega0*omega0-f0*f0)));
 GM2D_zeta_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( ((omega1*omega1-f0*f0)^(3/2))/(2*f0*omega1*omega1) - (1/2)*atan(f0/sqrt(omega1*omega1-f0*f0)) - sqrt(omega1*omega1-f0*f0)/(2*f0) - ((omega0*omega0-f0*f0)^(3/2))/(2*f0*omega0*omega0) + (1/2)*atan(f0/sqrt(omega0*omega0-f0*f0)) + sqrt(omega0*omega0-f0*f0)/(2*f0) );
