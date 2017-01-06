@@ -232,7 +232,7 @@ classdef InternalWaveModel < handle
             GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) - atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)));
             
             GM2D_uv_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0)/(2*omega1*omega1) - (3/2)*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0)/(2*omega0*omega0) + (3/2)*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
-            GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0) - obj.f0*obj.f0*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0) + obj.f0*obj.f0*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
+            GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( obj.f0*sqrt(omega1*omega1-obj.f0*obj.f0) + obj.f0*obj.f0*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - obj.f0*sqrt(omega0*omega0-obj.f0*obj.f0) - obj.f0*obj.f0*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)));
             GM2D_zeta_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( ((omega1*omega1-obj.f0*obj.f0)^(3/2))/(2*obj.f0*omega1*omega1) - (1/2)*atan(obj.f0/sqrt(omega1*omega1-obj.f0*obj.f0)) - sqrt(omega1*omega1-obj.f0*obj.f0)/(2*obj.f0) - ((omega0*omega0-obj.f0*obj.f0)^(3/2))/(2*obj.f0*omega0*omega0) + (1/2)*atan(obj.f0/sqrt(omega0*omega0-obj.f0*obj.f0)) + sqrt(omega0*omega0-obj.f0*obj.f0)/(2*obj.f0) );
             
             % Do a quick check to see how much energy is lost due to

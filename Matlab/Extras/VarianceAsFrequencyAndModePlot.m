@@ -1,7 +1,56 @@
 latitude = 33;
 f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
+N0 = 5.2e-3;
+g = 9.81;
 
-j_star = 3;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Model dimensions and grid
+%
+
+Lx = 750e3;
+Ly = 750e3;
+Lz = 5000;
+
+Nx = 128;
+Ny = 128;
+Nz = 128;
+
+dx = Lx/Nx;
+dy = Ly/Ny;
+dz = Lz/Nz;
+
+x = dx*(0:Nx-1)'; % periodic basis
+y = dy*(0:Ny-1)'; % periodic basis
+z = dz*(0:Nz-1)'; % cosine basis (not your usual dct basis, however)
+
+% Spectral domain, in radians
+dk = 1/Lx;          % fourier frequency
+k = 2*pi*([0:ceil(Nx/2)-1 -floor(Nx/2):-1]*dk)';
+
+dl = 1/Ly;          % fourier frequency
+l = 2*pi*([0:ceil(Ny/2)-1 -floor(Ny/2):-1]*dl)';
+
+nModes = Nz;
+j = (1:nModes)';
+
+[K,L,J] = ndgrid(k,l,j);
+[X,Y,Z] = ndgrid(x,y,z);
+
+M = J*pi/Lz;        % Vertical wavenumber
+K2 = K.*K + L.*L;   % Square of the horizontal wavenumber
+Kh = sqrt(K2);
+
+C2 = (N0*N0-f0*f0)./(M.*M+K2);
+C = sqrt( C2 );                         % Mode speed
+h = C2/g;                               % Mode depth
+Omega = sqrt(C.*C.*K2 + f0*f0);         % Mode frequency
+            
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Energy spectrum
+%
+j_star = 5;
 L_gm = 1.3e3; % thermocline exponential scale, meters
 invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
 E_gm = 6.3e-5; % non-dimensional energy parameter
@@ -14,19 +63,108 @@ B_norm = 1/atan(sqrt(N0*N0/(f0*f0)-1));
 
 GM2D_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*(atan(f0/sqrt(omega0*omega0-f0*f0)) - atan(f0/sqrt(omega1*omega1-f0*f0)));
 GM2D_uv_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( f0*sqrt(omega1*omega1-f0*f0)/(2*omega1*omega1) - (3/2)*atan(f0/sqrt(omega1*omega1-f0*f0)) - f0*sqrt(omega0*omega0-f0*f0)/(2*omega0*omega0) + (3/2)*atan(f0/sqrt(omega0*omega0-f0*f0)));
-GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( f0*sqrt(omega1*omega1-f0*f0) - f0*f0*atan(f0/sqrt(omega1*omega1-f0*f0)) - f0*sqrt(omega0*omega0-f0*f0) + f0*f0*atan(f0/sqrt(omega0*omega0-f0*f0)));
+GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( f0*sqrt(omega1*omega1-f0*f0) + f0*f0*atan(f0/sqrt(omega1*omega1-f0*f0)) - f0*sqrt(omega0*omega0-f0*f0) - f0*f0*atan(f0/sqrt(omega0*omega0-f0*f0)));
 GM2D_zeta_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( ((omega1*omega1-f0*f0)^(3/2))/(2*f0*omega1*omega1) - (1/2)*atan(f0/sqrt(omega1*omega1-f0*f0)) - sqrt(omega1*omega1-f0*f0)/(2*f0) - ((omega0*omega0-f0*f0)^(3/2))/(2*f0*omega0*omega0) + (1/2)*atan(f0/sqrt(omega0*omega0-f0*f0)) + sqrt(omega0*omega0-f0*f0)/(2*f0) );
 
 omegaAxis = linspace(f0,N0,1000)';
-modeAxis = (1:35)';
+modeAxis = (1:15);
 
+TE = zeros(length(omegaAxis),length(modeAxis));
 HKE = zeros(length(omegaAxis),length(modeAxis));
+VKE = zeros(length(omegaAxis),length(modeAxis));
+IE = zeros(length(omegaAxis),length(modeAxis));
 for j = modeAxis
    for iOmega = 1:(length(omegaAxis)-1)
+       TE(iOmega,j) = GM2D_int(omegaAxis(iOmega),omegaAxis(iOmega+1),j);
        HKE(iOmega,j) = GM2D_uv_int(omegaAxis(iOmega),omegaAxis(iOmega+1),j);
+       VKE(iOmega,j) = GM2D_w_int(omegaAxis(iOmega),omegaAxis(iOmega+1),j);
+       IE(iOmega,j) = GM2D_zeta_int(omegaAxis(iOmega),omegaAxis(iOmega+1),j);
    end
 end
 
+% TE = cat(2,TE(:,1),TE);
+% HKE = cat(2,HKE(:,1),HKE);
+% VKE = cat(2,VKE(:,1),VKE);
+% IE = cat(2,IE(:,1),IE);
+% modeAxis = cat(2,zeros(1,1),modeAxis);
+
+ticks = linspace(f0,N0,5);
+
+labels = cell(length(ticks),1);
+labels{1} = 'f_0';
+for i=2:(length(ticks)-1)
+   labels{i} = sprintf('%df_0',round(ticks(i)/f0));
+end
+labels{length(ticks)} = 'N_0';
+
+vticks = (1.5:1:max(modeAxis))';
+vlabels = cell(length(vticks),1);
+for i=1:length(vticks)
+   vlabels{i} = sprintf('%d',floor(vticks(i)));
+end
+
+scale = @(a) log10(a);
+
 figure
-pcolor(omegaAxis,modeAxis,log10(HKE/E)')
+
+subplot(2,2,1)
+pcolor(omegaAxis,modeAxis,scale(TE/max(max(TE)))'), hold on
+caxis([-2 0])
 shading flat
+for j = modeAxis
+    omega = sort(reshape(Omega(:,:,j),1,[]));
+    scatter(omega+1e-5,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+end
+title('total')
+ylabel('vertical mode')
+% xlabel('frequency')
+xticks([])
+% xticklabels(labels)
+yticks(vticks)
+yticklabels(vlabels)
+
+subplot(2,2,2)
+pcolor(omegaAxis,modeAxis,scale(HKE/max(max(HKE)))'), hold on
+caxis([-2 0])
+shading flat
+for j = modeAxis
+    omega = sort(reshape(Omega(:,:,j),1,[]));
+    scatter(omega+1e-5,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+end
+title('horizontal')
+% ylabel('vertical mode')
+yticks([])
+% xlabel('frequency')
+xticks([])
+% xticklabels(labels)
+
+subplot(2,2,3)
+pcolor(omegaAxis,modeAxis,scale(VKE/max(max(VKE)))'), hold on
+caxis([-2 0])
+shading flat
+for j = modeAxis
+    omega = sort(reshape(Omega(:,:,j),1,[]));
+    scatter(omega+1e-5,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+end
+title('vertical')
+ylabel('vertical mode')
+xlabel('frequency')
+xticks(ticks)
+xticklabels(labels)
+yticks(vticks)
+yticklabels(vlabels)
+
+subplot(2,2,4)
+pcolor(omegaAxis,modeAxis,scale(IE/max(max(IE)))'), hold on
+caxis([-2 0])
+shading flat
+for j = modeAxis
+    omega = sort(reshape(Omega(:,:,j),1,[]));
+    scatter(omega+1e-5,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+end
+title('isopycnal')
+% ylabel('vertical mode')
+yticks([])
+xlabel('frequency')
+xticks(ticks)
+xticklabels(labels)
