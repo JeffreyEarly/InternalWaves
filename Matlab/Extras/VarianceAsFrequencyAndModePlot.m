@@ -3,13 +3,16 @@ f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
 N0 = 5.2e-3;
 g = 9.81;
 
+xAxisMax = 5*f0;
+% xAxisMax = N0;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Model dimensions and grid
 %
 
-Lx = 750e3;
-Ly = 750e3;
+Lx = 1000e3;
+Ly = 1000e3;
 Lz = 5000;
 
 Nx = 128;
@@ -50,7 +53,7 @@ Omega = sqrt(C.*C.*K2 + f0*f0);         % Mode frequency
 %
 % Energy spectrum
 %
-j_star = 5;
+j_star = 15;
 L_gm = 1.3e3; % thermocline exponential scale, meters
 invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
 E_gm = 6.3e-5; % non-dimensional energy parameter
@@ -66,7 +69,7 @@ GM2D_uv_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( f0*sqrt(
 GM2D_w_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( f0*sqrt(omega1*omega1-f0*f0) + f0*f0*atan(f0/sqrt(omega1*omega1-f0*f0)) - f0*sqrt(omega0*omega0-f0*f0) - f0*f0*atan(f0/sqrt(omega0*omega0-f0*f0)));
 GM2D_zeta_int = @(omega0,omega1,j) E*H_norm*B_norm*((j+j_star).^(-5/2))*( ((omega1*omega1-f0*f0)^(3/2))/(2*f0*omega1*omega1) - (1/2)*atan(f0/sqrt(omega1*omega1-f0*f0)) - sqrt(omega1*omega1-f0*f0)/(2*f0) - ((omega0*omega0-f0*f0)^(3/2))/(2*f0*omega0*omega0) + (1/2)*atan(f0/sqrt(omega0*omega0-f0*f0)) + sqrt(omega0*omega0-f0*f0)/(2*f0) );
 
-omegaAxis = linspace(f0,N0,1000)';
+omegaAxis = linspace(f0,xAxisMax,1000)';
 modeAxis = (1:15);
 
 TE = zeros(length(omegaAxis),length(modeAxis));
@@ -88,14 +91,21 @@ end
 % IE = cat(2,IE(:,1),IE);
 % modeAxis = cat(2,zeros(1,1),modeAxis);
 
-ticks = linspace(f0,N0,5);
+% This shift is applied to the points along the omega axis for visual aid.
+omega_epsilon = 0.0;
+
+ticks = linspace(f0,xAxisMax,5);
 
 labels = cell(length(ticks),1);
 labels{1} = 'f_0';
 for i=2:(length(ticks)-1)
    labels{i} = sprintf('%df_0',round(ticks(i)/f0));
 end
-labels{length(ticks)} = 'N_0';
+if xAxisMax == N0
+    labels{length(ticks)} = 'N_0';
+else
+    labels{length(ticks)} = sprintf('%df_0',round(xAxisMax/f0));
+end
 
 vticks = (1.5:1:max(modeAxis))';
 vlabels = cell(length(vticks),1);
@@ -105,15 +115,15 @@ end
 
 scale = @(a) log10(a);
 
-figure
+figHandle = figure('Position',[100 100 700 600]);
 
-subplot(2,2,1)
+sp1 = subplot(2,2,1);
 pcolor(omegaAxis,modeAxis,scale(TE/max(max(TE)))'), hold on
 caxis([-2 0])
 shading flat
 for j = modeAxis
     omega = sort(reshape(Omega(:,:,j),1,[]));
-    scatter(omega+1e-5,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+    scatter(omega+omega_epsilon,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
 end
 title('total')
 ylabel('vertical mode')
@@ -123,13 +133,13 @@ xticks([])
 yticks(vticks)
 yticklabels(vlabels)
 
-subplot(2,2,2)
+sp2 = subplot(2,2,2);
 pcolor(omegaAxis,modeAxis,scale(HKE/max(max(HKE)))'), hold on
 caxis([-2 0])
 shading flat
 for j = modeAxis
     omega = sort(reshape(Omega(:,:,j),1,[]));
-    scatter(omega+1e-5,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+    scatter(omega+omega_epsilon,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
 end
 title('horizontal')
 % ylabel('vertical mode')
@@ -138,13 +148,13 @@ yticks([])
 xticks([])
 % xticklabels(labels)
 
-subplot(2,2,3)
+sp3 = subplot(2,2,3);
 pcolor(omegaAxis,modeAxis,scale(VKE/max(max(VKE)))'), hold on
 caxis([-2 0])
 shading flat
 for j = modeAxis
     omega = sort(reshape(Omega(:,:,j),1,[]));
-    scatter(omega+1e-5,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+    scatter(omega+omega_epsilon,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
 end
 title('vertical')
 ylabel('vertical mode')
@@ -154,13 +164,13 @@ xticklabels(labels)
 yticks(vticks)
 yticklabels(vlabels)
 
-subplot(2,2,4)
+sp4 = subplot(2,2,4);
 pcolor(omegaAxis,modeAxis,scale(IE/max(max(IE)))'), hold on
 caxis([-2 0])
 shading flat
 for j = modeAxis
     omega = sort(reshape(Omega(:,:,j),1,[]));
-    scatter(omega+1e-5,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
+    scatter(omega+omega_epsilon,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
 end
 title('isopycnal')
 % ylabel('vertical mode')
@@ -168,3 +178,39 @@ yticks([])
 xlabel('frequency')
 xticks(ticks)
 xticklabels(labels)
+% c = colorbar;
+
+dy = 0.045;
+sp1.Position(2) = sp1.Position(2) - dy;
+sp1.Position(4) = sp1.Position(4) + dy;
+sp3.Position(4) = sp3.Position(4) + dy;
+sp2.Position(2) = sp2.Position(2) - dy;
+sp2.Position(4) = sp2.Position(4) + dy;
+sp4.Position(4) = sp4.Position(4) + dy;
+
+dx = 0.045;
+sp1.Position(3) = sp1.Position(3) + dx;
+sp3.Position(3) = sp3.Position(3) + dx;
+sp2.Position(1) = sp2.Position(1) - dx;
+sp2.Position(3) = sp2.Position(3) + dx;
+sp4.Position(1) = sp4.Position(1) - dx;
+sp4.Position(3) = sp4.Position(3) + dx;
+
+figHandle.NextPlot = 'add';
+a = axes; 
+
+%// Set the title and get the handle to it
+ht = title(sprintf('%dkm x %dkm x %dkm (%dx%dx%d)',round(Lx/1e3),round(Ly/1e3),round(Lz/1e3),Nx,Ny,Nz),'FontSize', 24);
+ht.Position = [0.5 1.04 0.5];
+
+%// Turn the visibility of the axes off
+a.Visible = 'off';
+
+%// Turn the visibility of the title on
+ht.Visible = 'on';
+
+% if xAxisMax == N0
+%     print('ResolutionAndVariance.png','-r200','-dpng')
+% else
+%     print('ResolutionAndVarianceZoomed.png','-r200','-dpng')
+% end
