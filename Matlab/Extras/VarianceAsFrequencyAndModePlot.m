@@ -11,13 +11,13 @@ xAxisMax = 5*f0;
 % Model dimensions and grid
 %
 
-Lx = 1000e3;
-Ly = 1000e3;
-Lz = 5000;
+Lx = 100e3;
+Ly = 100e3;
+Lz = 2000;
 
 Nx = 128;
 Ny = 128;
-Nz = 128;
+Nz = 512;
 
 dx = Lx/Nx;
 dy = Ly/Ny;

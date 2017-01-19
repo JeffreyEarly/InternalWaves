@@ -29,6 +29,10 @@ plot(x,f,'LineWidth', 1.0, 'Color', 'white', 'Marker', 'o', 'MarkerSize',6, 'Mar
 plot(x,f_alt)
 title('(u,v)-mode')
 
+f = real(fft(f_tilde));
+f = f(1:N+1);
+plot(dz*(0:N)',f)
+
 
 % Now let's test W!
 f_bar = zeros(N,1);
