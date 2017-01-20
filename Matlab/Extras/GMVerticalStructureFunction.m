@@ -23,8 +23,8 @@ H = H_norm*(j_star+(1:1024)).^(-5/2);
 
 j_max = 3000;
 
-xi = ( exp(z/L_gm) - exp(-L/L_gm) )/( 1-exp(-L/L_gm) );
-% xi = exp(z/L_gm);
+%xi = ( exp(z/L_gm) - exp(-L/L_gm) )/( 1-exp(-L/L_gm) );
+xi = exp(z/L_gm);
 
 F2 = 0*z;
 G2 = 0*z;
