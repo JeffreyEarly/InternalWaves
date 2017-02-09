@@ -22,6 +22,10 @@
 %   [u,v] = wavemodel.VelocityFieldAtTime(t);
 %   [w,zeta] = wavemodel.VerticalFieldsAtTime(t);
 %
+% The vertical dimension must have Nz = 2^n or Nz = 2^n + 1 points. If you
+% request the extra point, then the upper boundary will be returned as
+% well. This is designed to match the DCT used by Kraig Winters' model.
+%
 %
 % Jeffrey J. Early
 % jeffrey@jeffreyearly.com
@@ -30,6 +34,7 @@
 % March 30th, 2016      Version 1.1
 % November 17th, 2016   Version 1.2
 % December 9th, 2016    Version 1.3
+% February 9th, 2017    Version 1.4
 
 classdef InternalWaveModel < handle
     properties
@@ -46,9 +51,10 @@ classdef InternalWaveModel < handle
         K2, Kh, F, G, M, h, Omega, Omega_plus, Omega_minus, f0, C
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         period
-        version = 1.3
+        version = 1.4
         dctScratch, dstScratch;
         performSanityChecks = 0
+        shouldIncludeUpperBoundary
     end
     
     methods
@@ -62,6 +68,16 @@ classdef InternalWaveModel < handle
             if length(dims) ~=3 || length(n) ~= 3
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
             end
+            
+            if mod(log2(n(3)),1) == 0
+                obj.shouldIncludeUpperBoundary = 0;
+            elseif mod(log2(n(3)-1),1) == 0  
+                obj.shouldIncludeUpperBoundary = 1;
+                n(3) = n(3)-1; % internally we proceed as if there are n-1 points.
+            else
+                error('The vertical dimension must have 2^n or (2^n)+1 points. This is an artificial restriction.');
+            end
+            
             obj.Lx = dims(1);
             obj.Ly = dims(2);
             obj.Lz = dims(3);
@@ -79,7 +95,11 @@ classdef InternalWaveModel < handle
             
             obj.x = dx*(0:obj.Nx-1)'; % periodic basis
             obj.y = dy*(0:obj.Ny-1)'; % periodic basis
-            obj.z = dz*(0:obj.Nz-1)'; % cosine basis (not your usual dct basis, however)
+            if obj.shouldIncludeUpperBoundary == 1
+                obj.z = dz*(0:obj.Nz)'; % cosine basis (not your usual dct basis, however)
+            else
+                obj.z = dz*(0:obj.Nz-1)'; % cosine basis (not your usual dct basis, however)
+            end
             
             % Spectral domain, in radians
             dk = 1/obj.Lx;          % fourier frequency
@@ -219,6 +239,7 @@ classdef InternalWaveModel < handle
             invT_gm = 5.2e-3; % reference buoyancy frequency, radians/seconds
             E_gm = 6.3e-5; % non-dimensional energy parameter
             E = L_gm*L_gm*L_gm*invT_gm*invT_gm*E_gm*Amp;
+            E = E*(obj.Lz/L_gm); % This correction fixes the amplitude so that the HKE variance at a given depth matches (instead of depth integrated energy)
                       
             % Compute the proper vertical function normalization
             H = (j_star+(1:1024)).^(-5/2);
@@ -388,8 +409,8 @@ classdef InternalWaveModel < handle
                 CheckHermitian(u_bar);CheckHermitian(v_bar);
             end
             
-            u = obj.TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz);
-            v = obj.TransformToSpatialDomainWithF(v_bar, obj.Nx, obj.Ny, obj.Nz);
+            u = obj.TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz, obj.shouldIncludeUpperBoundary);
+            v = obj.TransformToSpatialDomainWithF(v_bar, obj.Nx, obj.Ny, obj.Nz, obj.shouldIncludeUpperBoundary);
         end
         
         function [w,zeta] = VerticalFieldsAtTime(obj, t)
@@ -402,8 +423,8 @@ classdef InternalWaveModel < handle
                 CheckHermitian(w_bar);CheckHermitian(zeta_bar);
             end
             
-            w = obj.TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz);
-            zeta = obj.TransformToSpatialDomainWithG(zeta_bar, obj.Nx, obj.Ny, obj.Nz);
+            w = obj.TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz, obj.shouldIncludeUpperBoundary);
+            zeta = obj.TransformToSpatialDomainWithG(zeta_bar, obj.Nx, obj.Ny, obj.Nz, obj.shouldIncludeUpperBoundary);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -411,7 +432,7 @@ classdef InternalWaveModel < handle
         % Computes the phase information given the amplitudes (internal)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function u = TransformToSpatialDomainWithF(obj, u_bar, Nx, Ny, Nz )
+        function u = TransformToSpatialDomainWithF(obj, u_bar, Nx, Ny, Nz, shouldIncludeUpperBoundary )
             % Here we use what I call the 'Fourier series' definition of the ifft, so
             % that the coefficients in frequency space have the same units in time.
             u = Nx*Ny*ifft(ifft(u_bar,Nx,1),Ny,2,'symmetric');
@@ -428,10 +449,14 @@ classdef InternalWaveModel < handle
             end
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            u = u(:,:,1:Nz);
+            if shouldIncludeUpperBoundary == 1
+                u = u(:,:,1:(Nz+1));
+            else
+                u = u(:,:,1:Nz);
+            end
         end
         
-        function w = TransformToSpatialDomainWithG(obj, w_bar, Nx, Ny, Nz )
+        function w = TransformToSpatialDomainWithG(obj, w_bar, Nx, Ny, Nz, shouldIncludeUpperBoundary )
             % Here we use what I call the 'Fourier series' definition of the ifft, so
             % that the coefficients in frequency space have the same units in time.
             w = Nx*Ny*ifft(ifft(w_bar,Nx,1),Ny,2,'symmetric');
@@ -448,7 +473,11 @@ classdef InternalWaveModel < handle
             end
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            w = w(:,:,1:Nz);
+            if shouldIncludeUpperBoundary == 1
+                w = w(:,:,1:(Nz+1));
+            else
+                w = w(:,:,1:Nz);
+            end
         end
     end
 end
