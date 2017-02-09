@@ -1,3 +1,7 @@
+% AMS figure widths, given in picas, converted to points (1 pica=12 points)
+scaleFactor = 1;
+LoadFigureDefaults
+
 latitude = 33;
 f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
 
@@ -55,10 +59,48 @@ end
 %
 % Figure!
 %
-figure
+FigureSize = [50 50 figure_width_1col+8 225*scaleFactor];
+
+fig1 = figure('Units', 'points', 'Position', FigureSize);
+set(gcf,'PaperPositionMode','auto')
+set(gcf, 'Color', 'w');
+fig1.PaperUnits = 'points';
+fig1.PaperPosition = FigureSize;
+fig1.PaperSize = [FigureSize(3) FigureSize(4)];
+
 subplot(1,2,1)
-plot(PhiWKB,z), hold on, plot(PhiExact,z)
+plot([1 1], [-L 0],'--', 'LineWidth', 1.0*scaleFactor, 'Color', 0*[1 1 1])
+hold on
+plot(PhiWKB,z, 'LineWidth', 1.0*scaleFactor, 'Color', 0.5*[1 1 1])
+plot(PhiExact,z, 'LineWidth', 1.0*scaleFactor, 'Color', 0*[1 1 1])
 xlim([0 1.1*max(PhiExact)])
+ylabel('depth (m)', 'FontSize', figure_axis_label_size, 'FontName', figure_font);
+leg = legend('GM', 'WKB', 'exact');
+leg.Position(1) = 0.3;
+leg.Position(2) = 0.75;
+set( gca, 'FontSize', figure_axis_tick_size);
+set(gca, 'YTick', 1000*(-5:1:0));
+title('$b N_0 N^{-1}(z) \Phi(z)$','Interpreter','LaTex', 'FontSize', figure_axis_label_size, 'FontName', figure_font);
+
+
 subplot(1,2,2)
-plot(GammaWKB,z), hold on, plot(GammaExact,z)
+plot([1 1], [-L 0],'--', 'LineWidth', 1.0*scaleFactor, 'Color', 0*[1 1 1])
+hold on
+plot(GammaWKB,z, 'LineWidth', 1.0*scaleFactor, 'Color', 0.5*[1 1 1])
+plot(GammaExact,z, 'LineWidth', 1.0*scaleFactor, 'Color', 0*[1 1 1])
+set(gca, 'YTick', []);
 xlim([0 1.1*max(GammaWKB)])
+title('$b N_0 N(z)\Gamma(z)$','Interpreter','LaTex', 'FontSize', figure_axis_label_size, 'FontName', figure_font);
+
+
+set( gca, 'FontSize', figure_axis_tick_size);
+packfig(1,2)
+
+fig1 = tightfig;
+
+fig1.Position = FigureSize;
+fig1.PaperPosition = FigureSize;
+fig1.PaperSize = [FigureSize(3) FigureSize(4)];
+fig1.PaperPositionMode = 'auto';
+
+print('-depsc2', 'figures/VerticalStructureFunctions.eps')
