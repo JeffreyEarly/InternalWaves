@@ -37,7 +37,7 @@
 % February 9th, 2017    Version 1.4
 
 classdef InternalWaveModel < handle
-    properties
+    properties (Access = public)
         Lx, Ly, Lz % Domain size
         Nx, Ny, Nz % Number of points in each direction
         latitude
@@ -52,9 +52,12 @@ classdef InternalWaveModel < handle
         u_plus, u_minus, v_plus, v_minus, w_plus, w_minus, zeta_plus, zeta_minus
         period
         version = 1.4
-        dctScratch, dstScratch;
         performSanityChecks = 0
-        shouldIncludeUpperBoundary
+    end
+    
+    properties (Access = protected)
+        dctScratch, dstScratch;
+        nz % DCT length in the vertical. This doesn't change if the user requests the value at the surface, but Nz will.
     end
     
     methods
@@ -69,11 +72,10 @@ classdef InternalWaveModel < handle
                 error('The dims and n variables must be of length 3. You need to specify x,y,z');
             end
             
-            if mod(log2(n(3)),1) == 0
-                obj.shouldIncludeUpperBoundary = 0;
-            elseif mod(log2(n(3)-1),1) == 0  
-                obj.shouldIncludeUpperBoundary = 1;
-                n(3) = n(3)-1; % internally we proceed as if there are n-1 points.
+            if mod(log2(n(3)),1) == 0   
+                obj.nz = n(3);
+            elseif mod(log2(n(3)-1),1) == 0 % user wants the surface point
+                obj.nz = n(3)-1; % internally we proceed as if there are n-1 points
             else
                 error('The vertical dimension must have 2^n or (2^n)+1 points. This is an artificial restriction.');
             end
@@ -91,15 +93,11 @@ classdef InternalWaveModel < handle
             
             dx = obj.Lx/obj.Nx;
             dy = obj.Ly/obj.Ny;
-            dz = obj.Lz/obj.Nz;
+            dz = obj.Lz/obj.nz; % The spacing is invariant
             
             obj.x = dx*(0:obj.Nx-1)'; % periodic basis
             obj.y = dy*(0:obj.Ny-1)'; % periodic basis
-            if obj.shouldIncludeUpperBoundary == 1
-                obj.z = dz*(0:obj.Nz)'; % cosine basis (not your usual dct basis, however)
-            else
-                obj.z = dz*(0:obj.Nz-1)'; % cosine basis (not your usual dct basis, however)
-            end
+            obj.z = dz*(0:obj.Nz-1)'; % cosine basis (not your usual dct basis, however)
             
             % Spectral domain, in radians
             dk = 1/obj.Lx;          % fourier frequency
@@ -108,7 +106,7 @@ classdef InternalWaveModel < handle
             dl = 1/obj.Ly;          % fourier frequency
             obj.l = 2*pi*([0:ceil(obj.Ny/2)-1 -floor(obj.Ny/2):-1]*dl)';
             
-            nModes = obj.Nz;
+            nModes = obj.nz;
             obj.j = (1:nModes)';
             
             [K,L,J] = ndgrid(obj.k,obj.l,obj.j);
@@ -118,8 +116,8 @@ classdef InternalWaveModel < handle
             obj.X = X; obj.Y = Y; obj.Z = Z;
             
             % Preallocate this array for a faster dct
-            obj.dctScratch = zeros(obj.Nx,obj.Ny,2*obj.Nz);
-            obj.dstScratch = complex(zeros(obj.Nx,obj.Ny,2*obj.Nz));
+            obj.dctScratch = zeros(obj.Nx,obj.Ny,2*obj.nz);
+            obj.dstScratch = complex(zeros(obj.Nx,obj.Ny,2*obj.nz));
             
             obj.InitializeWaveProperties();
         end
@@ -164,7 +162,7 @@ classdef InternalWaveModel < handle
             T = 2*pi/dOmega;
             fprintf('The gap between these two lowest frequencies will be fully resolved after %.1f hours\n', T/3600);
             sortedOmega = sort(unique(reshape(omega(:,:,end),1,[])));
-            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', obj.Nz, sortedOmega(1)/obj.f0, sortedOmega(2)/obj.f0, sortedOmega(end-1)/obj.N0, sortedOmega(end)/obj.N0);
+            fprintf('j=%d mode has discrete frequencies (%.4f f0, %.4f f0, ..., %.4f N0, %.4f N0)\n', obj.nz, sortedOmega(1)/obj.f0, sortedOmega(2)/obj.f0, sortedOmega(end-1)/obj.N0, sortedOmega(end)/obj.N0);
         end
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         %
@@ -179,8 +177,8 @@ classdef InternalWaveModel < handle
             if (l0 <= -obj.Ny/2 || l0 >= obj.Ny/2)
                 error('Invalid choice for l0 (%d). Must be an integer %d < l0 < %d',l0,-obj.Ny/2+1,obj.Ny/2+1);
             end
-            if (j0 < 1 || j0 >= obj.Nz)
-                error('Invalid choice for j0 (%d). Must be an integer 0 < j < %d',j0, obj.Nz);
+            if (j0 < 1 || j0 >= obj.nz)
+                error('Invalid choice for j0 (%d). Must be an integer 0 < j < %d',j0, obj.nz);
             end
             
             % Deal with the negative wavenumber cases (and inertial)
@@ -409,8 +407,8 @@ classdef InternalWaveModel < handle
                 CheckHermitian(u_bar);CheckHermitian(v_bar);
             end
             
-            u = obj.TransformToSpatialDomainWithF(u_bar, obj.Nx, obj.Ny, obj.Nz, obj.shouldIncludeUpperBoundary);
-            v = obj.TransformToSpatialDomainWithF(v_bar, obj.Nx, obj.Ny, obj.Nz, obj.shouldIncludeUpperBoundary);
+            u = obj.TransformToSpatialDomainWithF(u_bar);
+            v = obj.TransformToSpatialDomainWithF(v_bar);
         end
         
         function [w,zeta] = VerticalFieldsAtTime(obj, t)
@@ -423,8 +421,8 @@ classdef InternalWaveModel < handle
                 CheckHermitian(w_bar);CheckHermitian(zeta_bar);
             end
             
-            w = obj.TransformToSpatialDomainWithG(w_bar, obj.Nx, obj.Ny, obj.Nz, obj.shouldIncludeUpperBoundary);
-            zeta = obj.TransformToSpatialDomainWithG(zeta_bar, obj.Nx, obj.Ny, obj.Nz, obj.shouldIncludeUpperBoundary);
+            w = obj.TransformToSpatialDomainWithG(w_bar);
+            zeta = obj.TransformToSpatialDomainWithG(zeta_bar);
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -432,15 +430,15 @@ classdef InternalWaveModel < handle
         % Computes the phase information given the amplitudes (internal)
         %
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-        function u = TransformToSpatialDomainWithF(obj, u_bar, Nx, Ny, Nz, shouldIncludeUpperBoundary )
+        function u = TransformToSpatialDomainWithF(obj, u_bar)
             % Here we use what I call the 'Fourier series' definition of the ifft, so
             % that the coefficients in frequency space have the same units in time.
-            u = Nx*Ny*ifft(ifft(u_bar,Nx,1),Ny,2,'symmetric');
+            u = obj.Nx*obj.Ny*ifft(ifft(u_bar,obj.Nx,1),obj.Ny,2,'symmetric');
             
             % Re-order to convert to an fast cosine transform
-            obj.dctScratch = cat(3, zeros(Nx,Ny), 0.5*u(:,:,1:Nz-1), u(:,:,Nz), 0.5*u(:,:,Nz-1:-1:1));
+            obj.dctScratch = cat(3, zeros(obj.Nx,obj.Ny), 0.5*u(:,:,1:obj.nz-1), u(:,:,obj.nz), 0.5*u(:,:,obj.nz-1:-1:1));
   
-            u = fft(obj.dctScratch,2*Nz,3);
+            u = fft(obj.dctScratch,2*obj.nz,3);
             if obj.performSanityChecks == 1
                 ratio = max(max(max(abs(imag(u)))))/max(max(max(abs(real(u)))));
                 if ratio > 1e-6
@@ -449,22 +447,18 @@ classdef InternalWaveModel < handle
             end
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            if shouldIncludeUpperBoundary == 1
-                u = u(:,:,1:(Nz+1));
-            else
-                u = u(:,:,1:Nz);
-            end
+            u = u(:,:,1:obj.Nz); % Here we use Nz (not nz) because the user may want the end point.
         end
         
-        function w = TransformToSpatialDomainWithG(obj, w_bar, Nx, Ny, Nz, shouldIncludeUpperBoundary )
+        function w = TransformToSpatialDomainWithG(obj, w_bar )
             % Here we use what I call the 'Fourier series' definition of the ifft, so
             % that the coefficients in frequency space have the same units in time.
-            w = Nx*Ny*ifft(ifft(w_bar,Nx,1),Ny,2,'symmetric');
+            w = obj.Nx*obj.Ny*ifft(ifft(w_bar,obj.Nx,1),obj.Ny,2,'symmetric');
             
             % Re-order to convert to an fast cosine transform
-            obj.dstScratch = sqrt(-1)*cat(3, zeros(Nx,Ny), 0.5*w(:,:,1:Nz-1), w(:,:,Nz), -0.5*w(:,:,Nz-1:-1:1));
+            obj.dstScratch = sqrt(-1)*cat(3, zeros(obj.Nx,obj.Ny), 0.5*w(:,:,1:obj.nz-1), w(:,:,obj.nz), -0.5*w(:,:,obj.nz-1:-1:1));
             
-            w = fft( obj.dstScratch,2*Nz,3);
+            w = fft( obj.dstScratch,2*obj.nz,3);
             if obj.performSanityChecks == 1
                 ratio = max(max(max(abs(imag(w)))))/max(max(max(abs(real(w)))));
                 if ratio > 1e-6
@@ -473,11 +467,7 @@ classdef InternalWaveModel < handle
             end
             % should not have to call real, but for some reason, with enough
             % points, it starts generating some small imaginary component.
-            if shouldIncludeUpperBoundary == 1
-                w = w(:,:,1:(Nz+1));
-            else
-                w = w(:,:,1:Nz);
-            end
+            w = w(:,:,1:obj.Nz); % Here we use Nz (not nz) because the user may want the end point.
         end
     end
 end
