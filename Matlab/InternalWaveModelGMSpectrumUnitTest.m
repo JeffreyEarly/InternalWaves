@@ -20,16 +20,16 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 30e3;
-Ly = 15e3;
+Lx = 800e3;
+Ly = 100e3;
 Lz = 5000;
 
-Nx = 256;
-Ny = 128;
+Nx = 512;
+Ny = 512/8;
 Nz = 64;
 
 latitude = 31;
-N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
+N0 = 5.2e-3; % Choose your stratification 7.6001e-04
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -40,41 +40,61 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 wavemodel.InitializeWithGMSpectrum(1.0);
 
-t = 0;
-[u,v]=wavemodel.VelocityFieldAtTime(t);
-[w,zeta] = wavemodel.VerticalFieldsAtTime(t);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Time step the model and save a time series of (u,v) from the center of
+% the domain.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-depth = 1000;
+depth = Lz/2;
 depthIndex = find(wavemodel.z-Lz > -depth,1,'first');
 stride = 4;
 t = 0:15*60:4*86400;
 xIndices = 1:stride:Nx;
 yIndices = 1:stride:Ny;
 cv_mooring = zeros([length(t) length(xIndices)*length(yIndices)]);
+startTime = datetime('now');
 for iTime=1:length(t)
-    fprintf('time @ %d of %d\n', iTime, length(t));
+    if mod(iTime,10) == 0
+        timePerStep = (datetime('now')-startTime)/(iTime-1);
+        timeRemaining = (length(t)-iTime+1)*timePerStep;   
+        fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
+    end
+    
     [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
+    
     cv_mooring(iTime,:) = reshape(u(xIndices,yIndices,depthIndex),1,[]) + sqrt(-1)*reshape(v(xIndices,yIndices,depthIndex),1,[]);
 end
 
-taper_bandwidth = 2;
-psi=[];
-%  [psi,lambda]=sleptap(size(cv_mooring,1),taper_bandwidth);
-[omega_p, Spp, Snn, Spn] = mspec(t(2)-t(1),cv_mooring,psi);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Plot the rotary spectrum of the horizontal velocity
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
+[omega_p, Spp, Snn, Spn] = mspec(t(2)-t(1),cv_mooring,[]);
 omega = [ -flipud(omega_p(2:end)); omega_p];
-[S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, N0, 0 );
+
 % We want the integral of this to give us the variance back, so we need to
 % divide by 2*pi
 S = (1/(2*pi))*[flipud(vmean(Snn,2)); vmean(Spp(2:end,:),2)];
 figure, plot(omega,S), ylog
-hold on, plot(omega,S_gm/5)
+
+% Compare it to GM
+% [S_gm] = GarrettMunkHorizontalKineticEnergyRotarySpectrumWKB( omega, latitude, N0, 0 );
+% hold on, plot(omega,S_gm)
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
-% Compute a few benchmarks
+% Plot the structure of the vertical variances
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+t = 0;
+[u,v]=wavemodel.VelocityFieldAtTime(t);
+[w,zeta] = wavemodel.VerticalFieldsAtTime(t);
 
 z = wavemodel.z;
 uvVariance = squeeze(mean(mean(u.*u + v.*v,1),2));
@@ -111,6 +131,7 @@ PE_int = trapz(z,PE,3);
 
 totalGM = mean(mean(HKE_int + VKE_int + PE_int))*1032; % scaled by the density of water
 fprintf('The total energy in the water column is %f J/m^2, compared to 3800 J/m^2 expected for GM.\n',totalGM);
+fprintf('We expect the integrated energy to be D/b time larger than GM, or %.1f\n',Lz/1300);
 
 AvgHKE = mean(mean(HKE(:,:,end)))*1e4;
 fprintf('The average 2*HKE is %f cm^2/s^2 at the surface, compared to 44 cm^2/s^2 for WKB scaled GM.\n',AvgHKE);
