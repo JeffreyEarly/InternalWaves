@@ -18,8 +18,8 @@
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-Lx = 800e3/32;
-Ly = 100e3/32;
+Lx = 800e3;
+Ly = 100e3;
 Lz = 5000;
 
 Nx = 2048/2;
@@ -36,10 +36,10 @@ Nz = 128;
 
 latitude = 31;
 N0 = 5.2e-3;
-GMReferenceLevel = 0.5;
+GMReferenceLevel = 1.0;
 
 timeStep = 15*60; % in seconds
-maxTime = 0.125*86400;
+maxTime = 4*86400;
 
 outputfolder = '/Volumes/OceanTransfer';
 outputfolder = '/Users/jearly/Desktop';
