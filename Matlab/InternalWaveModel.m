@@ -97,7 +97,7 @@ classdef InternalWaveModel < handle
             
             obj.x = dx*(0:obj.Nx-1)'; % periodic basis
             obj.y = dy*(0:obj.Ny-1)'; % periodic basis
-            obj.z = dz*(0:obj.Nz-1)'; % cosine basis (not your usual dct basis, however)
+            obj.z = dz*(0:obj.Nz-1)' - obj.Lz; % cosine basis (not your usual dct basis, however)
             
             % Spectral domain, in radians
             dk = 1/obj.Lx;          % fourier frequency
@@ -145,6 +145,10 @@ classdef InternalWaveModel < handle
             
             % G contains the coefficients for the W-modes
             obj.G = sqrt(2*g/(obj.Lz*(obj.N0*obj.N0-obj.f0*obj.f0)));
+            
+            signNorm = -2*(mod(obj.J,2) == 1)+1;
+            obj.F = signNorm .* obj.F;
+            obj.G = signNorm * obj.G;
             
             % Create the hermitian conjugates of the phase vectors;
             obj.Omega(:,(obj.Ny/2+1):end,:) = -obj.Omega(:,(obj.Ny/2+1):end,:);
@@ -385,11 +389,11 @@ classdef InternalWaveModel < handle
             obj.v_plus = U_plus .* MakeHermitian( ( sqrt(-1)*obj.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator ) .* obj.F;
             obj.v_minus = U_minus .* MakeHermitian( ( -sqrt(-1)*obj.f0 .* cos(alpha) + omega .* sin(alpha) )./denominator ) .* obj.F;
             
-            obj.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) * obj.G;
-            obj.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) * obj.G;
+            obj.w_plus = U_plus .* MakeHermitian(-sqrt(-1) *  obj.Kh .* sqrt(obj.h) ) .* obj.G;
+            obj.w_minus = U_minus .* MakeHermitian( -sqrt(-1) * obj.Kh .* sqrt(obj.h) ) .* obj.G;
             
-            obj.zeta_plus = U_plus .* MakeHermitian( -obj.Kh .* sqrt(obj.h) ./ omega ) * obj.G;
-            obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ omega ) * obj.G;  
+            obj.zeta_plus = U_plus .* MakeHermitian( -obj.Kh .* sqrt(obj.h) ./ omega ) .* obj.G;
+            obj.zeta_minus = U_minus .* MakeHermitian( obj.Kh .* sqrt(obj.h) ./ omega ) .* obj.G;  
         end
         
         %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

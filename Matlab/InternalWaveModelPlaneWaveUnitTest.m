@@ -36,7 +36,7 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wavemodel = InternalWaveModelSlow([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -46,7 +46,7 @@ wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 k0 = 4; % k=0..Nx/2
 l0 = 0; % l=0..Ny/2
-j0 = 21; % j=1..nModes, where 1 indicates the 1st baroclinic mode
+j0 = 20; % j=1..nModes, where 1 indicates the 1st baroclinic mode
 U = 0.01; % m/s
 sign = 1;
 

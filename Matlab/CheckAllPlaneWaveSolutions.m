@@ -34,7 +34,7 @@ N0 = 5.2e-3/2; % Choose your stratification 7.6001e-04
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModel([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+wavemodel = InternalWaveModelSlow([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
