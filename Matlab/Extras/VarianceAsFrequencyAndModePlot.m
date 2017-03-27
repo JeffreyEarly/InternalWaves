@@ -1,9 +1,9 @@
-latitude = 33;
+latitude = 31;
 f0 = 2 * 7.2921E-5 * sin( latitude*pi/180 );
 N0 = 5.2e-3;
 g = 9.81;
 
-xAxisMax = 5*f0;
+xAxisMax = 15*f0;
 % xAxisMax = N0;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -12,12 +12,12 @@ xAxisMax = 5*f0;
 %
 
 Lx = 100e3;
-Ly = 100e3;
-Lz = 2000;
+Ly = 1*100e3;
+Lz = 5000;
 
-Nx = 128;
-Ny = 128;
-Nz = 512;
+Nx = 64;
+Ny = 1*64;
+Nz = 65;
 
 dx = Lx/Nx;
 dy = Ly/Ny;
@@ -85,6 +85,33 @@ for j = modeAxis
    end
 end
 
+% Now we create extra points to fill in the gaps
+dOmegaInitial = 0.05;
+maxdOmega = 0.5*f0;
+Ln = -1/log(1-dOmegaInitial);
+dOmegas = (1-exp(-(1:100)'/Ln));
+gapOmegas = f0 + cumsum(f0*dOmegas);
+omegaExt = [];
+jExt = [];
+for iMode = 1:nModes
+    omegas = sort(reshape(abs(Omega(:,:,iMode)),[],1));
+    
+    % fill in the lower triangle
+    indices = find(gapOmegas < omegas(2));
+    jExt = cat(1,jExt,iMode*ones(length(indices),1));
+    omegaExt = cat(1,omegaExt,gapOmegas(indices));
+    
+    diffOmega = diff(omegas);
+    gapIndices = find(diffOmega>maxdOmega);
+    for i=2:length(gapIndices)
+        n = ceil(diffOmega(gapIndices(i))/maxdOmega);
+        newOmegas = linspace(omegas(gapIndices(i)),omegas(gapIndices(i)+1),n+1)';
+        jExt = cat(1,jExt,iMode*ones(n-1,1));
+        omegaExt = cat(1,omegaExt,newOmegas(2:end-1));
+    end
+end
+fprintf('Added %d external waves.\n', length(omegaExt));
+
 % TE = cat(2,TE(:,1),TE);
 % HKE = cat(2,HKE(:,1),HKE);
 % VKE = cat(2,VKE(:,1),VKE);
@@ -125,6 +152,7 @@ for j = modeAxis
     omega = sort(reshape(Omega(:,:,j),1,[]));
     scatter(omega+omega_epsilon,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
 end
+scatter(omegaExt+omega_epsilon,jExt+0.5,16*ones(size(omegaExt)),'filled', 'MarkerFaceColor', 1*[1 1 1])
 title('total')
 ylabel('vertical mode')
 % xlabel('frequency')
@@ -141,6 +169,7 @@ for j = modeAxis
     omega = sort(reshape(Omega(:,:,j),1,[]));
     scatter(omega+omega_epsilon,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
 end
+scatter(omegaExt+omega_epsilon,jExt+0.5,16*ones(size(omegaExt)),'filled', 'MarkerFaceColor', 1*[1 1 1])
 title('horizontal')
 % ylabel('vertical mode')
 yticks([])
@@ -156,6 +185,7 @@ for j = modeAxis
     omega = sort(reshape(Omega(:,:,j),1,[]));
     scatter(omega+omega_epsilon,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
 end
+scatter(omegaExt+omega_epsilon,jExt+0.5,16*ones(size(omegaExt)),'filled', 'MarkerFaceColor', 1*[1 1 1])
 title('vertical')
 ylabel('vertical mode')
 xlabel('frequency')
@@ -172,6 +202,7 @@ for j = modeAxis
     omega = sort(reshape(Omega(:,:,j),1,[]));
     scatter(omega+omega_epsilon,j*ones(size(omega))+0.5,16*ones(size(omega)),'filled', 'MarkerFaceColor', 0*[1 1 1])
 end
+scatter(omegaExt+omega_epsilon,jExt+0.5,16*ones(size(omegaExt)),'filled', 'MarkerFaceColor', 1*[1 1 1])
 title('isopycnal')
 % ylabel('vertical mode')
 yticks([])
