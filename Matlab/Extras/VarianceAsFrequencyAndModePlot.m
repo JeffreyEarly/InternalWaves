@@ -11,17 +11,24 @@ xAxisMax = 15*f0;
 % Model dimensions and grid
 %
 
-Lx = 100e3;
-Ly = 1*100e3;
+N = 512;
+Lmin = 50e3;
+aspectRatio = 4;
+maxGapTime = 48*3600; % How densely to fill the gaps
+
+Lx = aspectRatio*Lmin;
+Ly = Lmin;
 Lz = 5000;
 
-Nx = 64;
-Ny = 1*64;
-Nz = 65;
+Nx = aspectRatio*N;
+Ny = N;
+Nz = N/2+1;
 
 dx = Lx/Nx;
 dy = Ly/Ny;
 dz = Lz/Nz;
+
+fprintf('Resolution is %.2fm x %.2fm. There are 2^%d points in the horizontal.\n',dx,dz,round(log(Nx*Ny)/log(2)));
 
 x = dx*(0:Nx-1)'; % periodic basis
 y = dy*(0:Ny-1)'; % periodic basis
@@ -86,11 +93,11 @@ for j = modeAxis
 end
 
 % Now we create extra points to fill in the gaps
-dOmegaInitial = 0.05;
-maxdOmega = 0.5*f0;
-Ln = -1/log(1-dOmegaInitial);
+dOmegaInitial = 0.05*f0;
+maxdOmega = 2*pi/maxGapTime;
+Ln = -1/log(1-dOmegaInitial/maxdOmega);
 dOmegas = (1-exp(-(1:100)'/Ln));
-gapOmegas = f0 + cumsum(f0*dOmegas);
+gapOmegas = f0 + cumsum(maxdOmega*dOmegas);
 omegaExt = [];
 jExt = [];
 for iMode = 1:nModes
