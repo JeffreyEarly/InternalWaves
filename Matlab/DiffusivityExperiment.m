@@ -105,7 +105,7 @@ ymax = [Inf Inf 0 Inf Inf 0 Inf Inf];
 kappa_vector = [0 0 0 kappa kappa kappa 0 0];
 p0 = cat(2, x_float, y_float, z_isopycnal, x_float, y_float, z_isopycnal, x_float, y_float);
 
-f = @(t,y) FluxForFloatDiffusiveDrifter(t,y,z_float,wavemodel);
+f = @(t,y) FluxForFloatDiffusiveDrifter(t,y,z_float,wavemodel, 'exact');
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
