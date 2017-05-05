@@ -33,7 +33,7 @@ outputInterval = 15*60;
 maxTime = 86400/4;
 
 outputfolder = '/Volumes/OceanTransfer';
-outputfolder = '/Users/jearly/Desktop';
+% outputfolder = '/Users/jearly/Desktop';
 
 precision = 'single';
 
@@ -60,6 +60,13 @@ wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], 
 if shouldUseGMSpectrum == 1
     wavemodel.FillOutWaveSpectrum();
     wavemodel.InitializeWithGMSpectrum(GMReferenceLevel);
+    
+%     Ap = wavemodel.Amp_plus;
+%     Am = wavemodel.Amp_minus;
+%     Ap(:,:,(N+1):end) = 0;
+%     Am(:,:,(N+1):end) = 0;
+%     wavemodel.GenerateWavePhases(Ap,Am);
+    
     wavemodel.ShowDiagnostics();
     period = 2*pi/wavemodel.N0;
     [u,v] = wavemodel.VelocityFieldAtTime(0.0);
@@ -98,8 +105,7 @@ z_float = reshape(z_float,[],1);
 nFloats = numel(x_float);
 
 % Now let's place the floats along an isopycnal.
-[w,zeta] = wavemodel.VerticalFieldsAtTime(0);
-isopycnalDeviation = interpn(wavemodel.X,wavemodel.Y,wavemodel.Z,zeta,x_float,y_float,z_float,'spline');
+isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
 z_isopycnal = z_float + isopycnalDeviation;
 
 ymin = [-Inf -Inf -Lz -Inf -Inf -Lz -Inf -Inf -Lz];
@@ -172,6 +178,7 @@ floatDimID = netcdf.defDim(ncid, 'float_id', nFloats);
 xFloatID = netcdf.defVar(ncid, 'x-position-exact', ncPrecision, [floatDimID,tDimID]);
 yFloatID = netcdf.defVar(ncid, 'y-position-exact', ncPrecision, [floatDimID,tDimID]);
 zFloatID = netcdf.defVar(ncid, 'z-position-exact', ncPrecision, [floatDimID,tDimID]);
+zetaFloatID = netcdf.defVar(ncid, 'zeta-position-exact', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xFloatID, 'units', 'm');
 netcdf.putAtt(ncid,yFloatID, 'units', 'm');
 netcdf.putAtt(ncid,zFloatID, 'units', 'm');
@@ -180,6 +187,7 @@ netcdf.putAtt(ncid,zFloatID, 'units', 'm');
 xLinearFloatID = netcdf.defVar(ncid, 'x-position-linear', ncPrecision, [floatDimID,tDimID]);
 yLinearFloatID = netcdf.defVar(ncid, 'y-position-linear', ncPrecision, [floatDimID,tDimID]);
 zLinearFloatID = netcdf.defVar(ncid, 'z-position-linear', ncPrecision, [floatDimID,tDimID]);
+zetaLinearFloatID = netcdf.defVar(ncid, 'zeta-position-linear', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xLinearFloatID, 'units', 'm');
 netcdf.putAtt(ncid,yLinearFloatID, 'units', 'm');
 netcdf.putAtt(ncid,zLinearFloatID, 'units', 'm');
@@ -188,6 +196,7 @@ netcdf.putAtt(ncid,zLinearFloatID, 'units', 'm');
 xSplineFloatID = netcdf.defVar(ncid, 'x-position-spline', ncPrecision, [floatDimID,tDimID]);
 ySplineFloatID = netcdf.defVar(ncid, 'y-position-spline', ncPrecision, [floatDimID,tDimID]);
 zSplineFloatID = netcdf.defVar(ncid, 'z-position-spline', ncPrecision, [floatDimID,tDimID]);
+zetaSplineFloatID = netcdf.defVar(ncid, 'zeta-position-spline', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xSplineFloatID, 'units', 'm');
 netcdf.putAtt(ncid,ySplineFloatID, 'units', 'm');
 netcdf.putAtt(ncid,zSplineFloatID, 'units', 'm');
@@ -229,14 +238,17 @@ for iTime=1:length(t)
     netcdf.putVar(ncid, setprecision(xFloatID), [0 iTime-1], [nFloats 1], p(:,1));
     netcdf.putVar(ncid, setprecision(yFloatID), [0 iTime-1], [nFloats 1], p(:,2));
     netcdf.putVar(ncid, setprecision(zFloatID), [0 iTime-1], [nFloats 1], p(:,3));
+    netcdf.putVar(ncid, setprecision(zetaFloatID), [0 iTime-1], [nFloats 1], wavemodel.ZetaAtTimePosition(t(iTime),p(:,1),p(:,2),p(:,3)));
     
     netcdf.putVar(ncid, setprecision(xLinearFloatID), [0 iTime-1], [nFloats 1], p(:,4));
     netcdf.putVar(ncid, setprecision(yLinearFloatID), [0 iTime-1], [nFloats 1], p(:,5));
     netcdf.putVar(ncid, setprecision(zLinearFloatID), [0 iTime-1], [nFloats 1], p(:,6));
+    netcdf.putVar(ncid, setprecision(zetaLinearFloatID), [0 iTime-1], [nFloats 1], wavemodel.ZetaAtTimePosition(t(iTime),p(:,4),p(:,5),p(:,6)));
     
     netcdf.putVar(ncid, setprecision(xSplineFloatID), [0 iTime-1], [nFloats 1], p(:,7));
     netcdf.putVar(ncid, setprecision(ySplineFloatID), [0 iTime-1], [nFloats 1], p(:,8));
     netcdf.putVar(ncid, setprecision(zSplineFloatID), [0 iTime-1], [nFloats 1], p(:,9));
+    netcdf.putVar(ncid, setprecision(zetaSplineFloatID), [0 iTime-1], [nFloats 1], wavemodel.ZetaAtTimePosition(t(iTime),p(:,7),p(:,8),p(:,9)));
 end
 fprintf('Ending numerical simulation on %s\n', datestr(datetime('now')));
 
