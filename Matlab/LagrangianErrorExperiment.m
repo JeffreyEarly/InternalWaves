@@ -23,7 +23,7 @@ Lz = 5000;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = 2*N+1; % Must include end point to advect at the surface, so use 2^N + 1
+Nz = 1*N+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
@@ -32,8 +32,8 @@ GMReferenceLevel = 1.0;
 outputInterval = 15*60;
 maxTime = 86400/4;
 
-outputfolder = '/Volumes/OceanTransfer';
-% outputfolder = '/Users/jearly/Desktop';
+% outputfolder = '/Volumes/OceanTransfer';
+outputfolder = '/Users/jearly/Desktop';
 
 precision = 'single';
 
@@ -107,6 +107,10 @@ nFloats = numel(x_float);
 % Now let's place the floats along an isopycnal.
 isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
 z_isopycnal = z_float + isopycnalDeviation;
+
+rho = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_float);
+
+return
 
 ymin = [-Inf -Inf -Lz -Inf -Inf -Lz -Inf -Inf -Lz];
 ymax = [Inf Inf 0 Inf Inf 0 Inf Inf 0];
