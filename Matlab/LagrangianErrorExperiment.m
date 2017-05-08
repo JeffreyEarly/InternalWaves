@@ -109,6 +109,7 @@ isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
 z_isopycnal = z_float + isopycnalDeviation;
 
 rho = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_float);
+rho2 = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_isopycnal);
 
 return
 
