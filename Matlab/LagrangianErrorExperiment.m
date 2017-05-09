@@ -32,8 +32,8 @@ GMReferenceLevel = 1.0;
 outputInterval = 15*60;
 maxTime = 86400/4;
 
-% outputfolder = '/Volumes/OceanTransfer';
-outputfolder = '/Users/jearly/Desktop';
+outputfolder = '/Volumes/OceanTransfer';
+% outputfolder = '/Users/jearly/Desktop';
 
 precision = 'single';
 
@@ -94,9 +94,10 @@ end
 dx = wavemodel.x(2)-wavemodel.x(1);
 dy = wavemodel.y(2)-wavemodel.y(1);
 N = 10;
+nLevels = 3;
 x_float = (1:N)*dx;
 y_float = (1:N)*dy;
-z_float = (0:2)*(-Lz/4);
+z_float = (0:nLevels-1)*(-Lz/4);
 
 [x_float,y_float,z_float] = ndgrid(x_float,y_float,z_float);
 x_float = reshape(x_float,[],1);
@@ -108,10 +109,21 @@ nFloats = numel(x_float);
 isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
 z_isopycnal = z_float + isopycnalDeviation;
 
-rho = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_float);
-rho2 = wavemodel.DensityAtTimePosition(0,x_float,y_float,z_isopycnal);
-
-return
+% Iteratively place floats on the isopycnal surface. Overkill, probably.
+for zLevel = 1:nLevels
+    zLevelIndices = (zLevel-1)*N*N + (1:(N*N));
+    for i=1:5
+        rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices));
+        dRho = rho - mean(rho);
+        dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
+        z_isopycnal(zLevelIndices) = z_isopycnal(zLevelIndices)+dz;
+    end
+    
+    rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices));
+    dRho = rho - mean(rho);
+    dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
+    fprintf('All floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),z_float((zLevel-1)*N*N+1))
+end
 
 ymin = [-Inf -Inf -Lz -Inf -Inf -Lz -Inf -Inf -Lz];
 ymax = [Inf Inf 0 Inf Inf 0 Inf Inf 0];
@@ -183,7 +195,7 @@ floatDimID = netcdf.defDim(ncid, 'float_id', nFloats);
 xFloatID = netcdf.defVar(ncid, 'x-position-exact', ncPrecision, [floatDimID,tDimID]);
 yFloatID = netcdf.defVar(ncid, 'y-position-exact', ncPrecision, [floatDimID,tDimID]);
 zFloatID = netcdf.defVar(ncid, 'z-position-exact', ncPrecision, [floatDimID,tDimID]);
-zetaFloatID = netcdf.defVar(ncid, 'zeta-position-exact', ncPrecision, [floatDimID,tDimID]);
+densityFloatID = netcdf.defVar(ncid, 'density-exact', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xFloatID, 'units', 'm');
 netcdf.putAtt(ncid,yFloatID, 'units', 'm');
 netcdf.putAtt(ncid,zFloatID, 'units', 'm');
@@ -192,7 +204,7 @@ netcdf.putAtt(ncid,zFloatID, 'units', 'm');
 xLinearFloatID = netcdf.defVar(ncid, 'x-position-linear', ncPrecision, [floatDimID,tDimID]);
 yLinearFloatID = netcdf.defVar(ncid, 'y-position-linear', ncPrecision, [floatDimID,tDimID]);
 zLinearFloatID = netcdf.defVar(ncid, 'z-position-linear', ncPrecision, [floatDimID,tDimID]);
-zetaLinearFloatID = netcdf.defVar(ncid, 'zeta-position-linear', ncPrecision, [floatDimID,tDimID]);
+densityLinearFloatID = netcdf.defVar(ncid, 'density-linear', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xLinearFloatID, 'units', 'm');
 netcdf.putAtt(ncid,yLinearFloatID, 'units', 'm');
 netcdf.putAtt(ncid,zLinearFloatID, 'units', 'm');
@@ -201,7 +213,7 @@ netcdf.putAtt(ncid,zLinearFloatID, 'units', 'm');
 xSplineFloatID = netcdf.defVar(ncid, 'x-position-spline', ncPrecision, [floatDimID,tDimID]);
 ySplineFloatID = netcdf.defVar(ncid, 'y-position-spline', ncPrecision, [floatDimID,tDimID]);
 zSplineFloatID = netcdf.defVar(ncid, 'z-position-spline', ncPrecision, [floatDimID,tDimID]);
-zetaSplineFloatID = netcdf.defVar(ncid, 'zeta-position-spline', ncPrecision, [floatDimID,tDimID]);
+densitySplineFloatID = netcdf.defVar(ncid, 'density-spline', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xSplineFloatID, 'units', 'm');
 netcdf.putAtt(ncid,ySplineFloatID, 'units', 'm');
 netcdf.putAtt(ncid,zSplineFloatID, 'units', 'm');
@@ -213,6 +225,8 @@ netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'GMReferenceLevel', GMRefere
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'Model', 'Created from InternalWaveModel.m written by Jeffrey J. Early.');
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'ModelVersion', wavemodel.version);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'CreationDate', datestr(datetime('now')));
+
+netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'nFloatLevels', nLevels);
 
 % End definition mode
 netcdf.endDef(ncid);
@@ -243,17 +257,17 @@ for iTime=1:length(t)
     netcdf.putVar(ncid, setprecision(xFloatID), [0 iTime-1], [nFloats 1], p(:,1));
     netcdf.putVar(ncid, setprecision(yFloatID), [0 iTime-1], [nFloats 1], p(:,2));
     netcdf.putVar(ncid, setprecision(zFloatID), [0 iTime-1], [nFloats 1], p(:,3));
-    netcdf.putVar(ncid, setprecision(zetaFloatID), [0 iTime-1], [nFloats 1], wavemodel.ZetaAtTimePosition(t(iTime),p(:,1),p(:,2),p(:,3)));
+    netcdf.putVar(ncid, setprecision(densityFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,1),p(:,2),p(:,3))-wavemodel.rho0);
     
     netcdf.putVar(ncid, setprecision(xLinearFloatID), [0 iTime-1], [nFloats 1], p(:,4));
     netcdf.putVar(ncid, setprecision(yLinearFloatID), [0 iTime-1], [nFloats 1], p(:,5));
     netcdf.putVar(ncid, setprecision(zLinearFloatID), [0 iTime-1], [nFloats 1], p(:,6));
-    netcdf.putVar(ncid, setprecision(zetaLinearFloatID), [0 iTime-1], [nFloats 1], wavemodel.ZetaAtTimePosition(t(iTime),p(:,4),p(:,5),p(:,6)));
+    netcdf.putVar(ncid, setprecision(densityLinearFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,4),p(:,5),p(:,6))-wavemodel.rho0);
     
     netcdf.putVar(ncid, setprecision(xSplineFloatID), [0 iTime-1], [nFloats 1], p(:,7));
     netcdf.putVar(ncid, setprecision(ySplineFloatID), [0 iTime-1], [nFloats 1], p(:,8));
     netcdf.putVar(ncid, setprecision(zSplineFloatID), [0 iTime-1], [nFloats 1], p(:,9));
-    netcdf.putVar(ncid, setprecision(zetaSplineFloatID), [0 iTime-1], [nFloats 1], wavemodel.ZetaAtTimePosition(t(iTime),p(:,7),p(:,8),p(:,9)));
+    netcdf.putVar(ncid, setprecision(densitySplineFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,7),p(:,8),p(:,9))-wavemodel.rho0);
 end
 fprintf('Ending numerical simulation on %s\n', datestr(datetime('now')));
 
