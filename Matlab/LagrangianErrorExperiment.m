@@ -14,7 +14,7 @@
 % May 2nd, 2017      Version 1.0
 
 N = 16;
-aspectRatio = 8;
+aspectRatio = 1;
 
 L = 15e3;
 Lx = aspectRatio*L;
@@ -30,12 +30,12 @@ N0 = 5.2e-3; % Choose your stratification
 GMReferenceLevel = 1.0;
 
 outputInterval = 15*60;
-maxTime = 86400/4;
+maxTime = 86400;
 
-outputfolder = '/Volumes/OceanTransfer';
-% outputfolder = '/Users/jearly/Desktop';
+% outputfolder = '/Volumes/OceanTransfer';
+outputfolder = '/Users/jearly/Desktop';
 
-precision = 'single';
+precision = 'double';
 
 if strcmp(precision,'single')
     ncPrecision = 'NC_FLOAT';
@@ -53,7 +53,7 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-shouldUseGMSpectrum = 1;
+shouldUseGMSpectrum = 0;
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
@@ -73,7 +73,7 @@ if shouldUseGMSpectrum == 1
     U = max(max(max( sqrt(u.*u + v.*v) )));
 else
     j0 = 1; % j=1..nModes, where 1 indicates the 1st baroclinic mode
-    U = 0.1; % m/s
+    U = 0.025; % m/s
     sign = 1;
     phi = 0;
     k0 = 2;
@@ -82,7 +82,7 @@ else
     k = 2*pi*sqrt(k0^2 + l0^2)/Lx;
     
     period = wavemodel.InitializeWithPlaneWave(k0,l0,j0,U,sign);
-    maxTime = period;
+%     maxTime = period;
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -112,7 +112,7 @@ z_isopycnal = z_float + isopycnalDeviation;
 % Iteratively place floats on the isopycnal surface. Overkill, probably.
 for zLevel = 1:nLevels
     zLevelIndices = (zLevel-1)*N*N + (1:(N*N));
-    for i=1:5
+    for i=1:15
         rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices));
         dRho = rho - mean(rho);
         dz = dRho * 9.81/(N0*N0*wavemodel.rho0);

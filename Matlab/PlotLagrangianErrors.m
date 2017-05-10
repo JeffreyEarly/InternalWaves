@@ -4,6 +4,8 @@ file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-05T130219_128x16
 file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-05T131106_128x16x65.nc';
 file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-08T143435_128x16x17.nc';
 file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-08T151314_128x16x17.nc';
+file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-08T193423_16x16x17.nc';
+file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-08T195011_16x16x17.nc';
 
 t = ncread(file, 't');
 
@@ -31,7 +33,7 @@ ySpline = ncread(file, 'y-position-spline');
 zSpline = ncread(file, 'z-position-spline');
 rhoSpline = ncread(file, 'density-spline');
 
-floatsPerLevel = length(x)/nFloatLevels;
+floatsPerLevel = size(x,1)/nFloatLevels;
 dz = zeros(size(z));
 dzLinear = zeros(size(z));
 dzSpline = zeros(size(z));
