@@ -1,11 +1,5 @@
 
-file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-05T113306_128x16x33.nc';
-file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-05T130219_128x16x17.nc';
-file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-05T131106_128x16x65.nc';
-file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-08T143435_128x16x17.nc';
-file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-08T151314_128x16x17.nc';
-file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-08T193423_16x16x17.nc';
-file = '/Users/jearly/Desktop/LagrangianErrorExperiment_2017-05-08T195011_16x16x17.nc';
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-10T144505_128x16x33.nc';
 
 t = ncread(file, 't');
 
@@ -37,13 +31,37 @@ floatsPerLevel = size(x,1)/nFloatLevels;
 dz = zeros(size(z));
 dzLinear = zeros(size(z));
 dzSpline = zeros(size(z));
+xSplineInterpDiffusivity = zeros(length(t),nFloatLevels);
+ySplineInterpDiffusivity = zeros(length(t),nFloatLevels);
+zSplineInterpDiffusivity = zeros(length(t),nFloatLevels);
+zIsoSplineInterpDiffusivity = zeros(length(t),nFloatLevels);
+zIsoLinearInterpDiffusivity = zeros(length(t),nFloatLevels);
+kappa_z = zeros(length(t),nFloatLevels);
 for zLevel=1:nFloatLevels
     zLevelIndices = (zLevel-1)*floatsPerLevel + (1:floatsPerLevel);
     initialRho = mean(rho(zLevelIndices,1));
+    
+    % Distance from the initial isopycnal.
     dz(zLevelIndices,:) = dz_drho * (rho(zLevelIndices,:)-initialRho);
     dzLinear(zLevelIndices,:) = dz_drho * (rhoLinear(zLevelIndices,:)-initialRho);
     dzSpline(zLevelIndices,:) = dz_drho * (rhoSpline(zLevelIndices,:)-initialRho);
+    
+    % Diffusivity associated with the interpolation method, at each level
+    zIsoLinearInterpDiffusivity(:,zLevel) = mean((dzLinear(zLevelIndices,:)-dz(zLevelIndices,:)).^2,1)'./t;
+    
+    xSplineInterpDiffusivity(:,zLevel) = mean((xSpline(zLevelIndices,:)-x(zLevelIndices,:)).^2,1)'./t;
+    ySplineInterpDiffusivity(:,zLevel) = mean((ySpline(zLevelIndices,:)-y(zLevelIndices,:)).^2,1)'./t;
+    zSplineInterpDiffusivity(:,zLevel) = mean((zSpline(zLevelIndices,:)-z(zLevelIndices,:)).^2,1)'./t;
+    zIsoSplineInterpDiffusivity(:,zLevel) = mean((dzSpline(zLevelIndices,:)-dz(zLevelIndices,:)).^2,1)'./t;
+    
+    % Physical diffusivity at each level
+    kappa_z(:,zLevel) = (mean(dz(zLevelIndices,:).^2,1)'./t)/2;
+    
 end
+
+kappa_h_interp = (xSplineInterpDiffusivity + ySplineInterpDiffusivity)/4;
+kappa_z_interp = zIsoSplineInterpDiffusivity/2;
+kappa_z_interp_linear = zIsoLinearInterpDiffusivity/2;
 
 % z_plane  = (z(101:200,:))';
 % zeta_plane = (zeta(101:200,:))';
@@ -60,23 +78,15 @@ end
 % plot( x(drifterIndices,:), y(drifterIndices,:) ), hold on
 % plot( xSpline(drifterIndices,:), ySpline(drifterIndices,:) )
 
+figure
+plot(t,kappa_z,'--'), ylog, hold on
+plot(t,kappa_z_interp)
+plot(t,kappa_z_interp_linear)
+title(sprintf('%dx%dx%d',Nx,Ny,Nz))
+xlabel('time (s)')
+ylabel('diffusivity (m^2/s)')
 
-xSplineDiffusion = mean((xSpline-x).^2,1)'./t;
-ySplineDiffusion = mean((ySpline-y).^2,1)'./t;
-zSplineDiffusion = mean((zSpline(101:300,:)-z(101:300,:)).^2,1)'./t;
-zIsoSplineDiffusion = mean((dz(101:300,:)-dzSpline(101:300,:)).^2,1)'./t;
-zDiffusion = mean(dz(101:300,:).^2,1)'./t;
-
-kappa_h = (xSplineDiffusion + xSplineDiffusion)/4;
-kappa_z = zIsoSplineDiffusion/2;
-kappa_z_abs = zDiffusion/2;
-
-kappa_z0000 = mean((dzSpline(1:100,:)-dz(1:100,:)).^2,1)'./t;
-kappa_z1250 = mean((dzSpline(101:200,:)-dz(101:200,:)).^2,1)'./t;
-kappa_z2500 = mean((dzSpline(201:300,:)-dz(201:300,:)).^2,1)'./t;
-
-kappa_z1250_abs = mean(dz(101:200,:).^2,1)'./t;
-kappa_z2500_abs = mean(dz(201:300,:).^2,1)'./t;
+return
 
 figure
 subplot(1,2,1)

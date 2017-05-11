@@ -14,7 +14,7 @@
 % May 2nd, 2017      Version 1.0
 
 N = 16;
-aspectRatio = 1;
+aspectRatio = 8;
 
 L = 15e3;
 Lx = aspectRatio*L;
@@ -23,7 +23,7 @@ Lz = 5000;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = 1*N+1; % Must include end point to advect at the surface, so use 2^N + 1
+Nz = 2*N+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
@@ -32,8 +32,8 @@ GMReferenceLevel = 1.0;
 outputInterval = 15*60;
 maxTime = 86400;
 
-% outputfolder = '/Volumes/OceanTransfer';
-outputfolder = '/Users/jearly/Desktop';
+outputfolder = '/Volumes/OceanTransfer';
+% outputfolder = '/Users/jearly/Desktop';
 
 precision = 'double';
 
@@ -53,7 +53,7 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-shouldUseGMSpectrum = 0;
+shouldUseGMSpectrum = 1;
 
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
@@ -93,11 +93,11 @@ end
 
 dx = wavemodel.x(2)-wavemodel.x(1);
 dy = wavemodel.y(2)-wavemodel.y(1);
-N = 10;
+N = 5;
 nLevels = 3;
 x_float = (1:N)*dx;
 y_float = (1:N)*dy;
-z_float = (0:nLevels-1)*(-Lz/4);
+z_float = (0:nLevels-1)*(-Lz/(2*(nLevels-1)));
 
 [x_float,y_float,z_float] = ndgrid(x_float,y_float,z_float);
 x_float = reshape(x_float,[],1);
@@ -241,9 +241,10 @@ netcdf.putVar(ncid, setprecision(zVarID), wavemodel.z);
 % Run the model, and write the output to NetCDF
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+integrator = IntegratorWithDiffusivity( f, p0, deltaT, kappa_vector, ymin, ymax);
 startTime = datetime('now');
 fprintf('Starting numerical simulation on %s\n', datestr(startTime));
-integrator = IntegratorWithDiffusivity( f, p0, deltaT, kappa_vector, ymin, ymax);
 for iTime=1:length(t)
     if iTime == 2 || mod(iTime,10) == 0
         timePerStep = (datetime('now')-startTime)/(iTime-1);
