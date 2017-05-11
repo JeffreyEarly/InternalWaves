@@ -23,7 +23,7 @@ Lz = 5000;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = 2*N+1; % Must include end point to advect at the surface, so use 2^N + 1
+Nz = 4*N+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
