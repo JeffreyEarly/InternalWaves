@@ -27,9 +27,9 @@ latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
 GMReferenceLevel = 1.0;
 
-kappa = 5e-6;
+kappa = 0*5e-6;
 outputInterval = 15*60;
-maxTime = 86400/4;
+maxTime = 2*86400;
 interpolationMethod = 'spline';
 
 outputfolder = '/Volumes/OceanTransfer';
@@ -154,7 +154,7 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-filepath = sprintf('%s/InternalWaveModel_%s_%dx%dx%d.nc', outputfolder,datestr(datetime('now'),'yyyy-mm-ddTHHMMSS'),Nx,Ny,Nz);
+filepath = sprintf('%s/DiffusivityExperiment_%s_%dx%dx%d.nc', outputfolder,datestr(datetime('now'),'yyyy-mm-ddTHHMMSS'),Nx,Ny,Nz);
 
 % Apple uses 1e9 bytes as 1 GB (not the usual multiples of 2 definition)
 totalFields = 4;
@@ -245,6 +245,7 @@ netcdf.putVar(ncid, setprecision(zVarID), wavemodel.z);
 startTime = datetime('now');
 fprintf('Starting numerical simulation on %s\n', datestr(startTime));
 integrator = IntegratorWithDiffusivity( f, p0, deltaT, kappa_vector, ymin, ymax);
+% profile on
 for iTime=1:length(t)
     if iTime == 2
        startTime = datetime('now'); 
@@ -281,6 +282,7 @@ for iTime=1:length(t)
 
 
 end
+% profile viewer
 fprintf('Ending numerical simulation on %s\n', datestr(datetime('now')));
 
 netcdf.close(ncid);	
