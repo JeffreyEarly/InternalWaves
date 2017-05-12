@@ -11,7 +11,7 @@
 %
 % April 12th, 2017      Version 1.0
 
-N = 32;
+N = 16;
 aspectRatio = 8;
 
 L = 10e3;
@@ -27,9 +27,9 @@ latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
 GMReferenceLevel = 1.0;
 
-kappa = 0*5e-6;
+kappa = 5e-6;
 outputInterval = 15*60;
-maxTime = 2*86400;
+maxTime = 1*86400;
 interpolationMethod = 'spline';
 
 outputfolder = '/Volumes/OceanTransfer';
@@ -143,7 +143,7 @@ end
 deltaT = outputInterval/ceil(outputInterval/deltaT);
 fprintf('Rounding to match the output interval dt: %.2f\n',deltaT);
 
-t = (0:deltaT:maxTime)';
+t = (0:outputInterval:maxTime)';
 if t(end) < period
     t(end+1) = period;
 end
@@ -161,7 +161,9 @@ totalFields = 4;
 totalSize = totalFields*bytePerFloat*length(t)*(wavemodel.Nx)*(wavemodel.Ny)*(wavemodel.Nz)/1e9;
 fprintf('Writing output file to %s\nExpected file size is %.2f GB.\n',filepath,totalSize);
 
-ncid = netcdf.create(filepath, 'CLOBBER');
+cmode = netcdf.getConstant('CLOBBER');
+cmode = bitor(cmode,netcdf.getConstant('SHARE'));
+ncid = netcdf.create(filepath, cmode);
 
 % Define the dimensions
 xDimID = netcdf.defDim(ncid, 'x', wavemodel.Nx);
