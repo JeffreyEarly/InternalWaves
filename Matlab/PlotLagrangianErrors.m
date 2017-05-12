@@ -2,6 +2,7 @@
 % file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-09T224927_256x32x65.nc';
 file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-10T144505_128x16x33.nc';
 file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-11T103240_128x16x65.nc';
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-11T142927_256x32x129.nc';
 
 t = ncread(file, 't');
 
@@ -87,6 +88,7 @@ for zLevel=1:nFloatLevels
     [minD, maxD] = SecondMomentMatrix( x(zLevelIndices,:)', y(zLevelIndices,:)','eigen');
     D2 = (minD + maxD)/2 - (minD(1)+maxD(1))/2;
     kappa_h(:,zLevel) = 0.5 * D2./t;
+    [Mxx, Myy] = SecondMomentMatrix( z(zLevelIndices,:)', zeros(size(z(zLevelIndices,:)')) );
 end
 
 kappa_h_interp = (xSplineInterpDiffusivity + ySplineInterpDiffusivity)/4;
@@ -120,11 +122,13 @@ title(sprintf('%dx%dx%d',Nx,Ny,Nz))
 xlabel('time (s)')
 ylabel('diffusivity (m^2/s)')
 
-return
 
 figure
-plot(t,kappa_h_interp), ylog, hold on
+plot(t,kappa_h,'k','LineWidth',2), hold on
+plot(t,kappa_h_interp), ylog
 plot(t,kappa_h_interp_linear)
+
+return
 
 % figure
 % zLevel = nFloatLevels;

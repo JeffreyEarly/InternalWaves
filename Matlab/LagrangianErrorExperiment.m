@@ -13,7 +13,7 @@
 %
 % May 2nd, 2017      Version 1.0
 
-N = 16;
+N = 32;
 aspectRatio = 8;
 
 L = 15e3;
@@ -30,7 +30,7 @@ N0 = 5.2e-3; % Choose your stratification
 GMReferenceLevel = 1.0;
 
 outputInterval = 15*60;
-maxTime = 86400;
+maxTime = 86400/8;
 
 outputfolder = '/Volumes/OceanTransfer';
 % outputfolder = '/Users/jearly/Desktop';
@@ -94,10 +94,11 @@ end
 dx = wavemodel.x(2)-wavemodel.x(1);
 dy = wavemodel.y(2)-wavemodel.y(1);
 N = 5;
-nLevels = 3;
+nLevels = 1;
 x_float = (1:N)*dx;
 y_float = (1:N)*dy;
-z_float = (0:nLevels-1)*(-Lz/(2*(nLevels-1)));
+% z_float = (0:nLevels-1)*(-Lz/(2*(nLevels-1)));
+z_float = -Lz/2;
 
 [x_float,y_float,z_float] = ndgrid(x_float,y_float,z_float);
 x_float = reshape(x_float,[],1);
@@ -106,20 +107,20 @@ z_float = reshape(z_float,[],1);
 nFloats = numel(x_float);
 
 % Now let's place the floats along an isopycnal.
-isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
+isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float, 'exact');
 z_isopycnal = z_float + isopycnalDeviation;
 
 % Iteratively place floats on the isopycnal surface. Overkill, probably.
 for zLevel = 1:nLevels
     zLevelIndices = (zLevel-1)*N*N + (1:(N*N));
     for i=1:15
-        rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices));
+        rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices), 'exact');
         dRho = rho - mean(rho);
         dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
         z_isopycnal(zLevelIndices) = z_isopycnal(zLevelIndices)+dz;
     end
     
-    rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices));
+    rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices), 'exact');
     dRho = rho - mean(rho);
     dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
     fprintf('All floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),z_float((zLevel-1)*N*N+1))
@@ -246,8 +247,11 @@ integrator = IntegratorWithDiffusivity( f, p0, deltaT, kappa_vector, ymin, ymax)
 startTime = datetime('now');
 fprintf('Starting numerical simulation on %s\n', datestr(startTime));
 for iTime=1:length(t)
-    if iTime == 2 || mod(iTime,10) == 0
-        timePerStep = (datetime('now')-startTime)/(iTime-1);
+    if iTime == 2
+       startTime = datetime('now'); 
+    end
+    if iTime == 3 || mod(iTime,10) == 0
+        timePerStep = (datetime('now')-startTime)/(iTime-2);
         timeRemaining = (length(t)-iTime+1)*timePerStep;   
         fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
@@ -258,17 +262,17 @@ for iTime=1:length(t)
     netcdf.putVar(ncid, setprecision(xFloatID), [0 iTime-1], [nFloats 1], p(:,1));
     netcdf.putVar(ncid, setprecision(yFloatID), [0 iTime-1], [nFloats 1], p(:,2));
     netcdf.putVar(ncid, setprecision(zFloatID), [0 iTime-1], [nFloats 1], p(:,3));
-    netcdf.putVar(ncid, setprecision(densityFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,1),p(:,2),p(:,3))-wavemodel.rho0);
+    netcdf.putVar(ncid, setprecision(densityFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,1),p(:,2),p(:,3))-wavemodel.rho0, 'exact');
     
     netcdf.putVar(ncid, setprecision(xLinearFloatID), [0 iTime-1], [nFloats 1], p(:,4));
     netcdf.putVar(ncid, setprecision(yLinearFloatID), [0 iTime-1], [nFloats 1], p(:,5));
     netcdf.putVar(ncid, setprecision(zLinearFloatID), [0 iTime-1], [nFloats 1], p(:,6));
-    netcdf.putVar(ncid, setprecision(densityLinearFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,4),p(:,5),p(:,6))-wavemodel.rho0);
+    netcdf.putVar(ncid, setprecision(densityLinearFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,4),p(:,5),p(:,6))-wavemodel.rho0, 'exact');
     
     netcdf.putVar(ncid, setprecision(xSplineFloatID), [0 iTime-1], [nFloats 1], p(:,7));
     netcdf.putVar(ncid, setprecision(ySplineFloatID), [0 iTime-1], [nFloats 1], p(:,8));
     netcdf.putVar(ncid, setprecision(zSplineFloatID), [0 iTime-1], [nFloats 1], p(:,9));
-    netcdf.putVar(ncid, setprecision(densitySplineFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,7),p(:,8),p(:,9))-wavemodel.rho0);
+    netcdf.putVar(ncid, setprecision(densitySplineFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,7),p(:,8),p(:,9))-wavemodel.rho0, 'exact');
 end
 fprintf('Ending numerical simulation on %s\n', datestr(datetime('now')));
 

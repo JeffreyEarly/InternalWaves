@@ -11,17 +11,17 @@
 %
 % April 12th, 2017      Version 1.0
 
-N = 64;
+N = 32;
 aspectRatio = 8;
 
-L = 15e3;
+L = 10e3;
 Lx = aspectRatio*L;
 Ly = L;
 Lz = 5000;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = (N/2)+1; % Must include end point to advect at the surface, so use 2^N + 1
+Nz = 2*N+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
@@ -30,6 +30,7 @@ GMReferenceLevel = 1.0;
 kappa = 5e-6;
 outputInterval = 15*60;
 maxTime = 86400/4;
+interpolationMethod = 'spline';
 
 outputfolder = '/Volumes/OceanTransfer';
 
@@ -57,7 +58,7 @@ wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], 
 
 if shouldUseGMSpectrum == 1
     wavemodel.FillOutWaveSpectrum();
-    wavemodel.InitializeWithGMSpectrum(GMReferenceLevel);
+    wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
     wavemodel.ShowDiagnostics();
     period = 2*pi/wavemodel.N0;
     [u,v] = wavemodel.VelocityFieldAtTime(0.0);
@@ -84,10 +85,10 @@ end
 
 dx = wavemodel.x(2)-wavemodel.x(1);
 dy = wavemodel.y(2)-wavemodel.y(1);
-N = 10;
-x_float = (1:N)*dx;
-y_float = (1:N)*dy;
-z_float = (0:2)*(-Lz/4);
+nLevels = 5;
+x_float = (0:N-1)*dx;
+y_float = (0:N-1)*dy;
+z_float = (0:nLevels-1)*(-Lz/(2*(nLevels-1)));
 
 [x_float,y_float,z_float] = ndgrid(x_float,y_float,z_float);
 x_float = reshape(x_float,[],1);
@@ -96,16 +97,31 @@ z_float = reshape(z_float,[],1);
 nFloats = numel(x_float);
 
 % Now let's place the floats along an isopycnal.
-[w,zeta] = wavemodel.VerticalFieldsAtTime(0);
-isopycnalDeviation = interpn(wavemodel.X,wavemodel.Y,wavemodel.Z,zeta,x_float,y_float,z_float,'spline');
+isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float,interpolationMethod);
 z_isopycnal = z_float + isopycnalDeviation;
+
+% Iteratively place floats on the isopycnal surface. Overkill, probably.
+for zLevel = 1:nLevels
+    zLevelIndices = (zLevel-1)*N*N + (1:(N*N));
+    for i=1:15
+        rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices),interpolationMethod);
+        dRho = rho - mean(rho);
+        dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
+        z_isopycnal(zLevelIndices) = z_isopycnal(zLevelIndices)+dz;
+    end
+    
+    rho = wavemodel.DensityAtTimePosition(0,x_float(zLevelIndices),y_float(zLevelIndices),z_isopycnal(zLevelIndices));
+    dRho = rho - mean(rho);
+    dz = dRho * 9.81/(N0*N0*wavemodel.rho0);
+    fprintf('All floats are within %.2g meters of the isopycnal at z=%.1f meters\n',max(abs(dz)),z_float((zLevel-1)*N*N+1))
+end
 
 ymin = [-Inf -Inf -Lz -Inf -Inf -Lz -Inf -Inf];
 ymax = [Inf Inf 0 Inf Inf 0 Inf Inf];
 kappa_vector = [0 0 0 kappa kappa kappa 0 0];
 p0 = cat(2, x_float, y_float, z_isopycnal, x_float, y_float, z_isopycnal, x_float, y_float);
 
-f = @(t,y) FluxForFloatDiffusiveDrifter(t,y,z_float,wavemodel, 'exact');
+f = @(t,y) FluxForFloatDiffusiveDrifter(t,y,z_float,wavemodel, interpolationMethod);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
@@ -178,6 +194,7 @@ floatDimID = netcdf.defDim(ncid, 'float_id', nFloats);
 xFloatID = netcdf.defVar(ncid, 'x-position', ncPrecision, [floatDimID,tDimID]);
 yFloatID = netcdf.defVar(ncid, 'y-position', ncPrecision, [floatDimID,tDimID]);
 zFloatID = netcdf.defVar(ncid, 'z-position', ncPrecision, [floatDimID,tDimID]);
+densityFloatID = netcdf.defVar(ncid, 'density', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xFloatID, 'units', 'm');
 netcdf.putAtt(ncid,yFloatID, 'units', 'm');
 netcdf.putAtt(ncid,zFloatID, 'units', 'm');
@@ -186,6 +203,7 @@ netcdf.putAtt(ncid,zFloatID, 'units', 'm');
 xDiffusiveFloatID = netcdf.defVar(ncid, 'x-position-diffusive', ncPrecision, [floatDimID,tDimID]);
 yDiffusiveFloatID = netcdf.defVar(ncid, 'y-position-diffusive', ncPrecision, [floatDimID,tDimID]);
 zDiffusiveFloatID = netcdf.defVar(ncid, 'z-position-diffusive', ncPrecision, [floatDimID,tDimID]);
+densityDiffusiveFloatID = netcdf.defVar(ncid, 'density-diffusive', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xDiffusiveFloatID, 'units', 'm');
 netcdf.putAtt(ncid,yDiffusiveFloatID, 'units', 'm');
 netcdf.putAtt(ncid,zDiffusiveFloatID, 'units', 'm');
@@ -194,6 +212,7 @@ netcdf.putAtt(ncid,zDiffusiveFloatID, 'units', 'm');
 xDrifterID = netcdf.defVar(ncid, 'x-position-drifter', ncPrecision, [floatDimID,tDimID]);
 yDrifterID = netcdf.defVar(ncid, 'y-position-drifter', ncPrecision, [floatDimID,tDimID]);
 zDrifterID = netcdf.defVar(ncid, 'z-position-drifter', ncPrecision, [floatDimID,tDimID]);
+densityDrifterID = netcdf.defVar(ncid, 'density-drifter', ncPrecision, [floatDimID,tDimID]);
 netcdf.putAtt(ncid,xDrifterID, 'units', 'm');
 netcdf.putAtt(ncid,yDrifterID, 'units', 'm');
 netcdf.putAtt(ncid,zDrifterID, 'units', 'm');
@@ -205,6 +224,10 @@ netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'GMReferenceLevel', GMRefere
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'Model', 'Created from InternalWaveModel.m written by Jeffrey J. Early.');
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'ModelVersion', wavemodel.version);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'CreationDate', datestr(datetime('now')));
+
+netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'nFloatLevels', nLevels);
+netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'kappa', kappa);
+netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'interpolation-method', interpolationMethod);
 
 % End definition mode
 netcdf.endDef(ncid);
@@ -223,8 +246,11 @@ startTime = datetime('now');
 fprintf('Starting numerical simulation on %s\n', datestr(startTime));
 integrator = IntegratorWithDiffusivity( f, p0, deltaT, kappa_vector, ymin, ymax);
 for iTime=1:length(t)
-    if iTime == 2 || mod(iTime,10) == 0
-        timePerStep = (datetime('now')-startTime)/(iTime-1);
+    if iTime == 2
+       startTime = datetime('now'); 
+    end
+    if iTime == 3 || mod(iTime,10) == 0
+        timePerStep = (datetime('now')-startTime)/(iTime-2);
         timeRemaining = (length(t)-iTime+1)*timePerStep;   
         fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
@@ -241,15 +267,18 @@ for iTime=1:length(t)
     netcdf.putVar(ncid, setprecision(xFloatID), [0 iTime-1], [nFloats 1], p(:,1));
     netcdf.putVar(ncid, setprecision(yFloatID), [0 iTime-1], [nFloats 1], p(:,2));
     netcdf.putVar(ncid, setprecision(zFloatID), [0 iTime-1], [nFloats 1], p(:,3));
-    
+    netcdf.putVar(ncid, setprecision(densityFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,1),p(:,2),p(:,3))-wavemodel.rho0);
+
     netcdf.putVar(ncid, setprecision(xDiffusiveFloatID), [0 iTime-1], [nFloats 1], p(:,4));
     netcdf.putVar(ncid, setprecision(yDiffusiveFloatID), [0 iTime-1], [nFloats 1], p(:,5));
     netcdf.putVar(ncid, setprecision(zDiffusiveFloatID), [0 iTime-1], [nFloats 1], p(:,6));
-    
+    netcdf.putVar(ncid, setprecision(densityDiffusiveFloatID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,4),p(:,5),p(:,6))-wavemodel.rho0);
+
     netcdf.putVar(ncid, setprecision(xDrifterID), [0 iTime-1], [nFloats 1], p(:,7));
     netcdf.putVar(ncid, setprecision(yDrifterID), [0 iTime-1], [nFloats 1], p(:,8));
     netcdf.putVar(ncid, setprecision(zDrifterID), [0 iTime-1], [nFloats 1], z_float);
-    
+    netcdf.putVar(ncid, setprecision(densityDrifterID), [0 iTime-1], [nFloats 1], wavemodel.DensityAtTimePosition(t(iTime),p(:,7),p(:,8),z_float)-wavemodel.rho0);
+
 
 end
 fprintf('Ending numerical simulation on %s\n', datestr(datetime('now')));
