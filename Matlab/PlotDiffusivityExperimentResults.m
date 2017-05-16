@@ -18,7 +18,7 @@ file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T152917_64x64x65.
 
 % spline interpolation, waves only above k_cutoff = k_nyquist/4 -- 500km
 % domain, BUT, also includes inertial stuff.
-% file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T174254_64x64x65.nc';
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T174254_64x64x65.nc';
 
 t = ncread(file, 't');
 
@@ -74,7 +74,7 @@ for zLevel=1:nFloatLevels
     theZlabels{zLevel} = sprintf('%d meters (kappa=%.2g)',round(mean(z_float(1,:))),kappa_z(zLevel));
     
     thelabels{zLevel} = sprintf('%d meters',round(mean(z_float(1,:))));
-    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,1:round(length(tIndices)/2.0),'powspec');
+    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,1:round(length(tIndices)/1.0),'powspec');
     
 %     [ACx, DOFx] = Autocorrelation(x_float, length(dt)-1);
 %     [ACy, DOFy] = Autocorrelation(y_float, length(dt)-1);

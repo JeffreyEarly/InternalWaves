@@ -52,24 +52,33 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+nModels = 5;
+models = cell(nModels,1);
 
-wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
-wavemodel.ShowDiagnostics();
-period = 2*pi/wavemodel.N0;
-
-% Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
-% k = wavemodel.k;
-% k_nyquist = max(k)/4;
-% dk = k(2)-k(1);
-% indices = Kh < (k_nyquist - dk/2) | Kh > (k_nyquist + dk/2);
-% 
-% A_plus = wavemodel.Amp_plus;
-% A_minus = wavemodel.Amp_minus;
-% A_plus(indices) = 0;
-% A_minus(indices) = 0;
-% 
-% wavemodel.GenerateWavePhases(A_plus,A_minus);
+for iModel = 1:nModels
+    wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
+    
+    wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
+    wavemodel.ShowDiagnostics();
+    period = 2*pi/wavemodel.N0;
+    
+    Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
+    k = wavemodel.k;
+    k_nyquist = max(k);
+    k_cutoff = k_nyquist/4;
+    dk = k(2)-k(1);
+    k_cutoff = 4*dk;
+    indices = Kh < (k_cutoff - dk) | Kh > (k_cutoff + dk);
+    
+    A_plus = wavemodel.Amp_plus;
+    A_minus = wavemodel.Amp_minus;
+    A_plus(indices) = 0;
+    A_minus(indices) = 0;
+    
+    wavemodel.GenerateWavePhases(A_plus,A_minus);
+    
+    models{iModel} = wavemodel;
+end
 
 t = (0:outputInterval:maxTime)';
 
@@ -143,8 +152,16 @@ for iTime=1:length(t)
         timeRemaining = (length(t)-iTime+1)*timePerStep;
         fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
-    [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
-    w = wavemodel.VerticalFieldsAtTime(t(iTime));
+    
+    u = []; v= []; w = [];
+    for iModel = 1:nModels
+        wavemodel = models{iModel};
+        [u1,v1]=wavemodel.VelocityFieldAtTime(t(iTime));
+        w1 = wavemodel.VerticalFieldsAtTime(t(iTime));
+        u = u + u1;
+        v = v + v1;
+        w = w + w1;
+    end
     
     netcdf.putVar(ncid, setprecision(uVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], u);
     netcdf.putVar(ncid, setprecision(vVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], v);
