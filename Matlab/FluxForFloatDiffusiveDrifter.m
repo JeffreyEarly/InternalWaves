@@ -3,9 +3,13 @@
 % y_diff z_diff x_drifter y_drifter], and should therefore return [u v w u
 % v w u v].
 function flux = FluxForFloatDiffusiveDrifter(t,y,z_drifter,wavemodel,method)
-    [u_float,v_float,w_float] = wavemodel.VelocityAtTimePosition(t,y(:,1),y(:,2),y(:,3),method);
-    [u_diffusive_float,v_diffusive_float,w_diffusive_float] = wavemodel.VelocityAtTimePosition(t,y(:,4),y(:,5),y(:,6),method);
-    [u_drifter,v_drifter] = wavemodel.VelocityAtTimePosition(t,y(:,7),y(:,8),z_drifter,method);
+    nFloats = size(y,1);
+    floatIndices = 1:nFloats;
+    diffusiveFloatIndices = floatIndices + nFloats;
+    drifterIndices = diffusiveFloatIndices + nFloats;
     
-    flux = cat(2,u_float,v_float,w_float,u_diffusive_float,v_diffusive_float,w_diffusive_float,u_drifter,v_drifter);
+    [u,v] = wavemodel.VelocityAtTimePosition(t,cat(1,y(:,1),y(:,4),y(:,7)), cat(1,y(:,2),y(:,5),y(:,8)), cat(1,y(:,3),y(:,6),z_drifter), method);
+    w = wavemodel.VerticalVelocityAtTimePosition(t,cat(1,y(:,1),y(:,4)), cat(1,y(:,2),y(:,5)), cat(1,y(:,3),y(:,6)), method);
+    
+    flux = cat(2,u(floatIndices),v(floatIndices),w(floatIndices),u(diffusiveFloatIndices),v(diffusiveFloatIndices),w(diffusiveFloatIndices),u(drifterIndices),v(drifterIndices));
 end

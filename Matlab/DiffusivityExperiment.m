@@ -11,17 +11,17 @@
 %
 % April 12th, 2017      Version 1.0
 
-N = 16;
-aspectRatio = 8;
+N = 64;
+aspectRatio = 1;
 
-L = 10e3;
+L = 500e3;
 Lx = aspectRatio*L;
 Ly = L;
 Lz = 5000;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = 2*N+1; % Must include end point to advect at the surface, so use 2^N + 1
+Nz = N+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
@@ -29,8 +29,9 @@ GMReferenceLevel = 1.0;
 
 kappa = 5e-6;
 outputInterval = 15*60;
-maxTime = 1*86400;
+maxTime = 4.0*86400; %10*outputInterval;
 interpolationMethod = 'spline';
+shouldOutputEulerianFields = 0;
 
 outputfolder = '/Volumes/OceanTransfer';
 
@@ -59,10 +60,34 @@ wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], 
 if shouldUseGMSpectrum == 1
     wavemodel.FillOutWaveSpectrum();
     wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
+    wavemodel.SetExternalWavesWithFrequencies([],[],[],[],[],'energyDensity');
     wavemodel.ShowDiagnostics();
+    
+    Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
+    k = wavemodel.k;
+    k_nyquist = max(k);
+    k_cutoff = k_nyquist/4;
+    dk = k(2)-k(1);
+    indices = Kh < k_cutoff & Kh ~= 0;
+    
+    A_plus = wavemodel.Amp_plus;
+    A_minus = wavemodel.Amp_minus;
+    A_plus(indices) = 0;
+    A_minus(indices) = 0;
+    
+    wavemodel.GenerateWavePhases(A_plus,A_minus);
+    
+    maxPeriod = 2*pi/min(min(min(abs(wavemodel.Omega(~indices)))));
+    fprintf('Maximum wave period: T=%.2f minutes, maximum wave length: L=%.2f meters\n', maxPeriod/60, 2*pi/k_cutoff);
+    
     period = 2*pi/wavemodel.N0;
-    [u,v] = wavemodel.VelocityFieldAtTime(0.0);
-    U = max(max(max( sqrt(u.*u + v.*v) )));
+    if shouldOutputEulerianFields == 1
+        [u,v] = wavemodel.VelocityFieldAtTime(0.0);
+        U = max(max(max( sqrt(u.*u + v.*v) )));
+    else
+        U = 0.1;
+    end
+    fprintf('Max fluid velocity: %.2f cm/s\n',U*100);
 else
     j0 = 1; % j=1..nModes, where 1 indicates the 1st baroclinic mode
     U = 0.1; % m/s
@@ -86,6 +111,7 @@ end
 dx = wavemodel.x(2)-wavemodel.x(1);
 dy = wavemodel.y(2)-wavemodel.y(1);
 nLevels = 5;
+N = N/4;
 x_float = (0:N-1)*dx;
 y_float = (0:N-1)*dy;
 z_float = (0:nLevels-1)*(-Lz/(2*(nLevels-1)));
@@ -182,14 +208,16 @@ netcdf.putAtt(ncid,zVarID, 'units', 'm');
 netcdf.putAtt(ncid,tVarID, 'units', 's');
 
 % Define the dynamical variables
-uVarID = netcdf.defVar(ncid, 'u', ncPrecision, [xDimID,yDimID,zDimID,tDimID]);
-vVarID = netcdf.defVar(ncid, 'v', ncPrecision, [xDimID,yDimID,zDimID,tDimID]);
-wVarID = netcdf.defVar(ncid, 'w', ncPrecision, [xDimID,yDimID,zDimID,tDimID]);
-zetaVarID = netcdf.defVar(ncid, 'zeta', ncPrecision, [xDimID,yDimID,zDimID,tDimID]);
-netcdf.putAtt(ncid,uVarID, 'units', 'm/s');
-netcdf.putAtt(ncid,vVarID, 'units', 'm/s');
-netcdf.putAtt(ncid,wVarID, 'units', 'm/s');
-netcdf.putAtt(ncid,zetaVarID, 'units', 'm');
+if shouldOutputEulerianFields == 1
+    uVarID = netcdf.defVar(ncid, 'u', ncPrecision, [xDimID,yDimID,zDimID,tDimID]);
+    vVarID = netcdf.defVar(ncid, 'v', ncPrecision, [xDimID,yDimID,zDimID,tDimID]);
+    wVarID = netcdf.defVar(ncid, 'w', ncPrecision, [xDimID,yDimID,zDimID,tDimID]);
+    zetaVarID = netcdf.defVar(ncid, 'zeta', ncPrecision, [xDimID,yDimID,zDimID,tDimID]);
+    netcdf.putAtt(ncid,uVarID, 'units', 'm/s');
+    netcdf.putAtt(ncid,vVarID, 'units', 'm/s');
+    netcdf.putAtt(ncid,wVarID, 'units', 'm/s');
+    netcdf.putAtt(ncid,zetaVarID, 'units', 'm');
+end
 
 % Define the *float* dimensions
 floatDimID = netcdf.defDim(ncid, 'float_id', nFloats);
@@ -257,13 +285,16 @@ for iTime=1:length(t)
         timeRemaining = (length(t)-iTime+1)*timePerStep;   
         fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
-    [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
-    [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));
+
+    if shouldOutputEulerianFields == 1
+        [u,v]=wavemodel.VelocityFieldAtTime(t(iTime));
+        [w,zeta] = wavemodel.VerticalFieldsAtTime(t(iTime));
     
-    netcdf.putVar(ncid, setprecision(uVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], u);
-    netcdf.putVar(ncid, setprecision(vVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], v);
-    netcdf.putVar(ncid, setprecision(wVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], w);
-    netcdf.putVar(ncid, setprecision(zetaVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], zeta);
+        netcdf.putVar(ncid, setprecision(uVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], u);
+        netcdf.putVar(ncid, setprecision(vVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], v);
+        netcdf.putVar(ncid, setprecision(wVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], w);
+        netcdf.putVar(ncid, setprecision(zetaVarID), [0 0 0 iTime-1], [wavemodel.Nx wavemodel.Ny wavemodel.Nz 1], zeta);
+    end
     netcdf.putVar(ncid, setprecision(tVarID), iTime-1, 1, t(iTime));
     
     p = integrator.StepForwardToTime(t(iTime));

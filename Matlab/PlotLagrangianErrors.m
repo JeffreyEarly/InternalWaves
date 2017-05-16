@@ -2,7 +2,19 @@
 % file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-09T224927_256x32x65.nc';
 file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-10T144505_128x16x33.nc';
 file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-11T103240_128x16x65.nc';
-file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-11T142927_256x32x129.nc';
+
+% This file zeros everything outside of the k=nyquist/4 band
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-13T153340_64x64x65.nc';
+
+% This file zeros everything outside of the k=nyquist/2 band
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-14T165631_64x64x65.nc';
+
+% This file zeros everything outside of the k=3*nyquist/4 band
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-14T170830_64x64x65.nc';
+% Cubic spline does really well, largely matching even at 3/4th of nyquist.
+
+% This file zeros everything outside of the k=nyquist-2*dk band
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-14T172441_64x64x65.nc';
 
 t = ncread(file, 't');
 
