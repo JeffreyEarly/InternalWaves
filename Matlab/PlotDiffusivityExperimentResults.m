@@ -20,6 +20,19 @@ file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T152917_64x64x65.
 % domain, BUT, also includes inertial stuff.
 file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T174254_64x64x65.nc';
 
+% spline interpolation, waves only above k_cutoff = 4*dk -- 500km
+% domain, BUT, also includes inertial stuff.
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T140447_64x64x65.nc';
+
+% spline interpolation, no cutoff
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T162635_64x64x65.nc';
+
+% spline interpolation, no cutoff, 20000 km
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T195831_64x64x65.nc';
+
+% spline interpolation, no cutoff, 20000 km
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T223010_128x128x65.nc';
+
 t = ncread(file, 't');
 
 Nx = length(ncread(file, 'x'));

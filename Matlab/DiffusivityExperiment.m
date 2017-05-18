@@ -11,17 +11,17 @@
 %
 % April 12th, 2017      Version 1.0
 
-N = 64;
+N = 128;
 aspectRatio = 1;
 
-L = 500e3;
+L = 50e3;
 Lx = aspectRatio*L;
 Ly = L;
 Lz = 5000;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = N+1; % Must include end point to advect at the surface, so use 2^N + 1
+Nz = N/2+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
@@ -29,9 +29,9 @@ GMReferenceLevel = 1.0;
 
 kappa = 5e-6;
 outputInterval = 15*60;
-maxTime = 4.0*86400; %10*outputInterval;
+maxTime = 8.0*86400; %10*outputInterval;
 interpolationMethod = 'spline';
-shouldOutputEulerianFields = 0;
+shouldOutputEulerianFields = 1;
 
 outputfolder = '/Volumes/OceanTransfer';
 
@@ -60,14 +60,14 @@ wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], 
 if shouldUseGMSpectrum == 1
     wavemodel.FillOutWaveSpectrum();
     wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
-    wavemodel.SetExternalWavesWithFrequencies([],[],[],[],[],'energyDensity');
+%     wavemodel.SetExternalWavesWithFrequencies([],[],[],[],[],'energyDensity');
     wavemodel.ShowDiagnostics();
     
     Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
     k = wavemodel.k;
     k_nyquist = max(k);
-    k_cutoff = k_nyquist/4;
     dk = k(2)-k(1);
+    k_cutoff = 0*dk;
     indices = Kh < k_cutoff & Kh ~= 0;
     
     A_plus = wavemodel.Amp_plus;
@@ -78,7 +78,8 @@ if shouldUseGMSpectrum == 1
     wavemodel.GenerateWavePhases(A_plus,A_minus);
     
     maxPeriod = 2*pi/min(min(min(abs(wavemodel.Omega(~indices)))));
-    fprintf('Maximum wave period: T=%.2f minutes, maximum wave length: L=%.2f meters\n', maxPeriod/60, 2*pi/k_cutoff);
+    maxWavelength = 2*pi/min(min(min(Kh(~(Kh < k_cutoff)))));
+    fprintf('Maximum wave period: T=%.2f minutes, maximum wave length: L=%.2f meters\n', maxPeriod/60, maxWavelength);
     
     period = 2*pi/wavemodel.N0;
     if shouldOutputEulerianFields == 1
@@ -255,6 +256,7 @@ netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'Model', 'Created from Inter
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'ModelVersion', wavemodel.version);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'CreationDate', datestr(datetime('now')));
 
+netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'max-wavelength-in-spectrum', maxWavelength);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'nFloatLevels', nLevels);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'kappa', kappa);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'interpolation-method', interpolationMethod);

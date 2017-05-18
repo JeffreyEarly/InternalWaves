@@ -52,7 +52,7 @@ end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-nModels = 5;
+nModels = 1;
 models = cell(nModels,1);
 
 for iModel = 1:nModels
@@ -66,9 +66,13 @@ for iModel = 1:nModels
     k = wavemodel.k;
     k_nyquist = max(k);
     k_cutoff = k_nyquist/4;
+    indices = Kh < (k_cutoff - dk/2);
     dk = k(2)-k(1);
-    k_cutoff = 4*dk;
-    indices = Kh < (k_cutoff - dk) | Kh > (k_cutoff + dk);
+    k_cutoff = 1*dk;
+    indices = Kh < (k_cutoff - dk/2);
+    
+    maxWavelength = 2*pi/min(min(min(Kh(~indices))));
+    maxPeriod = 2*pi/min(min(min(abs(wavemodel.Omega(~indices)))));
     
     A_plus = wavemodel.Amp_plus;
     A_minus = wavemodel.Amp_minus;
@@ -126,6 +130,8 @@ netcdf.putAtt(ncid,wVarID, 'units', 'm/s');
 % Write some metadata
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'latitude', latitude);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'N0', N0);
+netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'max-wavelength-in-spectrum', maxWavelength);
+netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'max-period-in-spectrum', maxPeriod);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'GMReferenceLevel', GMReferenceLevel);
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'Model', 'Created from InternalWaveModel.m written by Jeffrey J. Early.');
 netcdf.putAtt(ncid,netcdf.getConstant('NC_GLOBAL'), 'ModelVersion', wavemodel.version);
@@ -153,7 +159,7 @@ for iTime=1:length(t)
         fprintf('\twriting values time step %d of %d to file. Estimated finish time %s (%s from now)\n', iTime, length(t), datestr(datetime('now')+timeRemaining), datestr(timeRemaining, 'HH:MM:SS')) ;
     end
     
-    u = []; v= []; w = [];
+    u = zeros(size(models{1}.X)); v= zeros(size(models{1}.X)); w = zeros(size(models{1}.X));
     for iModel = 1:nModels
         wavemodel = models{iModel};
         [u1,v1]=wavemodel.VelocityFieldAtTime(t(iTime));
