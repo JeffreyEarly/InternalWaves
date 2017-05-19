@@ -11,17 +11,17 @@
 %
 % April 12th, 2017      Version 1.0
 
-N = 128;
+N = 64;
 aspectRatio = 1;
 
 L = 50e3;
 Lx = aspectRatio*L;
 Ly = L;
-Lz = 5000;
+Lz = 1300;
 
 Nx = aspectRatio*N;
 Ny = N;
-Nz = N/2+1; % Must include end point to advect at the surface, so use 2^N + 1
+Nz = N+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
@@ -29,7 +29,7 @@ GMReferenceLevel = 1.0;
 
 kappa = 5e-6;
 outputInterval = 15*60;
-maxTime = 8.0*86400; %10*outputInterval;
+maxTime = 12.0*86400; %10*outputInterval;
 interpolationMethod = 'spline';
 shouldOutputEulerianFields = 1;
 
@@ -60,14 +60,14 @@ wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], 
 if shouldUseGMSpectrum == 1
     wavemodel.FillOutWaveSpectrum();
     wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
-%     wavemodel.SetExternalWavesWithFrequencies([],[],[],[],[],'energyDensity');
+    wavemodel.SetExternalWavesWithFrequencies([],[],[],[],[],'energyDensity');
     wavemodel.ShowDiagnostics();
     
     Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
     k = wavemodel.k;
     k_nyquist = max(k);
     dk = k(2)-k(1);
-    k_cutoff = 0*dk;
+    k_cutoff = 12*dk;
     indices = Kh < k_cutoff & Kh ~= 0;
     
     A_plus = wavemodel.Amp_plus;
@@ -112,10 +112,16 @@ end
 dx = wavemodel.x(2)-wavemodel.x(1);
 dy = wavemodel.y(2)-wavemodel.y(1);
 nLevels = 5;
-N = N/4;
+N = floor(N/3);
 x_float = (0:N-1)*dx;
 y_float = (0:N-1)*dy;
 z_float = (0:nLevels-1)*(-Lz/(2*(nLevels-1)));
+
+% nudge towards the center of the domain. This isn't necessary, but does
+% prevent the spline interpolation from having to worry about the
+% boundaries.
+x_float = x_float + (max(wavemodel.x) - max(x_float))/2;
+y_float = y_float + (max(wavemodel.y) - max(y_float))/2;
 
 [x_float,y_float,z_float] = ndgrid(x_float,y_float,z_float);
 x_float = reshape(x_float,[],1);

@@ -33,6 +33,13 @@ file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T195831_64x64x65.
 % spline interpolation, no cutoff, 20000 km
 file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T223010_128x128x65.nc';
 
+% 12*dk cutoff, more floats, 12 days, BUT, I forgot to remove external
+% waves.
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-18T220352_64x64x65.nc';
+
+% 12*dk cutoff, more floats, 12 days, no external waves, floats in center
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-19T065731_64x64x65.nc';
+
 t = ncread(file, 't');
 
 Nx = length(ncread(file, 'x'));
@@ -87,7 +94,7 @@ for zLevel=1:nFloatLevels
     theZlabels{zLevel} = sprintf('%d meters (kappa=%.2g)',round(mean(z_float(1,:))),kappa_z(zLevel));
     
     thelabels{zLevel} = sprintf('%d meters',round(mean(z_float(1,:))));
-    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,1:round(length(tIndices)/1.0),'powspec');
+    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,1:round(length(tIndices)/1.0),'slope');
     
 %     [ACx, DOFx] = Autocorrelation(x_float, length(dt)-1);
 %     [ACy, DOFy] = Autocorrelation(y_float, length(dt)-1);
