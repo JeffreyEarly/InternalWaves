@@ -17,6 +17,9 @@ file = '/Volumes/OceanTransfer/EulerianCorrelationExperiment_2017-05-17T111803_1
 % k=1*dk
 % file = '/Volumes/OceanTransfer/EulerianCorrelationExperiment_2017-05-17T113129_128x128x128.nc';
 
+
+file = '/Users/jearly/Desktop/DiffusivityExperiment_2017-05-19T092556_64x64x65.nc';
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %
 % Read in the problem dimensions and parameters
@@ -29,9 +32,10 @@ z = ncread(file, 'z');
 t = ncread(file, 't');
 
 maxWavelength = ncreadatt(file,'/','max-wavelength-in-spectrum');
-maxPeriod = ncreadatt(file,'/','max-period-in-spectrum');
+titlestring = sprintf('Largest wave, L=%.2f km',maxWavelength/1e3);
 
-titlestring = sprintf('Largest wave, L=%.2f km, T=%.1f min',maxWavelength/1e3, maxPeriod/60);
+% maxPeriod = ncreadatt(file,'/','max-period-in-spectrum');
+% titlestring = sprintf('Largest wave, L=%.2f km, T=%.1f min',maxWavelength/1e3, maxPeriod/60);
 
 depth_index = 1;
 

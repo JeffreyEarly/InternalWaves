@@ -55,6 +55,8 @@ file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T183551_64x64x65.
 % 50km domain, full wave spectrum
 file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-21T081340_128x128x129.nc';
 
+file = '/Users/jearly/Desktop/DiffusivityExperiment_2017-05-19T092556_64x64x65.nc';
+
 t = ncread(file, 't');
 
 Nx = length(ncread(file, 'x'));
@@ -84,7 +86,7 @@ rho = ncread(file, 'density');
 
 floatsPerLevel = size(x,1)/nFloatLevels;
 
-tIndices = (1:(length(t)-1));
+tIndices = (1:(length(t)-400));
 
 n = floatsPerLevel;
 r2 = zeros(n*(n-1)/2,nFloatLevels);
@@ -109,7 +111,7 @@ for zLevel=1:nFloatLevels
     theZlabels{zLevel} = sprintf('%d meters (kappa=%.2g)',round(mean(z_float(1,:))),kappa_z(zLevel));
     
     thelabels{zLevel} = sprintf('%d meters',round(mean(z_float(1,:))));
-    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,1:round(length(tIndices)/1.0),'powspec');
+    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,'powspec');
 %     [a, b] = PatchDiffusivity(t(tIndices),x_float,y_float,1,sqrt(floatsPerLevel));
 %     [r2(1:length(a),zLevel), kappa_r(1:length(a),zLevel)] = PatchDiffusivity(t(tIndices),x_float,y_float,1,sqrt(floatsPerLevel));
 %     
