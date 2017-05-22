@@ -16,6 +16,11 @@ file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-14T170830_64x64
 % This file zeros everything outside of the k=nyquist-2*dk band
 file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-14T172441_64x64x65.nc';
 
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-21T071709_64x64x65.nc';
+
+% full field
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-21T180815_64x64x65.nc';
+
 t = ncread(file, 't');
 
 Nx = length(ncread(file, 'x'));
@@ -140,7 +145,6 @@ plot(t,kappa_h,'k','LineWidth',2), hold on
 plot(t,kappa_h_interp), ylog
 plot(t,kappa_h_interp_linear)
 
-return
 
 % figure
 % zLevel = nFloatLevels;

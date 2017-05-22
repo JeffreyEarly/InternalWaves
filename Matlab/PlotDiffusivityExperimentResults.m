@@ -40,6 +40,21 @@ file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-18T220352_64x64x65.
 % 12*dk cutoff, more floats, 12 days, no external waves, floats in center
 file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-19T065731_64x64x65.nc';
 
+% same, but no inertial. Full depth, scaled 1.0 GM.
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T113257_64x64x65.nc';
+
+% same, but no inertial. Full depth, scaled 1.0 GM.
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T114155_64x64x129.nc';
+
+% same, but 20,000 km domain to try to get bigger diffusivities.
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T172346_64x64x65.nc';
+
+% small domain, 15km
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T183551_64x64x65.nc';
+
+% 50km domain, full wave spectrum
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-21T081340_128x128x129.nc';
+
 t = ncread(file, 't');
 
 Nx = length(ncread(file, 'x'));
@@ -57,10 +72,10 @@ y = ncread(file, 'y-position');
 z = ncread(file, 'z-position');
 rho = ncread(file, 'density');
 
-x = ncread(file, 'x-position-diffusive');
-y = ncread(file, 'y-position-diffusive');
-z = ncread(file, 'z-position-diffusive');
-rho = ncread(file, 'density-diffusive');
+% x = ncread(file, 'x-position-diffusive');
+% y = ncread(file, 'y-position-diffusive');
+% z = ncread(file, 'z-position-diffusive');
+% rho = ncread(file, 'density-diffusive');
 
 % x = ncread(file, 'x-position-drifter');
 % y = ncread(file, 'y-position-drifter');
@@ -94,8 +109,10 @@ for zLevel=1:nFloatLevels
     theZlabels{zLevel} = sprintf('%d meters (kappa=%.2g)',round(mean(z_float(1,:))),kappa_z(zLevel));
     
     thelabels{zLevel} = sprintf('%d meters',round(mean(z_float(1,:))));
-    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,1:round(length(tIndices)/1.0),'slope');
-    
+    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,1:round(length(tIndices)/1.0),'powspec');
+%     [a, b] = PatchDiffusivity(t(tIndices),x_float,y_float,1,sqrt(floatsPerLevel));
+%     [r2(1:length(a),zLevel), kappa_r(1:length(a),zLevel)] = PatchDiffusivity(t(tIndices),x_float,y_float,1,sqrt(floatsPerLevel));
+%     
 %     [ACx, DOFx] = Autocorrelation(x_float, length(dt)-1);
 %     [ACy, DOFy] = Autocorrelation(y_float, length(dt)-1);
 end
@@ -120,8 +137,8 @@ for zLevel=1:nFloatLevels
     b = kappa_r(:,zLevel);
     
     [N,edges,bin] = histcounts(a,theBins);
-    yMean = zeros(max(bin),1);
-    yStdErr = zeros(max(bin),1);
+    yMean = zeros(length(edges)-1,1);
+    yStdErr = zeros(length(edges)-1,1);
     for i=1:max(bin)
         yMean(i) = mean(b(bin==i));
         yStdErr(i) = std(b(bin==i))/sqrt(sum(bin==i));
@@ -135,6 +152,8 @@ legend(thelabels,'Location', 'northwest')
 xlabel('distance (m)')
 ylabel('diffusivity (m^2/s)')
 title('horizontal diffusivity at different depths')
+
+return
 
 subplot(2,1,2)
 for zLevel=1:nFloatLevels

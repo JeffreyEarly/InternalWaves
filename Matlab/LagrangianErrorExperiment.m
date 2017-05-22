@@ -16,7 +16,7 @@
 N = 64;
 aspectRatio = 1;
 
-L = 15e3;
+L = 50e3;
 Lx = aspectRatio*L;
 Ly = L;
 Lz = 5000;
@@ -27,7 +27,7 @@ Nz = N+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
-GMReferenceLevel = 1.0;
+GMReferenceLevel = 1.0 * Lz/1300;
 
 outputInterval = 15*60;
 maxTime = 86400/8;
@@ -67,18 +67,20 @@ if shouldUseGMSpectrum == 1
     %     Am(:,:,(N+1):end) = 0;
     %     wavemodel.GenerateWavePhases(Ap,Am);
     
-    Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
-    k = wavemodel.k;
-    k_nyquist = max(k) - 2*(k(2)-k(1));
-    dk = k(2)-k(1);
-    indices = Kh < (k_nyquist - dk/2) | Kh > (k_nyquist + dk/2);
-    
-    A_plus = wavemodel.Amp_plus;
-    A_minus = wavemodel.Amp_minus;
-    A_plus(indices) = 0;
-    A_minus(indices) = 0;
-    
-    wavemodel.GenerateWavePhases(A_plus,A_minus);
+%     Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
+%     k = wavemodel.k;
+%     k_nyquist = max(k) - 2*(k(2)-k(1));
+%     dk = k(2)-k(1);
+%     %     indices = Kh < (k_nyquist - dk/2) | Kh > (k_nyquist + dk/2);
+%     k_cutoff = 12*dk;
+%     indices = Kh < k_cutoff; % & Kh ~= 0;
+%     
+%     A_plus = wavemodel.Amp_plus;
+%     A_minus = wavemodel.Amp_minus;
+%     A_plus(indices) = 0;
+%     A_minus(indices) = 0;
+%     
+%     wavemodel.GenerateWavePhases(A_plus,A_minus);
     
     wavemodel.ShowDiagnostics();
     period = 2*pi/wavemodel.N0;

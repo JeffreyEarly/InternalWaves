@@ -11,13 +11,13 @@
 %
 % April 12th, 2017      Version 1.0
 
-N = 64;
+N = 128;
 aspectRatio = 1;
 
 L = 50e3;
 Lx = aspectRatio*L;
 Ly = L;
-Lz = 1300;
+Lz = 5000;
 
 Nx = aspectRatio*N;
 Ny = N;
@@ -25,7 +25,7 @@ Nz = N+1; % Must include end point to advect at the surface, so use 2^N + 1
 
 latitude = 31;
 N0 = 5.2e-3; % Choose your stratification
-GMReferenceLevel = 1.0;
+GMReferenceLevel = 1.0 * Lz/1300;
 
 kappa = 5e-6;
 outputInterval = 15*60;
@@ -60,26 +60,27 @@ wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], 
 if shouldUseGMSpectrum == 1
     wavemodel.FillOutWaveSpectrum();
     wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,1);
-    wavemodel.SetExternalWavesWithFrequencies([],[],[],[],[],'energyDensity');
     wavemodel.ShowDiagnostics();
     
-    Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
-    k = wavemodel.k;
-    k_nyquist = max(k);
-    dk = k(2)-k(1);
-    k_cutoff = 12*dk;
-    indices = Kh < k_cutoff & Kh ~= 0;
-    
-    A_plus = wavemodel.Amp_plus;
-    A_minus = wavemodel.Amp_minus;
-    A_plus(indices) = 0;
-    A_minus(indices) = 0;
-    
-    wavemodel.GenerateWavePhases(A_plus,A_minus);
-    
-    maxPeriod = 2*pi/min(min(min(abs(wavemodel.Omega(~indices)))));
-    maxWavelength = 2*pi/min(min(min(Kh(~(Kh < k_cutoff)))));
-    fprintf('Maximum wave period: T=%.2f minutes, maximum wave length: L=%.2f meters\n', maxPeriod/60, maxWavelength);
+%     wavemodel.SetExternalWavesWithFrequencies([],[],[],[],[],'energyDensity');
+%     
+%     Kh = sqrt(wavemodel.K.^2 + wavemodel.L.^2);
+%     k = wavemodel.k;
+%     k_nyquist = max(k);
+%     dk = k(2)-k(1);
+%     k_cutoff = 12*dk;
+%     indices = Kh < k_cutoff; % & Kh ~= 0;
+%     
+%     A_plus = wavemodel.Amp_plus;
+%     A_minus = wavemodel.Amp_minus;
+%     A_plus(indices) = 0;
+%     A_minus(indices) = 0;
+%     
+%     wavemodel.GenerateWavePhases(A_plus,A_minus);
+%     
+%     maxPeriod = 2*pi/min(min(min(abs(wavemodel.Omega(~indices)))));
+%     maxWavelength = 2*pi/min(min(min(Kh(~(Kh < k_cutoff)))));
+%     fprintf('Maximum wave period: T=%.2f minutes, maximum wave length: L=%.2f meters\n', maxPeriod/60, maxWavelength);
     
     period = 2*pi/wavemodel.N0;
     if shouldOutputEulerianFields == 1
