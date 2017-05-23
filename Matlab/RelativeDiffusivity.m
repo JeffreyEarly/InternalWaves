@@ -11,12 +11,22 @@ stride = 1;
 iteration = 1;
 for iDrifter=1:stride:nDrifters
     for jDrifter = (iDrifter+1):stride:nDrifters
-        q = abs(x(:,iDrifter) - x(:,jDrifter));
-        r = abs(y(:,iDrifter) - y(:,jDrifter));
+        %         q = abs(x(:,iDrifter) - x(:,jDrifter));
+        %         r = abs(y(:,iDrifter) - y(:,jDrifter));
+        
+        q = x(:,iDrifter) - x(:,jDrifter);
+        r = y(:,iDrifter) - y(:,jDrifter);
+        
+        % mean-squared-separation distance over the requested time-interval
+        r2(iteration) = mean(q.^2 + r.^2,1);
+        
+        % Now remove the initial conditions.
+        q = q-q(1);
+        r = r-r(1);
         
         % squared-separation distance as a function of time.
         D2 = q.^2 + r.^2;
-               
+        
         if strcmp(method,'endpoint')
             kappa_r(iteration) = (D2(end) - D2(1))/(4*(t(end) - t(1)));
         elseif strcmp(method,'slope')
@@ -39,8 +49,7 @@ for iDrifter=1:stride:nDrifters
             kappa_r(iteration) = u(end).*qc(end) + v(end).*rc(end);
         end
         
-        % mean-squared-separation distance over the requested time-interval
-        r2(iteration) = mean(D2,1);
+        
         
 %         [~,~,q,r] = CenterOfMass( x(:,[iDrifter jDrifter]), y(:,[iDrifter jDrifter]) );
         dt = t(2)-t(1);

@@ -88,6 +88,8 @@ floatsPerLevel = size(x,1)/nFloatLevels;
 
 tIndices = (1:(length(t)-400));
 
+diffusivityMethod = 'powspec';
+
 n = floatsPerLevel;
 r2 = zeros(n*(n-1)/2,nFloatLevels);
 kappa_r = zeros(n*(n-1)/2,nFloatLevels);
@@ -111,7 +113,7 @@ for zLevel=1:nFloatLevels
     theZlabels{zLevel} = sprintf('%d meters (kappa=%.2g)',round(mean(z_float(1,:))),kappa_z(zLevel));
     
     thelabels{zLevel} = sprintf('%d meters',round(mean(z_float(1,:))));
-    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,'powspec');
+    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,diffusivityMethod);
 %     [a, b] = PatchDiffusivity(t(tIndices),x_float,y_float,1,sqrt(floatsPerLevel));
 %     [r2(1:length(a),zLevel), kappa_r(1:length(a),zLevel)] = PatchDiffusivity(t(tIndices),x_float,y_float,1,sqrt(floatsPerLevel));
 %     
@@ -153,7 +155,7 @@ end
 legend(thelabels,'Location', 'northwest')
 xlabel('distance (m)')
 ylabel('diffusivity (m^2/s)')
-title('horizontal diffusivity at different depths')
+title(sprintf('horizontal diffusivity at different depths (%s method)',diffusivityMethod))
 
 return
 
