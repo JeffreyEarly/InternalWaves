@@ -1,61 +1,8 @@
-% spline interpolation, and no external waves.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T085819_64x64x65.nc';
-
-% spline interpolation, and no external waves--but this time by zeroing
-% after filling out the spectrum.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T094823_64x64x65.nc';
-
-% spline interpolation, waves only above k_cutoff = k_nyquist/4
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T103602_64x64x65.nc';
-
-% spline interpolation, waves only above k_cutoff = k_nyquist/4 -- 50km
-% domain
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T111359_64x64x65.nc';
-
-% spline interpolation, waves only above k_cutoff = k_nyquist/4 -- 50km
-% domain, BUT, also includes inertial stuff.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T152917_64x64x65.nc';
-
-% spline interpolation, waves only above k_cutoff = k_nyquist/4 -- 500km
-% domain, BUT, also includes inertial stuff.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-15T174254_64x64x65.nc';
-
-% spline interpolation, waves only above k_cutoff = 4*dk -- 500km
-% domain, BUT, also includes inertial stuff.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T140447_64x64x65.nc';
-
-% spline interpolation, no cutoff
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T162635_64x64x65.nc';
-
-% spline interpolation, no cutoff, 20000 km
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T195831_64x64x65.nc';
-
-% spline interpolation, no cutoff, 20000 km
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-17T223010_128x128x65.nc';
-
-% 12*dk cutoff, more floats, 12 days, BUT, I forgot to remove external
-% waves.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-18T220352_64x64x65.nc';
-
-% 12*dk cutoff, more floats, 12 days, no external waves, floats in center
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-19T065731_64x64x65.nc';
-
-% same, but no inertial. Full depth, scaled 1.0 GM.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T113257_64x64x65.nc';
-
-% same, but no inertial. Full depth, scaled 1.0 GM.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T114155_64x64x129.nc';
-
-% same, but 20,000 km domain to try to get bigger diffusivities.
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T172346_64x64x65.nc';
-
-% small domain, 15km
-file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-20T183551_64x64x65.nc';
-
 % 50km domain, full wave spectrum
 file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-21T081340_128x128x129.nc';
 
-file = '/Users/jearly/Desktop/DiffusivityExperiment_2017-05-19T092556_64x64x65.nc';
+% 500km domain, full wave spectrum
+file = '/Volumes/OceanTransfer/DiffusivityExperiment_2017-05-23T224848_128x128x129.nc';
 
 t = ncread(file, 't');
 
@@ -63,7 +10,7 @@ Nx = length(ncread(file, 'x'));
 Ny = length(ncread(file, 'y'));
 Nz = length(ncread(file, 'z'));
 
-nFloatLevels = ncreadatt(file, '/', 'nFloatLevels');
+nLevels = ncreadatt(file, '/', 'nFloatLevels');
 interpolationMethod = ncreadatt(file, '/', 'interpolation-method');
 N0 = ncreadatt(file, '/', 'N0');
 rho0 = 1025;
@@ -74,32 +21,35 @@ y = ncread(file, 'y-position');
 z = ncread(file, 'z-position');
 rho = ncread(file, 'density');
 
-% x = ncread(file, 'x-position-diffusive');
-% y = ncread(file, 'y-position-diffusive');
-% z = ncread(file, 'z-position-diffusive');
-% rho = ncread(file, 'density-diffusive');
+x = ncread(file, 'x-position-diffusive');
+y = ncread(file, 'y-position-diffusive');
+z = ncread(file, 'z-position-diffusive');
+rho = ncread(file, 'density-diffusive');
 
 % x = ncread(file, 'x-position-drifter');
 % y = ncread(file, 'y-position-drifter');
 % z = ncread(file, 'z-position-drifter');
 % rho = ncread(file, 'density-drifter');
 
-floatsPerLevel = size(x,1)/nFloatLevels;
+floatsPerLevel = size(x,1)/nLevels;
 
-tIndices = (1:(length(t)-400));
+tIndices = (1:(length(t)-1));
 
-diffusivityMethod = 'powspec';
+diffusivityMethod = 'endpoint';
 
 n = floatsPerLevel;
-r2 = zeros(n*(n-1)/2,nFloatLevels);
-kappa_r = zeros(n*(n-1)/2,nFloatLevels);
-kappa_r_corr = zeros(n*(n-1)/2,nFloatLevels);
-kappa_z = zeros(nFloatLevels,1);
-D2z = zeros(length(tIndices),nFloatLevels);
-theZlabels = cell(nFloatLevels,1);
-thelabels = cell(nFloatLevels,1);
-for zLevel=1:nFloatLevels
+r2 = cell(nLevels,1);
+kappa_r = cell(nLevels,1);
+kappa_r_corr = cell(nLevels,1);
+kappa_z = zeros(nLevels,1);
+D2z = zeros(length(tIndices),nLevels);
+theZlabels = cell(nLevels,1);
+thelabels = cell(nLevels,1);
+for zLevel=1:nLevels
     zLevelIndices = (zLevel-1)*floatsPerLevel + (1:floatsPerLevel);
+    zLevelIndices = reshape(zLevelIndices,round(sqrt(floatsPerLevel)),[]);
+    zLevelIndices = zLevelIndices(1:3:end,1:3:end);
+    zLevelIndices = reshape(zLevelIndices,1,[]);
     
     x_float = x(zLevelIndices,tIndices)';
     y_float = y(zLevelIndices,tIndices)';
@@ -113,7 +63,8 @@ for zLevel=1:nFloatLevels
     theZlabels{zLevel} = sprintf('%d meters (kappa=%.2g)',round(mean(z_float(1,:))),kappa_z(zLevel));
     
     thelabels{zLevel} = sprintf('%d meters',round(mean(z_float(1,:))));
-    [r2(:,zLevel), kappa_r(:,zLevel), kappa_r_corr(:,zLevel)] = RelativeDiffusivity(t(tIndices),x_float,y_float,diffusivityMethod);
+    [r2{zLevel}, kappa_r{zLevel}, kappa_r_corr{zLevel}] = RelativeDiffusivity(t(tIndices),x_float,y_float,diffusivityMethod);
+    
 %     [a, b] = PatchDiffusivity(t(tIndices),x_float,y_float,1,sqrt(floatsPerLevel));
 %     [r2(1:length(a),zLevel), kappa_r(1:length(a),zLevel)] = PatchDiffusivity(t(tIndices),x_float,y_float,1,sqrt(floatsPerLevel));
 %     
@@ -136,9 +87,9 @@ theBins = xGrid(1:sqrt(floatsPerLevel)+1) + (xGrid(2)-xGrid(1))/2;
 theBins(1) = 0;
 figure
 subplot(2,1,1)
-for zLevel=1:nFloatLevels
-    a = sqrt(r2(:,zLevel));
-    b = kappa_r(:,zLevel);
+for zLevel=1:nLevels
+    a = sqrt(r2{zLevel});
+    b = kappa_r{zLevel};
     
     [N,edges,bin] = histcounts(a,theBins);
     yMean = zeros(length(edges)-1,1);
@@ -161,8 +112,8 @@ return
 
 subplot(2,1,2)
 for zLevel=1:nFloatLevels
-    a = sqrt(r2(:,zLevel));
-    b = kappa_r_corr(:,zLevel);
+    a = sqrt(r2{zLevel});
+    b = kappa_r_corr{zLevel};
     
     [N,edges,bin] = histcounts(a,theBins);
     yMean = zeros(max(bin),1);
