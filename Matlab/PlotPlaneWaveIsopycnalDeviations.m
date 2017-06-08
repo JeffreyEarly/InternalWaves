@@ -1,5 +1,5 @@
 
-file = '/Volumes/OceanTransfer/PlaneWaveIsopycnalExperiment_2017-06-06T144721_16x16x17.nc';
+file = '/Volumes/OceanTransfer/PlaneWaveIsopycnalExperiment_2017-06-08T114746_64x64x65.nc';
 
 t = ncread(file, 't');
 
