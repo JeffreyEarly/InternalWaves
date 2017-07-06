@@ -2,6 +2,7 @@ model_dir = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEta
 
 eulerian_file = [model_dir 'input/SaveIC_EarlyIWmodel.nc'];
 lagrangian_dir = [model_dir 'output/lagrangian/'];
+floatsPerLevel = 100;
 
 % First we need to read Lx and Ly from the Eulerian files, in order to
 % unwrap the Lagrangian trajectories, so that they don't jump across the
@@ -27,5 +28,6 @@ for iFile = 1:length(UniqueParticleFiles)
     end
 end
 
-
-dx = round(diff(x,2)/Lx);
+outputfile = [lagrangian_dir 'particles.mat'];
+outputfile = '/Users/jearly/Documents/ProjectRepositories/InternalWaves/Matlab/WintersModel/particles.mat';
+save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
