@@ -16,12 +16,13 @@ for i = 1:2
     y = yvar(:,tindices)';
     z = zvar(:,tindices)';
     
-    [r2, kappa_r_slope ] = PairwiseRelativeDiffusivity( t, x, y, 'slope' );
+    [r2, kappa_r_slope ] = PairwiseRelativeDiffusivityWithZ( t, x, y, z, 'slope' );
     
 %     scatter(sqrt(r2), kappa_r_slope)
     
     theBins = 100:500:7000;
     theBins = 10.^(linspace(log10(100),log10(7000),15));
+    theBins = 10.^(linspace(log10(0.01),log10(20),15));
     hold on
     [xMean, yMean, yStdErr] = histogramWithErrorbars(sqrt(r2),kappa_r_slope,theBins);
 end
