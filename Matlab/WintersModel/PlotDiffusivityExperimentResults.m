@@ -1,4 +1,4 @@
-load('particles.mat');
+load('particles_LIN.mat');
 
 tIndices = 1:length(t);
 

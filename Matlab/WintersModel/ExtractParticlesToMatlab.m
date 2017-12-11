@@ -1,4 +1,5 @@
 model_dir = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_NL_35e-11_36000s_restart/';
+model_dir = '/Volumes/seattle_data1/cwortham/research/nsf_iwv/model_raw/EarlyEtal_GM_LIN_unforced_3600000s_restart/';
 
 eulerian_file = [model_dir 'input/SaveIC_EarlyIWmodel.nc'];
 lagrangian_dir = [model_dir 'output/lagrangian/'];
@@ -29,5 +30,5 @@ for iFile = 1:length(UniqueParticleFiles)
 end
 
 outputfile = [lagrangian_dir 'particles.mat'];
-outputfile = '/Users/jearly/Documents/ProjectRepositories/InternalWaves/Matlab/WintersModel/particles.mat';
+outputfile = '/Users/jearly/Documents/ProjectRepositories/InternalWaves/Matlab/WintersModel/particles_LIN.mat';
 save(outputfile,'x','y','z','t','floatsPerLevel', 'model_dir');
