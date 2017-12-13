@@ -131,7 +131,7 @@ z_float = reshape(z_float,[],1);
 nFloats = numel(x_float);
 
 % Now let's place the floats along an isopycnal.
-isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float,interpolationMethod);
+isopycnalDeviation = wavemodel.IsopycnalDisplacementAtTimePosition(0,x_float,y_float,z_float,interpolationMethod);
 z_isopycnal = z_float + isopycnalDeviation;
 
 % Iteratively place floats on the isopycnal surface. Overkill, probably.

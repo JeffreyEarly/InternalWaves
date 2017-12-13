@@ -93,7 +93,7 @@ z_float = reshape(z_float,[],1);
 nFloats = numel(x_float);
 
 % Now let's place the floats along an isopycnal.
-isopycnalDeviation = wavemodel.ZetaAtTimePosition(0,x_float,y_float,z_float);
+isopycnalDeviation = wavemodel.IsopycnalDisplacementAtTimePosition(0,x_float,y_float,z_float);
 z_isopycnal = z_float + isopycnalDeviation;
 
 fprintf('The maximum isopycnal deviation is %.2f meters (in a total depth of %.1f m).\n',max(isopycnalDeviation),Lz);
