@@ -1,6 +1,6 @@
 N = 16;
 f_bar = zeros(N,1);
-j = 2;
+j = 15;
 f_bar(j+1) = 1;
 
 
@@ -52,3 +52,7 @@ subplot(2,1,2),
 plot(x,f_test, 'LineWidth', 3.0, 'Color', 'blue'), hold on
 plot(x,f,'LineWidth', 1.0, 'Color', 'white', 'Marker', 'o', 'MarkerSize',6, 'MarkerFaceColor', 'black')
 title('(w)-mode')
+
+g = cat(1,f,0,-f(N:-1:2));
+g_bar = ifft(g);
+g_bar_tilde = 2*imag(g_bar(2:N+1));

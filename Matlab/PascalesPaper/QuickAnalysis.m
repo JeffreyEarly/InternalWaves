@@ -1,4 +1,4 @@
-load('particle_data_nonlinear.mat');
+load('particle_data_linear_60m.mat');
 
 % tindices=1:floor(length(timevar)/2);
 % tindices=floor(length(timevar)/2):length(timevar);
@@ -16,7 +16,6 @@ plot(q,r)
 figure
 scatter(q(1,:),r(1,:))
 
-return
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % First let's look at z
