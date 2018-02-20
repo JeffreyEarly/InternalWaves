@@ -19,7 +19,13 @@ file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-14T172441_64x64
 file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-21T071709_64x64x65.nc';
 
 % full field
-file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2017-05-21T180815_64x64x65.nc';
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2018-02-20T114636_64x64x65.nc';
+
+% plane wave
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2018-02-20T130052_64x64x65.nc';
+
+% plane wave, half the time step
+file = '/Volumes/OceanTransfer/LagrangianErrorExperiment_2018-02-20T134046_64x64x65.nc';
 
 t = ncread(file, 't');
 
