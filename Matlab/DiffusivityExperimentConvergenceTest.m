@@ -60,7 +60,7 @@ shouldUseGMSpectrum = 1;
 wavemodel = InternalWaveModelConstantStratification([Lx, Ly, Lz], [Nx, Ny, Nz], latitude, N0);
 
 wavemodel.FillOutWaveSpectrum();
-wavemodel.InitializeWithGMSpectrum(GMReferenceLevel);
+wavemodel.InitializeWithGMSpectrum(GMReferenceLevel,'shouldRandomizeAmplitude',1);
 wavemodel.ShowDiagnostics();
         
 if shouldZeroDampingRegion == 1

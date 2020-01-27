@@ -2,7 +2,7 @@ files{1} = '/Volumes/MoreStorage/DiffusivityExperiment_2020-01-24T045517_128x128
 files{2} = '/Volumes/MoreStorage/DiffusivityExperiment_2020-01-24T110233_64x64x129.nc';
 files{3} = '/Volumes/MoreStorage/DiffusivityExperiment_2020-01-24T123859_32x32x129.nc';
 files{4} = '/Volumes/MoreStorage/DiffusivityExperiment_2020-01-24T133617_64x64x129.nc';
-files{5} = '/Volumes/MoreStorage/DiffusivityExperiment_2020-01-24T150729_256x256x129.nc';
+files{5} = '/Volumes/MoreStorage/DiffusivityExperiment_2020-01-25T193808_256x256x129.nc';
 
 nFiles = 5;
 
